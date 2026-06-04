@@ -12,4 +12,9 @@ if [ ! -x "$pyex" ] || ! "$pyex" -c "import unidecode" >/dev/null 2>&1; then
     "$pyex" -m pip install -r "$fold/requirements.txt"
 fi
 
-exec "$pyex" "$fold/normalize_fs.py" "$@"
+stat=0
+"$pyex" "$fold/normalize_fs.py" "$@" || stat=$?
+echo
+read -n 1 -s -r -p "Нажмите любую клавишу для выхода..."
+echo
+exit "$stat"

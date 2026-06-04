@@ -1,4 +1,5 @@
 @echo off
+chcp 65001 >nul
 REM Обёртка для Windows: при первом запуске готовит .venv и зависимости, затем запускает normalize_fs.py.
 setlocal
 set "fold=%~dp0"
@@ -16,3 +17,4 @@ python -m venv "%fold%.venv"
 
 :run
 "%pyex%" "%fold%normalize_fs.py" %*
+pause
