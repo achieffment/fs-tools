@@ -11,21 +11,28 @@ from pathlib import Path
 from .filesystem import FilesystemNormalizer
 from .name import build_normalizer
 
+# PowerShell-скрипт с C#-блоком IFileOpenDialog (нативный выбор папки Windows).
+_PICK_FOLDER_PS1 = Path(__file__).with_name("pick_folder.ps1")
+
 
 def _parse_args(argv: list[str] | None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Нормализатор имён файлов и папок (рекурсивно). Каталог выбирается в диалоге проводника при запуске.")
+    parser = argparse.ArgumentParser(description="Нормализатор имён файлов и папок (рекурсивно). Каталог выбирается интерактивно при запуске (диалог проводника на Windows и в WSL, диалог macOS, либо ввод пути в терминале на обычном Linux).")
     return parser.parse_args(argv)
 
 
-def _prompt_directory(reason: str) -> str:
-    """Ввод пути в терминале (для обычного Linux или когда проводник недоступен)."""
+def _prompt_directory(reason: str, default: str = "") -> str:
+    """Ввод пути в терминале (для обычного Linux или когда проводник недоступен). При пустом вводе возвращается default (если задан)."""
     sys.stderr.write(f"{reason}\n")
-    sys.stderr.write("Введите путь к каталогу: ")
+    if default:
+        sys.stderr.write(f"Введите путь к каталогу [{default}]: ")
+    else:
+        sys.stderr.write("Введите путь к каталогу: ")
     sys.stderr.flush()
     try:
-        return input().strip()
+        value = input().strip()
     except EOFError:
         return ""
+    return value or default
 
 
 def _is_win() -> bool:
@@ -44,48 +51,86 @@ def _is_wsl() -> bool:
         return bool(os.environ.get("WSL_DISTRO_NAME"))
 
 
-def _win_folder_dialog() -> str | None:
-    """Открывает нативный проводник Windows через PowerShell.
-    Возвращает выбранный Windows-путь, "" при отмене пользователем или None,
-    если PowerShell недоступен либо вызов завершился ошибкой.
+def _win_folder_dialog(initial: str | None = None) -> str | None:
+    """Нативный диалог выбора папки Windows (pick_folder.ps1, IFileOpenDialog).
+
+    Стартовая папка и заголовок передаются через env (FSNORM_INITIAL, FSNORM_TITLE),
+    чтобы не экранировать их в команде. Имена переменных добавляются в WSLENV — иначе
+    из-под WSL они не доходят до powershell.exe.
+
+    Возвращает выбранный Windows-путь, "" при отмене (скрипт завершается с кодом 0
+    и пустым выводом) или None, если powershell.exe/скрипт недоступен либо вызов
+    завершился с ненулевым кодом (откат на ввод в терминале).
     """
     powershell = shutil.which("powershell.exe") or shutil.which("powershell")
     if not powershell:
         return None
-    # UTF-8 на стороне PowerShell — иначе путь с не-ASCII (кириллица) исказится.
-    script = (
-        "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8;"
-        "Add-Type -AssemblyName System.Windows.Forms;"
-        "$d = New-Object System.Windows.Forms.FolderBrowserDialog;"
-        "if ($d.ShowDialog() -eq 'OK') { Write-Output $d.SelectedPath }"
-    )
+    try:
+        script = _PICK_FOLDER_PS1.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    env = os.environ.copy()
+    env["FSNORM_TITLE"] = "Выберите каталог для нормализации"
+    if initial:
+        env["FSNORM_INITIAL"] = initial
+    else:
+        env.pop("FSNORM_INITIAL", None)
+    # В WSL пользовательские переменные окружения не попадают в Windows-процессы
+    # (powershell.exe), пока они не перечислены в WSLENV. Без флага значение
+    # передаётся как есть — UNC-путь уже в Windows-формате, переводить его не нужно.
+    shared = ["FSNORM_TITLE"] + (["FSNORM_INITIAL"] if initial else [])
+    wslenv = [
+        e
+        for e in env.get("WSLENV", "").split(":")
+        if e and e.split("/", 1)[0] not in {"FSNORM_TITLE", "FSNORM_INITIAL"}
+    ]
+    env["WSLENV"] = ":".join(wslenv + shared)
     try:
         dialog = subprocess.run(
             [powershell, "-NoProfile", "-STA", "-Command", script],
             capture_output=True,
             text=True,
             encoding="utf-8",
+            env=env,
             check=False,
         )
     except (OSError, subprocess.SubprocessError):
         return None
+    if dialog.returncode != 0:
+        return None  # ошибка скрипта (отмена даёт код 0); откат на терминал
     return dialog.stdout.strip()  # "" при отмене
 
 
-def _mac_folder_dialog() -> str | None:
+def _mac_folder_dialog(initial: str | None = None) -> str | None:
     """Нативный диалог выбора папки macOS через osascript.
+    initial — POSIX-путь предвыбранной папки (передаётся через env, чтобы
+    не экранировать путь в строке скрипта).
     Возвращает POSIX-путь, "" при отмене или None, если osascript недоступен/ошибка.
     """
     osascript = shutil.which("osascript")
     if not osascript:
         return None
-    script = 'POSIX path of (choose folder with prompt "Выберите каталог для нормализации")'
+    prompt = "Выберите каталог для нормализации"
+    script = (
+        'set p to (system attribute "FSNORM_INITIAL")\n'
+        'if p is not "" then\n'
+        f'  POSIX path of (choose folder with prompt "{prompt}" default location (POSIX file p))\n'
+        "else\n"
+        f'  POSIX path of (choose folder with prompt "{prompt}")\n'
+        "end if"
+    )
+    env = os.environ.copy()
+    if initial:
+        env["FSNORM_INITIAL"] = initial
+    else:
+        env.pop("FSNORM_INITIAL", None)  # не подхватывать устаревшее значение
     try:
         dialog = subprocess.run(
             [osascript, "-e", script],
             capture_output=True,
             text=True,
             encoding="utf-8",
+            env=env,
             check=False,
         )
     except (OSError, subprocess.SubprocessError):
@@ -93,6 +138,24 @@ def _mac_folder_dialog() -> str | None:
     if dialog.returncode != 0:
         return ""  # отмена (-128) или ошибка диалога
     return dialog.stdout.strip()
+
+
+def _to_win_path(unix_path: str) -> str | None:
+    """Переводит путь WSL в Windows-путь через wslpath. None при ошибке/пустом выводе."""
+    wslpath = shutil.which("wslpath")
+    if not wslpath:
+        return None
+    try:
+        converted = subprocess.run(
+            [wslpath, "-w", unix_path],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return converted.stdout.strip() or None
 
 
 def _to_wsl_path(win_path: str) -> str | None:
@@ -114,41 +177,52 @@ def _to_wsl_path(win_path: str) -> str | None:
 
 
 def _pick_directory() -> str:
-    """Windows/WSL — проводник Windows; macOS — osascript; иначе — ввод в терминале."""
+    """Windows/WSL — нативный проводник Windows (IFileOpenDialog); macOS — osascript;
+    обычный Linux — ввод в терминале. Папка по умолчанию везде — рабочий каталог
+    (os.getcwd()): для alias/консоли это каталог вызова, для ярлыка/двойного клика
+    на .bat — его «Рабочая папка» (обычно каталог проекта). В WSL путь дополнительно
+    переводится в Windows-формат (wslpath) для диалога, а выбранный путь — обратно
+    в путь WSL.
+    """
+    cwd = os.getcwd()
     if _is_win():
-        win_path = _win_folder_dialog()
+        win_path = _win_folder_dialog(cwd)
         if win_path is None:
-            return _prompt_directory("Проводник Windows недоступен.")
+            return _prompt_directory("Проводник Windows недоступен.", default=cwd)
         return win_path  # путь или "" (отмена)
     if _is_mac():
-        path = _mac_folder_dialog()
+        path = _mac_folder_dialog(cwd)
         if path is None:
-            return _prompt_directory("Стандартный диалог macOS недоступен.")
+            return _prompt_directory("Стандартный диалог macOS недоступен.", default=cwd)
         return path  # путь или "" (отмена)
     if _is_wsl():
-        win_path = _win_folder_dialog()
+        # Каталог вызова (WSL-путь) -> Windows-путь (UNC) для InitialDirectory диалога.
+        # Если конвертация не удалась (None), диалог откроется без стартовой папки.
+        win_init = _to_win_path(cwd)
+        win_path = _win_folder_dialog(win_init)
         if win_path is None:
-            return _prompt_directory("Проводник Windows недоступен.")
+            return _prompt_directory("Проводник Windows недоступен.", default=cwd)
         if not win_path:
             return ""  # пользователь отменил выбор
         converted = _to_wsl_path(win_path)
         if converted is None:
-            return _prompt_directory("Не удалось преобразовать путь Windows.")
+            return _prompt_directory("Не удалось преобразовать путь Windows.", default=cwd)
         return converted
-    return _prompt_directory("Графический выбор папки доступен только в Windows/macOS/WSL.")
+    # Обычный Linux: ввод пути в терминале с дефолтом = каталог вызова.
+    return _prompt_directory("Укажите каталог для нормализации.", default=cwd)
 
 
 def main(argv: list[str] | None = None) -> int:
     _parse_args(argv)
-    target = _pick_directory()
-    if not target:
+    targ = _pick_directory()
+    if not targ:
         sys.stderr.write("Каталог не выбран.\n")
         return 1
-    root = Path(target).expanduser()
+    root = Path(targ).expanduser()
     try:
         root = root.resolve(strict=True)
     except OSError:
-        sys.stderr.write(f"Ошибка: каталог не найден: {target}\n")
+        sys.stderr.write(f"Ошибка: каталог не найден: {targ}\n")
         return 1
     if not root.is_dir():
         sys.stderr.write(f"Ошибка: каталог не является каталогом: {root}\n")
