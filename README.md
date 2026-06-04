@@ -57,8 +57,8 @@ pip install -r requirements.txt
 Проще всего — через обёртку для своей ОС. При первом запуске она автоматически подготовит окружение (`.venv` + зависимости), затем запустит утилиту:
 
 ```bash
+./normalize.bat       # Windows
 ./normalize.sh        # Linux/macOS (терминал)
-normalize.bat         # Windows
 ```
 
 На macOS для запуска двойным кликом в Finder используйте `normalize.command` (один раз сделайте его исполняемым: `chmod +x normalize.command`).
