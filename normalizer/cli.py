@@ -32,6 +32,10 @@ def _is_win() -> bool:
     return os.name == "nt"
 
 
+def _is_mac() -> bool:
+    return sys.platform == "darwin"
+
+
 def _is_wsl() -> bool:
     try:
         with open("/proc/version", encoding="utf-8") as fh:
@@ -68,6 +72,29 @@ def _win_folder_dialog() -> str | None:
     return dialog.stdout.strip()  # "" при отмене
 
 
+def _mac_folder_dialog() -> str | None:
+    """Нативный диалог выбора папки macOS через osascript.
+    Возвращает POSIX-путь, "" при отмене или None, если osascript недоступен/ошибка.
+    """
+    osascript = shutil.which("osascript")
+    if not osascript:
+        return None
+    script = 'POSIX path of (choose folder with prompt "Выберите каталог для нормализации")'
+    try:
+        dialog = subprocess.run(
+            [osascript, "-e", script],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if dialog.returncode != 0:
+        return ""  # отмена (-128) или ошибка диалога
+    return dialog.stdout.strip()
+
+
 def _to_wsl_path(win_path: str) -> str | None:
     """Переводит Windows-путь в путь WSL через wslpath. None при ошибке."""
     wslpath = shutil.which("wslpath")
@@ -87,12 +114,17 @@ def _to_wsl_path(win_path: str) -> str | None:
 
 
 def _pick_directory() -> str:
-    """Windows/WSL — нативный проводник Windows; обычный Linux — ввод в терминале."""
+    """Windows/WSL — проводник Windows; macOS — osascript; иначе — ввод в терминале."""
     if _is_win():
         win_path = _win_folder_dialog()
         if win_path is None:
             return _prompt_directory("Проводник Windows недоступен.")
         return win_path  # путь или "" (отмена)
+    if _is_mac():
+        path = _mac_folder_dialog()
+        if path is None:
+            return _prompt_directory("Стандартный диалог macOS недоступен.")
+        return path  # путь или "" (отмена)
     if _is_wsl():
         win_path = _win_folder_dialog()
         if win_path is None:
@@ -103,7 +135,7 @@ def _pick_directory() -> str:
         if converted is None:
             return _prompt_directory("Не удалось преобразовать путь Windows.")
         return converted
-    return _prompt_directory("Графический выбор папки доступен только в Windows/WSL.")
+    return _prompt_directory("Графический выбор папки доступен только в Windows/macOS/WSL.")
 
 
 def main(argv: list[str] | None = None) -> int:
