@@ -241,6 +241,9 @@ class LeadingZeroRule(Rule):
 class CaseRule(Rule):
     """Папки — с заглавной буквы, файлы — в нижнем регистре.
 
+    У папок ведущие '_' сохраняются (их оставляет TrimEdgeRule), поэтому
+    капитализируется первая буква уже ПОСЛЕ них ('_private' -> '_Private').
+
     Исключение: общепринятые имена-маркеры (README и т.п.) сохраняют
     свой регистр — их stem не приводится к нижнему. Чтобы защитить новое
     имя, достаточно добавить его в PRESERVED_STEMS.
@@ -251,7 +254,8 @@ class CaseRule(Rule):
 
     def apply(self, stem: str, is_dir: bool) -> str:
         if is_dir:
-            return stem[:1].upper() + stem[1:]
+            i = len(stem) - len(stem.lstrip("_"))  # позиция первой буквы после '_'
+            return stem[:i] + stem[i:i + 1].upper() + stem[i + 1:]
         if stem in self.PRESERVED_STEMS:
             return stem
         return stem.lower()
@@ -283,18 +287,17 @@ class TrimEdgeRule(Rule):
 
     _LE = re.compile(r"^[^0-9A-Za-z]+")
     _TE = re.compile(r"[^0-9A-Za-z]+$")
-    # Ведущие '_' у файлов сохраняем (например, _private, __init__),
-    # обрезаем только остальной «мусор» по краям.
+    # Ведущие '_' сохраняем и у файлов, и у папок (например, _private,
+    # __init__), обрезаем только остальной «мусор» по краям.
     _LEAD_US = re.compile(r"^_+")
     _PR = (("(", ")"), ("[", "]"))
 
     def apply(self, stem: str, is_dir: bool) -> str:
         lead = ""
-        if not is_dir:
-            m = self._LEAD_US.match(stem)
-            if m:
-                lead = m.group(0)
-                stem = stem[len(lead):]
+        m = self._LEAD_US.match(stem)
+        if m:
+            lead = m.group(0)
+            stem = stem[len(lead):]
         stem = self._trim_leadin(stem)
         stem = self._trim_traili(stem)
         return lead + stem

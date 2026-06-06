@@ -86,6 +86,9 @@ def test_brackets_rule_exported():
         ("   фывфыв   фывфыв ---", "Fyvfyv-fyvfyv"),
         ("--- папка", "Papka"),
         ("-файл с пробелом", "Fail-s-probelom"),
+        # Ведущий '_' сохраняется и у папок; первая буква после него — заглавная:
+        ("_private", "_Private"),
+        ("__cache__", "__Cache"),
     ],
 )
 def test_dir_pipeline(nn, name, expected):
@@ -119,6 +122,9 @@ def test_dir_pipeline(nn, name, expected):
         ("  отчёт", True),
         ("   фывфыв   фывфыв ---", True),
         ("--- папка", True),
+        # Папки с ведущим '_' — стабильны после первого прогона:
+        ("_private", True),
+        ("__cache__", True),
     ],
 )
 def test_idempotent(nn, name, is_dir):
@@ -258,6 +264,9 @@ def test_case_rule():
     assert CaseRule().apply("README", is_dir=False) == "README"
     # Сохраняется только точное совпадение: иной регистр приводится к нижнему.
     assert CaseRule().apply("Readme", is_dir=False) == "readme"
+    # У папок ведущий '_' сохраняется, капитализируется первая буква после него:
+    assert CaseRule().apply("_private", is_dir=True) == "_Private"
+    assert CaseRule().apply("__cache", is_dir=True) == "__Cache"
 
 
 @pytest.mark.parametrize(
@@ -297,9 +306,9 @@ def test_trim_edge(raw, expected):
     assert TrimEdgeRule().apply(raw, is_dir=False) == expected
 
 
-def test_trim_edge_dir_strips_leading_underscore():
-    # Для папок поведение не меняется: ведущий '_' обрезается.
-    assert TrimEdgeRule().apply("__name__", is_dir=True) == "name"
+def test_trim_edge_dir_keeps_leading_underscore():
+    # Ведущий '_' сохраняется и у папок (как у файлов); хвостовой мусор обрезается.
+    assert TrimEdgeRule().apply("__name__", is_dir=True) == "__name"
 
 
 def test_empty_stem_guard(nn):
