@@ -1,4 +1,0 @@
-fixture: привет👍
-edge case sample text
-lorem ipsum dolor sit amet
-sample payload 42

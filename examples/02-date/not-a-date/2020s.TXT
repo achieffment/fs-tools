@@ -1,2 +1,0 @@
-fixture: 2020s
-alpha beta gamma delta

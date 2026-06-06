@@ -1,3 +1,0 @@
-fixture: 1999
-тестовые данные внутри
-demo content

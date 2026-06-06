@@ -1,3 +1,0 @@
-fixture: _private
-fixture for normalizer
-проверка регистра и дат

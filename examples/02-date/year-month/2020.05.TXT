@@ -1,4 +1,0 @@
-fixture: 2020.05
-edge case sample text
-ничего особенного
-ничего особенного

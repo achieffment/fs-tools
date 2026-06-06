@@ -1,3 +1,0 @@
-fixture: Отчёт 1 версия
-lorem ipsum dolor sit amet
-проверка регистра и дат

@@ -1,3 +1,0 @@
-fixture: release 1 Müller
-demo content
-alpha beta gamma delta

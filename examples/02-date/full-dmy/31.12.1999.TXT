@@ -1,4 +1,0 @@
-fixture: 31.12.1999
-sample payload 42
-sample payload 42
-edge case sample text

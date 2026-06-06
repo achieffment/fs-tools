@@ -1,3 +1,0 @@
-fixture: file_5
-проверка регистра и дат
-lorem ipsum dolor sit amet

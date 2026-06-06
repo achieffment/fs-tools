@@ -1,3 +1,0 @@
-fixture: doc_7
-0xCAFEBABE marker
-sample payload 42

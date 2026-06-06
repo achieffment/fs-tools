@@ -1,2 +1,0 @@
-fixture: hello world
-0xCAFEBABE marker

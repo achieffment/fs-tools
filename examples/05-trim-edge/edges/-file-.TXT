@@ -1,3 +1,0 @@
-fixture: -file-
-ничего особенного
-alpha beta gamma delta

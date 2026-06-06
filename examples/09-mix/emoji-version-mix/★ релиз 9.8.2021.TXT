@@ -1,3 +1,0 @@
-fixture: ★ релиз 9.8.2021
-edge case sample text
-разные байты тут лежат

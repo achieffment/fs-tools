@@ -1,2 +1,0 @@
-fixture:   Отчёт №1 от 20.05.2020  
-sample payload 42

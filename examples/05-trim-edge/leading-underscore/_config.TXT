@@ -1,3 +1,0 @@
-fixture: _config
-edge case sample text
-тестовые данные внутри

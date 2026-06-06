@@ -1,3 +1,0 @@
-fixture: 12.1999
-fixture for normalizer
-lorem ipsum dolor sit amet

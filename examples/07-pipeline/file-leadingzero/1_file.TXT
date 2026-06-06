@@ -1,3 +1,0 @@
-fixture: 1_file
-0xCAFEBABE marker
-разные байты тут лежат

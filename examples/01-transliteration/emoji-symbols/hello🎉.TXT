@@ -1,4 +1,0 @@
-fixture: hello🎉
-edge case sample text
-alpha beta gamma delta
-0xCAFEBABE marker

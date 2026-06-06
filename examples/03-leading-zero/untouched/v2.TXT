@@ -1,4 +1,0 @@
-fixture: v2
-fixture for normalizer
-just a placeholder line
-demo content

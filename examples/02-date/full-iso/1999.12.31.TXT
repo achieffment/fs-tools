@@ -1,3 +1,0 @@
-fixture: 1999.12.31
-alpha beta gamma delta
-разные байты тут лежат

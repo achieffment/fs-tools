@@ -1,2 +1,0 @@
-fixture: UPPER
-just a placeholder line

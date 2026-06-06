@@ -1,4 +1,0 @@
-fixture: [05.2020]
-demo content
-alpha beta gamma delta
-lorem ipsum dolor sit amet

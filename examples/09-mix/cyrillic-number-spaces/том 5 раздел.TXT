@@ -1,2 +1,0 @@
-fixture: том 5 раздел
-demo content

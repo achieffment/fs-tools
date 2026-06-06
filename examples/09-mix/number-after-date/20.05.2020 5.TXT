@@ -1,3 +1,0 @@
-fixture: 20.05.2020 5
-demo content
-lorem ipsum dolor sit amet

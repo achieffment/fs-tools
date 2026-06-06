@@ -1,3 +1,0 @@
-fixture: report final
-lorem ipsum dolor sit amet
-0xCAFEBABE marker
