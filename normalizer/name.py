@@ -25,6 +25,10 @@ class NameNormalizer:
     # отдаваемое в os.rename (иначе объект уехал бы в другой каталог). Основную
     # очистку делает TransliterationRule; этот барьер ловит любой остаток.
     _PATH_UNSAFE_RE = re.compile(r"[\\/\x00-\x1f]+")
+    # Тот же барьер для запрещённых на Windows символов ('< > : " | ? *'):
+    # TransliterationRule их уже вырезал — здесь страховка, чтобы имя оставалось
+    # валидным на Windows (одиночный '<' ломает os.rename — WinError 123).
+    _WIN_FRBIDDDEN_RE = re.compile(r'[<>:"|?*]+')
 
     def __init__(self, rules: list[Rule]):
         self.rules = rules
@@ -45,8 +49,10 @@ class NameNormalizer:
         for rule in self.rules:
             new_stem = rule.apply(new_stem, is_dir)
         # Защитный барьер: имя не должно содержать разделителей пути/управляющих
-        # символов. В норме TransliterationRule их уже убрал — здесь страховка.
+        # символов и запрещённых на Windows символов. В норме TransliterationRule
+        # их уже убрал — здесь страховка.
         new_stem = self._PATH_UNSAFE_RE.sub("-", new_stem)
+        new_stem = self._WIN_FRBIDDDEN_RE.sub("", new_stem)
         if not new_stem:
             return name  # защита от пустого имени (например, имя из одних emoji)
         return new_stem + ext

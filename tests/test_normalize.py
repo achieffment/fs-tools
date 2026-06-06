@@ -34,6 +34,13 @@ def nn():
         ("файл 1.JPG", "fail-01.JPG"),
         ("2020-05-05-file.txt", "2020-05-05_file.txt"),
         ("dump-2020-05-05.txt", "dump_2020-05-05.txt"),
+        # Мягкий знак удаляется (не превращается в апостроф):
+        ("Письмо.txt", "pismo.txt"),
+        # Кавычки-«ёлочки» (unidecode -> '<<'/'>>') запрещены на Windows: вырезаются:
+        (
+            "Заявление директору ООО «Печоралифтсервис».docx",
+            "zaiavlenie-direktoru-ooo-pechoraliftservis.docx",
+        ),
     ],
 )
 def test_file_pipeline(nn, name, expected):
@@ -237,6 +244,65 @@ def test_transliteration_rule_strips_separators():
     assert "\\" not in TransliterationRule().apply("∖", is_dir=False)
 
 
+# --------------------------------------------------------------------------- #
+# Мягкий/твёрдый знак: unidecode превращает 'ь'/'ъ' в апостроф — мы его убираем.
+# --------------------------------------------------------------------------- #
+@pytest.mark.parametrize(
+    "name, expected",
+    [
+        ("Письмо", "pismo"),
+        ("автомобиль", "avtomobil"),
+        ("секретарь", "sekretar"),
+        ("подъезд", "podezd"),
+        ("Объявление", "obiavlenie"),
+    ],
+)
+def test_soft_hard_sign_removed(nn, name, expected):
+    assert nn.normalize(name, is_dir=False) == expected
+    # Апостроф не должен появляться в имени:
+    assert "'" not in nn.normalize(name, is_dir=False)
+
+
+def test_ascii_apostrophe_preserved(nn):
+    # ASCII-апостроф во ВХОДНОМ имени не трогаем — убираем только 'ь'/'ъ'.
+    assert nn.normalize("O'Brien.txt", is_dir=False) == "o'brien.txt"
+
+
+# --------------------------------------------------------------------------- #
+# Запрещённые на Windows символы (< > : " | ? *). Транслитерация порождает их из
+# типографики ('«'->'<<', '»'->'>>', '“'/'”'->'"'); их нужно вырезать, иначе
+# одиночный '<' в середине имени ломает os.rename на Windows (WinError 123).
+# --------------------------------------------------------------------------- #
+@pytest.mark.parametrize(
+    "raw",
+    [
+        "«ёлочки»", "ООО «Печоралифтсервис»", "“кавычки”", "„нижние“",
+        "файл «с» кавычками", "‹одинарные›",
+    ],
+)
+def test_no_windows_forbidden_introduced(nn, raw):
+    for is_dir in (False, True):
+        out = nn.normalize(raw if is_dir else raw + ".txt", is_dir=is_dir)
+        assert not any(ch in out for ch in '<>:"|?*')
+
+
+@pytest.mark.parametrize(
+    "name, expected",
+    [
+        ("«Печоралифтсервис».txt", "pechoraliftservis.txt"),
+        ("ООО «Рога и Копыта».doc", "ooo-roga-i-kopyta.doc"),
+    ],
+)
+def test_guillemets_pipeline(nn, name, expected):
+    assert nn.normalize(name, is_dir=False) == expected
+
+
+def test_transliteration_rule_removes_windows_forbidden():
+    # Прямой контракт правила: '<<'/'>>' из unidecode('«»') вырезаются.
+    out = TransliterationRule().apply("«тест»", is_dir=False)
+    assert "<" not in out and ">" not in out
+
+
 @pytest.mark.parametrize("raw", ["½", "10½", "½ доля", "naïve½"])
 def test_fraction_idempotent(nn, raw):
     once = nn.normalize(raw, is_dir=False)
@@ -308,6 +374,22 @@ def test_fs_no_relocation_via_separator(tmp_path):
     assert len(survivors) == 1
     assert "/" not in survivors[0].name and "\\" not in survivors[0].name
     assert (tmp_path / "10½.dat").exists() is False  # переименован
+
+
+def test_fs_guillemets_renamed_no_data_loss(tmp_path):
+    # Регресс на WinError 123: имя с кавычками-«ёлочками» давало '<<'/'>>' через
+    # unidecode, и одиночный '<' в середине ломал переименование на Windows.
+    # Теперь запрещённые символы вырезаются, файл нормализуется на месте.
+    doc = tmp_path / "Заявление ООО «Печоралифтсервис».docx"
+    doc.write_text("ДАННЫЕ")
+    fs = FilesystemNormalizer(build_normalizer())
+    fs.apply(tmp_path)
+    survivors = [p for p in tmp_path.iterdir() if p.is_file() and p.read_text() == "ДАННЫЕ"]
+    assert len(survivors) == 1
+    name = survivors[0].name
+    assert not any(ch in name for ch in '<>:"|?*')
+    assert name == "zaiavlenie-ooo-pechoraliftservis.docx"
+    assert doc.exists() is False  # переименован
 
 
 def test_fs_case_collision_no_data_loss(tmp_path):
