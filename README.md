@@ -31,6 +31,8 @@ fs-normalizer/
 │   ├── name.py              # сборка нового имени из конвейера правил
 │   └── rules.py             # правила нормализации
 ├── tests/                   # тесты (pytest)
+├── examples/                # песочница-фикстуры для ручного прогона
+│   └── reset.sh/.command/.bat  # откат прогона по examples/ (git checkout + git clean)
 └── requirements.txt
 ```
 
