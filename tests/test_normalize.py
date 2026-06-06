@@ -1,10 +1,12 @@
 import pytest
 
 from normalizer import (
+    BracketsRule,
     CaseRule,
     DateRule,
     FilesystemNormalizer,
     LeadingZeroRule,
+    SpaceToDashRule,
     TransliterationRule,
     TrimEdgeRule,
     build_normalizer,
@@ -34,6 +36,21 @@ def nn():
         ("файл 1.JPG", "fail-01.JPG"),
         ("2020-05-05-file.txt", "2020-05-05_file.txt"),
         ("dump-2020-05-05.txt", "dump_2020-05-05.txt"),
+        # Дубли файлового менеджера ('(1)' и '[1]') -> скобки убираются, ведущий ноль:
+        ("Файл (1).docx", "fail-01.docx"),
+        ("Файл (12).docx", "fail-12.docx"),
+        ("Файл [1].docx", "fail-01.docx"),
+        # Текст в скобках -> скобки сохраняются (концевая скобка не срезается):
+        ("инн (Нового договора нет).txt", "inn-(novogo-dogovora-net).txt"),
+        ("инн [Нового договора нет].txt", "inn-[novogo-dogovora-net].txt"),
+        # Пробел-дефис-пробел схлопывается в одно тире:
+        ("Резюме - подготовка.txt", "reziume-podgotovka.txt"),
+        # Намеренное двойное тире (без пробелов) сохраняется:
+        ("file--improved.txt", "file--improved.txt"),
+        # Незакрытые/несовпадающие скобки вырезаются (как невалидный мусор):
+        ("Файл (1.docx", "fail-01.docx"),
+        ("Файл (1].docx", "fail-01.docx"),
+        ("инн (Нового договора нет.txt", "inn-novogo-dogovora-net.txt"),
         # Мягкий знак удаляется (не превращается в апостроф):
         ("Письмо.txt", "pismo.txt"),
         # Кавычки-«ёлочки» (unidecode -> '<<'/'>>') запрещены на Windows: вырезаются:
@@ -45,6 +62,14 @@ def nn():
 )
 def test_file_pipeline(nn, name, expected):
     assert nn.normalize(name, is_dir=False) == expected
+
+
+def test_brackets_rule_exported():
+    # Публичное API не должно разойтись: новое правило экспортируется из пакета.
+    import normalizer
+
+    assert "BracketsRule" in normalizer.__all__
+    assert normalizer.BracketsRule is BracketsRule
 
 
 # --------------------------------------------------------------------------- #
@@ -80,6 +105,16 @@ def test_dir_pipeline(nn, name, expected):
         ("v2 readme.MD", False),
         ("2020-05-05-file.txt", False),
         ("dump-2020-05-05.txt", False),
+        # Скобки (круглые и квадратные) и схлопывание дефисов:
+        ("Файл (1)", False),
+        ("инн (Нового договора нет)", False),
+        ("Файл [1]", False),
+        ("инн [Нового договора нет]", False),
+        ("Резюме - подготовка", False),
+        ("file--improved", False),
+        # Незакрытые скобки вырезаются за один прогон, дальше стабильно:
+        ("Файл (1", False),
+        ("инн (Нового договора нет", False),
         # Папки с ведущим мусором — капитализация за один прогон:
         ("  отчёт", True),
         ("   фывфыв   фывфыв ---", True),
@@ -158,6 +193,62 @@ def test_leading_zero(raw, expected):
 
 
 # --------------------------------------------------------------------------- #
+# BracketsRule
+# --------------------------------------------------------------------------- #
+@pytest.mark.parametrize(
+    "raw, expected",
+    [
+        # Число/дата (без букв) -> скобки убираются (круглые и квадратные):
+        ("file (1)", "file 1"),
+        ("file (12)", "file 12"),
+        ("(2021.03.10)", "2021.03.10"),
+        ("file [1]", "file 1"),
+        ("[2021.03.10]", "2021.03.10"),
+        # Текст (буквы) -> скобки сохраняются:
+        ("inn (kopiia)", "inn (kopiia)"),
+        ("a (b1c)", "a (b1c)"),
+        ("inn [chernovik]", "inn [chernovik]"),
+        # Пустые скобки убираются, без скобок — без изменений:
+        ("x ()", "x "),
+        ("x []", "x "),
+        ("plain", "plain"),
+        # Непарные/несовпадающие скобки вырезаются (валидность контента не важна):
+        ("file (1", "file 1"),
+        ("file 1)", "file 1"),
+        ("file (1]", "file 1"),
+        ("file [1)", "file 1"),
+        ("inn (kopiia", "inn kopiia"),
+        ("inn kopiia)", "inn kopiia"),
+        ("a (1) b (2", "a 1 b 2"),
+        ("((1))", "1"),  # вложенные пары схлопываются
+    ],
+)
+def test_brackets_rule(raw, expected):
+    assert BracketsRule().apply(raw, is_dir=False) == expected
+
+
+# --------------------------------------------------------------------------- #
+# SpaceToDashRule — схлопывание пробелов и дефисов
+# --------------------------------------------------------------------------- #
+@pytest.mark.parametrize(
+    "raw, expected",
+    [
+        # Прогон с пробелом -> одно тире:
+        ("a b", "a-b"),
+        ("a - b", "a-b"),
+        ("a -- b", "a-b"),
+        ("a   b", "a-b"),
+        # Дефисы без пробелов сохраняются (даты не множатся, идемпотентно):
+        ("a---b", "a---b"),
+        ("file--improved", "file--improved"),
+        ("2020-05-20", "2020-05-20"),
+    ],
+)
+def test_space_to_dash(raw, expected):
+    assert SpaceToDashRule().apply(raw, is_dir=False) == expected
+
+
+# --------------------------------------------------------------------------- #
 # CaseRule / TrimEdgeRule
 # --------------------------------------------------------------------------- #
 def test_case_rule():
@@ -190,6 +281,16 @@ def test_readme_preserved(nn, name, expected):
         ("--_file", "file"),  # '_' не в самом начале -> обрезается вместе с мусором
         ("2020-05-00", "2020-05-00"),  # цифры плейсхолдера сохраняются
         ("2020-00-00", "2020-00-00"),
+        # Парная скобка на краю сохраняется (круглая и квадратная):
+        ("inn-(novogo-net)", "inn-(novogo-net)"),
+        ("(kopiia)-fail", "(kopiia)-fail"),
+        ("inn-[novogo-net]", "inn-[novogo-net]"),
+        ("[kopiia]-fail", "[kopiia]-fail"),
+        # Непарная скобка по-прежнему срезается как мусор:
+        ("abc)", "abc"),
+        ("(abc", "abc"),
+        ("abc]", "abc"),
+        ("[abc", "abc"),
     ],
 )
 def test_trim_edge(raw, expected):
