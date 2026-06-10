@@ -1,6 +1,6 @@
 ---
 description: Инварианты и осознанные допущения glob-матчинга путей (exclude/include)
-globs: normalizer/exclude.py
+globs: normalizer/exclude.py,normalizer/filesystem.py
 alwaysApply: false
 ---
 
@@ -49,3 +49,8 @@ alwaysApply: false
   включаем. Без exclude include — no-op.
 - При непустом `include.txt` (`filesystem.py`, probe) исключённые каталоги не
   обрезаются при обходе — внутри могут быть re-included потомки.
+- Исключённые объекты не попадают в счётчики `renamed`/`skipped` (`filesystem.py`).
+- На регистронезависимой ФС (Windows, macOS по умолчанию) `os.walk` отдаёт имена в
+  регистре хранения на диске — паттерн в `exclude.txt`/`include.txt` должен совпадать.
+- `/mnt/wsl` — не диск: сегмент `wsl` не сводится к токену-букве (в отличие от
+  `/mnt/d/`).

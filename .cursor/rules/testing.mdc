@@ -6,7 +6,11 @@ alwaysApply: true
 # Тесты ко всем правилам
 
 Каждое правило нормализации покрыто тестами и проверяется. Новое или изменённое
-поведение обязательно сопровождается тестами в `tests/test_normalize.py`:
+поведение обязательно сопровождается тестами в `tests/test_normalize.py`.
+Фильтры путей (`exclude`/`include`) — там же: юнит `_canon`/`_seg_glob`/`PathMatcher`,
+e2e `FilesystemNormalizer` + excluder/includer (deepest-wins, probe, регистрозависимость).
+
+Обязательные виды проверки:
 
 - **Юнит правила**: прямые вызовы `<Rule>().apply(...)` на наборе кейсов.
 - **Пайплайн**: поведение через `build_normalizer().normalize(...)`.
