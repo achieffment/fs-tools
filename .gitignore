@@ -3,6 +3,3 @@
 .ruff_cache
 .venv
 __pycache__
-.fs-ignore
-# демо-фильтр примеров отслеживается (его паттерны скоупятся только на 10-ignore)
-!examples/.fs-ignore
