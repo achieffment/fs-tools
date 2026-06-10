@@ -292,6 +292,11 @@ def _ign(*lines):
         (["/Archive"], "a/Archive", True, False),
         (["Home/Components"], "Home/Components", True, True),
         (["Home/Components"], "x/Home/Components", True, False),
+        # Префикс './' НЕ поддерживается ('.' — обычный сегмент): не совпадает,
+        # тогда как basename 'Foo' и якорь '/Foo' — совпадают:
+        (["./Foo"], "Foo", True, False),
+        (["Foo"], "Foo", True, True),
+        (["/Foo"], "Foo", True, True),
         # '*' — в пределах сегмента; '**' — через сегменты (в т.ч. ноль):
         (["*.bak"], "Docs/notes.bak", False, True),
         (["*.bak"], "Docs/notes.txt", False, False),
@@ -497,6 +502,23 @@ def test_fs_negation_reincludes_file(tmp_path):
     fs.apply(tmp_path)
     assert (tmp_path / "Docs" / "Черновик.tmp").exists()   # исключён -> не тронут
     assert (tmp_path / "Docs" / "vazhnoe.keep").exists()   # включён -> нормализован
+
+
+def test_fs_hidden_not_reincluded_by_negation(tmp_path):
+    # Скрытые (имя на '.') отсекаются `_hidden` ДО фильтра и внутрь не заходим,
+    # поэтому правило-'!' их не возвращает (даже при включённом probe, incl=True).
+    (tmp_path / ".keep").write_text("x")            # скрытый файл
+    hidden = tmp_path / ".cfg"
+    hidden.mkdir()
+    (hidden / "Отчёт 2020").write_text("y")          # внутрь скрытой папки не заходим
+    ign = _ign("Archive", "!*.keep", "!.cfg/**")    # '!' -> incl=True (probe)
+    assert ign.incl is True
+    fs = FilesystemNormalizer(build_normalizer(), ign)
+    renamed, skipped = fs.apply(tmp_path)
+    assert (tmp_path / ".keep").exists()             # скрытый файл не тронут
+    assert (hidden / "Отчёт 2020").exists()          # содержимое скрытой папки не тронуто
+    assert renamed == 0
+    assert skipped == 0
 
 
 def test_fs_negation_probe_descends_ignored_dir(tmp_path):
