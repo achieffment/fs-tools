@@ -48,7 +48,7 @@ fs-normalizer/
 │   └── safety.py                     # барьеры безопасности имени (один компонент пути)
 ├── tests/                            # тесты (pytest)
 ├── examples/                         # песочница-фикстуры для ручного прогона
-│   └── reset.sh/.command/.bat        # откат прогона по examples/ (git checkout + git clean)
+│   └── reset.sh/.command/.bat        # откат прогона по examples/ (git reset + clean + checkout, ignorecase=false)
 └── requirements.txt
 ```
 

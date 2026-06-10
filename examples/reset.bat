@@ -11,15 +11,21 @@ cd /d "%~dp0"
 git rev-parse --is-inside-work-tree >nul 2>nul
 if errorlevel 1 goto notgit
 
-REM 1. Возвращаем отслеживаемые файлы к версии из git (только в этом каталоге).
-git restore --staged --worktree -- . 2>nul
-if errorlevel 1 (
-    git reset -q -- .
-    git checkout -- .
-)
+REM Откат с core.ignorecase=false и в порядке reset -> clean -> checkout. На
+REM регистронезависимой ФС (Windows, macOS) переименования, отличающиеся ТОЛЬКО
+REM регистром (CaseRule: archive -> Archive и т.п.), git обычными командами не
+REM возвращает: путь считается тем же, имя не переименовывается. С ignorecase=false
+REM мис-кейсовый объект становится неотслеживаемым, удаляется на шаге 2 и
+REM пересоздаётся на шаге 3 уже с правильным регистром.
 
-REM 2. Удаляем неотслеживаемые объекты (опустевшие нормализованные каталоги и пр.).
-git clean -fd -- .
+REM 1. Снимаем индекс к HEAD (если переименования были staged) — мис-кейс станет untracked.
+git -c core.ignorecase=false reset -q -- .
+
+REM 2. Удаляем неотслеживаемые объекты (мис-кейс, опустевшие нормализованные каталоги и пр.).
+git -c core.ignorecase=false clean -fd -- .
+
+REM 3. Возвращаем отслеживаемые файлы к версии из git (только в этом каталоге).
+git -c core.ignorecase=false checkout -- .
 
 echo Готово: examples/ возвращён к состоянию из git.
 goto end
