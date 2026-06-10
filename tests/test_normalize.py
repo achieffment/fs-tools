@@ -1,27 +1,20 @@
+"""Кросс-секционные тесты: пайплайн, идемпотентность, безопасность, ФС и фильтр.
+
+Тесты отдельных правил — в tests/rules/test_<rule>.py. Фикстура `nn` — в conftest.py.
+"""
 from pathlib import PurePosixPath
 
 import pathspec
 import pytest
 
 from normalizer import (
-    BracketsRule,
-    CaseRule,
-    DateRule,
     FilesystemNormalizer,
     FsIgnore,
-    LeadingZeroRule,
-    SpaceToDashRule,
-    TransliterationRule,
-    TrimEdgeRule,
     build_normalizer,
     load_fs_ignore,
 )
 from normalizer.ignore import _FACTORY
-
-
-@pytest.fixture()
-def nn():
-    return build_normalizer()
+from normalizer.safety import enforce_safe_component
 
 
 # --------------------------------------------------------------------------- #
@@ -40,6 +33,10 @@ def nn():
         ("2020", "2020-00-00"),
         ("-file_01-.png", "file_01.png"),
         ("файл 1.JPG", "fail-01.JPG"),
+        # Одиночная цифра рядом с кромочным «мусором»: ведущий ноль за один
+        # проход (LeadingZeroRule идёт после TrimEdgeRule). Регресс идемпотентности.
+        ("том 5!.txt", "tom-05.txt"),
+        ("глава 9-.md", "glava-09.md"),
         ("2020-05-05-file.txt", "2020-05-05_file.txt"),
         ("dump-2020-05-05.txt", "dump_2020-05-05.txt"),
         # Дубли файлового менеджера ('(1)' и '[1]') -> скобки убираются, ведущий ноль:
@@ -68,14 +65,6 @@ def nn():
 )
 def test_file_pipeline(nn, name, expected):
     assert nn.normalize(name, is_dir=False) == expected
-
-
-def test_brackets_rule_exported():
-    # Публичное API не должно разойтись: новое правило экспортируется из пакета.
-    import normalizer
-
-    assert "BracketsRule" in normalizer.__all__
-    assert normalizer.BracketsRule is BracketsRule
 
 
 # --------------------------------------------------------------------------- #
@@ -124,6 +113,12 @@ def test_dir_pipeline(nn, name, expected):
         # Незакрытые скобки вырезаются за один прогон, дальше стабильно:
         ("Файл (1", False),
         ("инн (Нового договора нет", False),
+        # Одиночная цифра рядом с кромочным «мусором»: ведущий ноль ставится за
+        # один проход, иначе '5' -> '05' проявлялось бы только на втором прогоне:
+        ("том 5!", False),
+        ("report 5!", False),
+        ("5.", False),
+        ("глава 9-", True),
         # Папки с ведущим мусором — капитализация за один прогон:
         ("  отчёт", True),
         ("   фывфыв   фывфыв ---", True),
@@ -139,290 +134,35 @@ def test_idempotent(nn, name, is_dir):
     assert once == twice
 
 
-# --------------------------------------------------------------------------- #
-# DateRule
-# --------------------------------------------------------------------------- #
-@pytest.mark.parametrize(
-    "raw, expected",
-    [
-        ("20.05.2020", "2020-05-20"),
-        ("2020.05.20", "2020-05-20"),
-        ("2020/05/20", "2020-05-20"),
-        ("1.2.2020", "2020-02-01"),
-        # Соседние разделители вокруг даты -> '_':
-        ("2020-05-05-file", "2020-05-05_file"),
-        ("dump-2020-05-05", "dump_2020-05-05"),
-        ("2020-05-05.file", "2020-05-05_file"),
-        ("dump 20.05.2020", "dump_2020-05-20"),
-        ("dump_2020-05-05", "dump_2020-05-05"),
-        ("2020-05-00-file", "2020-05-00_file"),
-        ("year-2020-end", "year_2020-00-00_end"),
-        ("05.2020", "2020-05-00"),
-        ("2020.05", "2020-05-00"),
-        ("1.2020", "2020-01-00"),
-        ("2020", "2020-00-00"),
-        # Невалидные/нерелевантные — без изменений:
-        ("31.02.2020", "31.02.2020"),
-        ("13.2020", "13.2020"),
-        ("1080", "1080"),
-        ("12345", "12345"),
-        # Цифры, склеенные с буквами, — НЕ дата (отдельный токен обязателен):
-        ("model2020", "model2020"),
-        ("version2021", "version2021"),
-        ("abc1999x", "abc1999x"),
-        ("build2024release", "build2024release"),
-        ("2020s", "2020s"),
-        # Разделители-токены (_) сохраняют распознавание года:
-        ("file_2020", "file_2020-00-00"),
-        # Уже нормализованные — без изменений:
-        ("2020-05-20", "2020-05-20"),
-        ("2020-05-00", "2020-05-00"),
-        ("2020-00-00", "2020-00-00"),
-    ],
-)
-def test_date_rule(raw, expected):
-    assert DateRule().apply(raw, is_dir=False) == expected
-
-
-# --------------------------------------------------------------------------- #
-# LeadingZeroRule
-# --------------------------------------------------------------------------- #
-@pytest.mark.parametrize(
-    "raw, expected",
-    [
-        ("1_file", "01_file"),
-        ("file_5", "file_05"),
-        ("a 7 b", "a 07 b"),
-        ("1.5", "1.5"),        # дробь не трогаем
-        ("v2", "v2"),          # буквенный префикс
-        ("2x", "2x"),          # буквенный суффикс
-        ("file10", "file10"),  # двузначное / слитно с буквами
-        ("12", "12"),          # уже двузначное
-    ],
-)
-def test_leading_zero(raw, expected):
-    assert LeadingZeroRule().apply(raw, is_dir=False) == expected
-
-
-# --------------------------------------------------------------------------- #
-# BracketsRule
-# --------------------------------------------------------------------------- #
-@pytest.mark.parametrize(
-    "raw, expected",
-    [
-        # Число/дата (без букв) -> скобки убираются (круглые и квадратные):
-        ("file (1)", "file 1"),
-        ("file (12)", "file 12"),
-        ("(2021.03.10)", "2021.03.10"),
-        ("file [1]", "file 1"),
-        ("[2021.03.10]", "2021.03.10"),
-        # Текст (буквы) -> скобки сохраняются:
-        ("inn (kopiia)", "inn (kopiia)"),
-        ("a (b1c)", "a (b1c)"),
-        ("inn [chernovik]", "inn [chernovik]"),
-        # Пустые скобки убираются, без скобок — без изменений:
-        ("x ()", "x "),
-        ("x []", "x "),
-        ("plain", "plain"),
-        # Непарные/несовпадающие скобки вырезаются (валидность контента не важна):
-        ("file (1", "file 1"),
-        ("file 1)", "file 1"),
-        ("file (1]", "file 1"),
-        ("file [1)", "file 1"),
-        ("inn (kopiia", "inn kopiia"),
-        ("inn kopiia)", "inn kopiia"),
-        ("a (1) b (2", "a 1 b 2"),
-        ("((1))", "1"),  # вложенные пары схлопываются
-    ],
-)
-def test_brackets_rule(raw, expected):
-    assert BracketsRule().apply(raw, is_dir=False) == expected
-
-
-# --------------------------------------------------------------------------- #
-# SpaceToDashRule — схлопывание пробелов и дефисов
-# --------------------------------------------------------------------------- #
-@pytest.mark.parametrize(
-    "raw, expected",
-    [
-        # Прогон с пробелом -> одно тире:
-        ("a b", "a-b"),
-        ("a - b", "a-b"),
-        ("a -- b", "a-b"),
-        ("a   b", "a-b"),
-        # Дефисы без пробелов сохраняются (даты не множатся, идемпотентно):
-        ("a---b", "a---b"),
-        ("file--improved", "file--improved"),
-        ("2020-05-20", "2020-05-20"),
-    ],
-)
-def test_space_to_dash(raw, expected):
-    assert SpaceToDashRule().apply(raw, is_dir=False) == expected
-
-
-# --------------------------------------------------------------------------- #
-# CaseRule / TrimEdgeRule
-# --------------------------------------------------------------------------- #
-def test_case_rule():
-    assert CaseRule().apply("report", is_dir=True) == "Report"
-    assert CaseRule().apply("Report", is_dir=False) == "report"
-    # README в верхнем регистре сохраняется как есть:
-    assert CaseRule().apply("README", is_dir=False) == "README"
-    # Сохраняется только точное совпадение: иной регистр приводится к нижнему.
-    assert CaseRule().apply("Readme", is_dir=False) == "readme"
-    # У папок ведущий '_' сохраняется, капитализируется первая буква после него:
-    assert CaseRule().apply("_private", is_dir=True) == "_Private"
-    assert CaseRule().apply("__cache", is_dir=True) == "__Cache"
-
-
-@pytest.mark.parametrize(
-    "name, expected",
-    [
-        ("README", "README"),
-        ("README.md", "README.md"),
-        ("README.TXT", "README.TXT"),
-    ],
-)
-def test_readme_preserved(nn, name, expected):
-    assert nn.normalize(name, is_dir=False) == expected
-
-
-@pytest.mark.parametrize(
-    "raw, expected",
-    [
-        ("-file-", "file"),
-        ("__name__", "__name"),  # ведущие '_' у файлов сохраняются
-        ("_private", "_private"),
-        ("--_file", "file"),  # '_' не в самом начале -> обрезается вместе с мусором
-        ("2020-05-00", "2020-05-00"),  # цифры плейсхолдера сохраняются
-        ("2020-00-00", "2020-00-00"),
-        # Парная скобка на краю сохраняется (круглая и квадратная):
-        ("inn-(novogo-net)", "inn-(novogo-net)"),
-        ("(kopiia)-fail", "(kopiia)-fail"),
-        ("inn-[novogo-net]", "inn-[novogo-net]"),
-        ("[kopiia]-fail", "[kopiia]-fail"),
-        # Непарная скобка по-прежнему срезается как мусор:
-        ("abc)", "abc"),
-        ("(abc", "abc"),
-        ("abc]", "abc"),
-        ("[abc", "abc"),
-    ],
-)
-def test_trim_edge(raw, expected):
-    assert TrimEdgeRule().apply(raw, is_dir=False) == expected
-
-
-def test_trim_edge_dir_keeps_leading_underscore():
-    # Ведущий '_' сохраняется и у папок (как у файлов); хвостовой мусор обрезается.
-    assert TrimEdgeRule().apply("__name__", is_dir=True) == "__name"
-
-
 def test_empty_stem_guard(nn):
     # Имя из символов, которые после транслитерации/чистки исчезают -> без изменений.
     assert nn.normalize("@@@.png", is_dir=False) == "@@@.png"
 
 
 # --------------------------------------------------------------------------- #
-# Безопасность: транслитерация не должна вносить разделители пути / управляющие
-# символы. Иначе os.rename истолковал бы их как путь и переместил/потерял объект.
+# Безопасность: общий барьер enforce_safe_component (один компонент пути).
+# Разделители/управляющие -> '-', запрещённые на Windows символы вырезаются.
 # --------------------------------------------------------------------------- #
 @pytest.mark.parametrize(
-    "raw",
+    "raw, expected",
     [
-        "½", "¼", "¾", "10½", "½ доля", "naïve½", "файл ½",
-        "∖обратная", "↘стрелка", "＼fullwidth",  # дают '\' через unidecode
-        "пример\u2028строка", "две\u2029строки",  # дают '\n' через unidecode
+        ("a/b", "a-b"),                          # '/' -> '-' (один компонент пути)
+        ("a\\b", "a-b"),                         # '\' -> '-'
+        ("a//b\\\\c", "a-b-c"),                  # цепочки разделителей схлопываются в один '-'
+        ("a\x00b\x1fc", "a-b-c"),                # управляющие символы -> '-'
+        ('a<b>c:d"e|f?g*h', "abcdefgh"),         # запрещённые на Windows вырезаются
+        ("<>:|?*", ""),                          # имя из одного «мусора» -> пусто
+        ("clean_name-01", "clean_name-01"),      # безопасное имя не меняется (идемпотентность)
     ],
 )
-def test_no_path_separators_introduced(nn, raw):
-    for is_dir in (False, True):
-        out = nn.normalize(raw if is_dir else raw + ".txt", is_dir=is_dir)
-        assert "/" not in out
-        assert "\\" not in out
-        assert not any(ord(c) < 0x20 for c in out)
+def test_enforce_safe_component(raw, expected):
+    assert enforce_safe_component(raw) == expected
 
 
-@pytest.mark.parametrize(
-    "name, expected",
-    [
-        ("½.txt", "01-02.txt"),
-        ("10½.dat", "10-01-02.dat"),
-        ("½ доля.txt", "01-02-dolia.txt"),
-    ],
-)
-def test_fraction_pipeline(nn, name, expected):
-    assert nn.normalize(name, is_dir=False) == expected
-
-
-def test_transliteration_rule_strips_separators():
-    # Прямой контракт правила: '/' и '\' из unidecode заменяются на '-'.
-    assert "/" not in TransliterationRule().apply("½", is_dir=False)
-    assert "\\" not in TransliterationRule().apply("∖", is_dir=False)
-
-
-# --------------------------------------------------------------------------- #
-# Мягкий/твёрдый знак: unidecode превращает 'ь'/'ъ' в апостроф — мы его убираем.
-# --------------------------------------------------------------------------- #
-@pytest.mark.parametrize(
-    "name, expected",
-    [
-        ("Письмо", "pismo"),
-        ("автомобиль", "avtomobil"),
-        ("секретарь", "sekretar"),
-        ("подъезд", "podezd"),
-        ("Объявление", "obiavlenie"),
-    ],
-)
-def test_soft_hard_sign_removed(nn, name, expected):
-    assert nn.normalize(name, is_dir=False) == expected
-    # Апостроф не должен появляться в имени:
-    assert "'" not in nn.normalize(name, is_dir=False)
-
-
-def test_ascii_apostrophe_preserved(nn):
-    # ASCII-апостроф во ВХОДНОМ имени не трогаем — убираем только 'ь'/'ъ'.
-    assert nn.normalize("O'Brien.txt", is_dir=False) == "o'brien.txt"
-
-
-# --------------------------------------------------------------------------- #
-# Запрещённые на Windows символы (< > : " | ? *). Транслитерация порождает их из
-# типографики ('«'->'<<', '»'->'>>', '“'/'”'->'"'); их нужно вырезать, иначе
-# одиночный '<' в середине имени ломает os.rename на Windows (WinError 123).
-# --------------------------------------------------------------------------- #
-@pytest.mark.parametrize(
-    "raw",
-    [
-        "«ёлочки»", "ООО «Печоралифтсервис»", "“кавычки”", "„нижние“",
-        "файл «с» кавычками", "‹одинарные›",
-    ],
-)
-def test_no_windows_forbidden_introduced(nn, raw):
-    for is_dir in (False, True):
-        out = nn.normalize(raw if is_dir else raw + ".txt", is_dir=is_dir)
-        assert not any(ch in out for ch in '<>:"|?*')
-
-
-@pytest.mark.parametrize(
-    "name, expected",
-    [
-        ("«Печоралифтсервис».txt", "pechoraliftservis.txt"),
-        ("ООО «Рога и Копыта».doc", "ooo-roga-i-kopyta.doc"),
-    ],
-)
-def test_guillemets_pipeline(nn, name, expected):
-    assert nn.normalize(name, is_dir=False) == expected
-
-
-def test_transliteration_rule_removes_windows_forbidden():
-    # Прямой контракт правила: '<<'/'>>' из unidecode('«»') вырезаются.
-    out = TransliterationRule().apply("«тест»", is_dir=False)
-    assert "<" not in out and ">" not in out
-
-
-@pytest.mark.parametrize("raw", ["½", "10½", "½ доля", "naïve½"])
-def test_fraction_idempotent(nn, raw):
-    once = nn.normalize(raw, is_dir=False)
-    assert nn.normalize(once, is_dir=False) == once
+@pytest.mark.parametrize("raw", ["a/b", "a\\b", 'x<y>:"|?*', "a\x00b", "<>:|?*"])
+def test_enforce_safe_component_idempotent(raw):
+    once = enforce_safe_component(raw)
+    assert enforce_safe_component(once) == once
 
 
 # --------------------------------------------------------------------------- #
@@ -529,8 +269,8 @@ def test_fs_case_collision_no_data_loss(tmp_path):
 # --------------------------------------------------------------------------- #
 def _ign(*lines):
     spec = pathspec.PathSpec.from_lines(_FACTORY, lines)
-    has_negation = any(p.include is False for p in spec.patterns)
-    return FsIgnore(spec, has_negation)
+    incl = any(p.include is False for p in spec.patterns)
+    return FsIgnore(spec, incl)
 
 
 @pytest.mark.parametrize(
@@ -581,7 +321,7 @@ def test_fsignore_matching(lines, rel, is_dir, ignored):
 def test_fsignore_empty_never_matches():
     ign = _ign()
     assert ign.matches(PurePosixPath("anything/at/all"), True) is False
-    assert ign.has_negation is False
+    assert ign.incl is False
 
 
 def test_fsignore_negation_last_match_wins():
@@ -589,7 +329,7 @@ def test_fsignore_negation_last_match_wins():
     ign = _ign("*.log", "!keep.log")
     assert ign.matches(PurePosixPath("a.log"), False) is True
     assert ign.matches(PurePosixPath("keep.log"), False) is False
-    assert ign.has_negation is True
+    assert ign.incl is True
 
 
 def test_fsignore_order_reexclude_after_reinclude():
@@ -613,7 +353,7 @@ def test_load_fs_ignore_empty_file(tmp_path):
     ign = load_fs_ignore(tmp_path)
     assert ign is not None
     assert ign.matches(PurePosixPath("home/user/Archive"), True) is False
-    assert ign.has_negation is False
+    assert ign.incl is False
 
 
 def test_load_fs_ignore_patterns_comments_negation(tmp_path):
@@ -625,7 +365,7 @@ def test_load_fs_ignore_patterns_comments_negation(tmp_path):
     assert ign.matches(PurePosixPath("x/Archive/y"), False) is True
     assert ign.matches(PurePosixPath("notes.bak"), False) is True
     assert ign.matches(PurePosixPath("important.bak"), False) is False
-    assert ign.has_negation is True
+    assert ign.incl is True
 
 
 def test_load_fs_ignore_does_not_modify_file(tmp_path):
@@ -765,7 +505,7 @@ def test_fs_negation_probe_descends_ignored_dir(tmp_path):
     data = tmp_path / "Archive" / "nested" / "Data"
     (data / "Папка").mkdir(parents=True)
     ign = _ign("Archive", "!**/Data/**")
-    assert ign.has_negation is True
+    assert ign.incl is True
     fs = FilesystemNormalizer(build_normalizer(), ign)
     fs.apply(tmp_path)
     assert (data / "Papka").is_dir()       # возвращённый потомок нормализован

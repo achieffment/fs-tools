@@ -39,7 +39,7 @@ class FilesystemNormalizer:
         # При наличии override-правил (`!`) нельзя обрезать исключённые каталоги:
         # внутри могут быть возвращённые потомки, до которых надо дойти. Тогда
         # заходим во все нескрытые каталоги, а skip/normalize решаем по объекту.
-        probe = self.ignorer is not None and self.ignorer.has_negation
+        probe = self.ignorer is not None and self.ignorer.incl
         items: list[Path] = []
         for dirpath, foldnames, filenames in os.walk(root, topdown=True, followlinks=False):
             base = Path(dirpath)

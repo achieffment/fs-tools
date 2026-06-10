@@ -44,14 +44,14 @@ _FACTORY = _factory_name()
 class FsIgnore:
     """Обёртка над pathspec.PathSpec: матчинг пути относительно корня нормализации.
 
-    `has_negation` — есть ли в списке хотя бы одно правило-override (`!...`). При его
+    `incl` — есть ли в списке хотя бы одно правило-override (`!...`). При его
     наличии обход не обрезает исключённые каталоги (внутри возможны возвращённые
     потомки); см. FilesystemNormalizer.
     """
 
-    def __init__(self, spec: pathspec.PathSpec[Any], has_negation: bool):
+    def __init__(self, spec: pathspec.PathSpec[Any], incl: bool):
         self._spec = spec
-        self.has_negation = has_negation
+        self.incl = incl
 
     def matches(self, rel: Path, is_dir: bool) -> bool:
         """Сопоставляет путь, заданный ОТНОСИТЕЛЬНО корня нормализации.
@@ -79,5 +79,5 @@ def load_fs_ignore(project_root: Path) -> FsIgnore | None:
     except OSError:
         return None
     spec = pathspec.PathSpec.from_lines(_FACTORY, raw.splitlines())
-    has_negation = any(p.include is False for p in spec.patterns)
-    return FsIgnore(spec, has_negation)
+    incl = any(p.include is False for p in spec.patterns)
+    return FsIgnore(spec, incl)

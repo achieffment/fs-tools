@@ -13,6 +13,7 @@ from .rules import (
     TransliterationRule,
     TrimEdgeRule,
 )
+from .safety import enforce_safe_component
 
 
 class NameNormalizer:
@@ -21,15 +22,6 @@ class NameNormalizer:
     # Расширение — последний сегмент из букв/цифр (1-8), не состоящий целиком из цифр.
     # Это защищает даты с точками (20.05.2020) от ложного разбиения на «расширение».
     _EXT_RE = re.compile(r"\.([A-Za-z0-9]{1,8})$")
-    # Жёсткая гарантия безопасности: итоговое имя — всегда ОДИН компонент пути.
-    # Разделители пути ('/', '\') и управляющие символы не могут попасть в имя,
-    # отдаваемое в os.rename (иначе объект уехал бы в другой каталог). Основную
-    # очистку делает TransliterationRule; этот барьер ловит любой остаток.
-    _DIR_UNSAFE_RE = re.compile(r"[\\/\x00-\x1f]+")
-    # Тот же барьер для запрещённых на Windows символов ('< > : " | ? *'):
-    # TransliterationRule их уже вырезал — здесь страховка, чтобы имя оставалось
-    # валидным на Windows (одиночный '<' ломает os.rename — WinError 123).
-    _WIN_FRBIDDDEN_RE = re.compile(r'[<>:"|?*]+')
 
     def __init__(self, rules: list[Rule]):
         self.rules = rules
@@ -52,8 +44,7 @@ class NameNormalizer:
         # Защитный барьер: имя не должно содержать разделителей пути/управляющих
         # символов и запрещённых на Windows символов. В норме TransliterationRule
         # их уже убрал — здесь страховка.
-        new_stem = self._DIR_UNSAFE_RE.sub("-", new_stem)
-        new_stem = self._WIN_FRBIDDDEN_RE.sub("", new_stem)
+        new_stem = enforce_safe_component(new_stem)
         if not new_stem:
             return name  # защита от пустого имени (например, имя из одних emoji)
         return new_stem + ext
@@ -61,6 +52,13 @@ class NameNormalizer:
 
 def build_normalizer() -> NameNormalizer:
     """Фабрика: собирает конвейер правил в каноническом порядке.
+
+    LeadingZeroRule идёт ПОСЛЕ TrimEdgeRule (и SpaceToDashRule): ведущий ноль
+    добавляется к уже очищенному от кромочного «мусора» токену. Иначе одиночная
+    цифра рядом с символом, который потом срежет TrimEdge ('5!', '5.', 'том 5,'),
+    на первом проходе не распозналась бы как отдельный токен и осталась без нуля,
+    а на втором (мусор уже срезан) — получила бы его: '5' -> '05' (нарушение
+    идемпотентности).
 
     CaseRule идёт ПОСЛЕДНИМ — после схлопывания пробелов и обрезки кромок,
     чтобы заглавная буква папки применялась к финальному первому символу.
@@ -72,9 +70,9 @@ def build_normalizer() -> NameNormalizer:
             TransliterationRule(),
             BracketsRule(),
             DateRule(),
-            LeadingZeroRule(),
             SpaceToDashRule(),
             TrimEdgeRule(),
+            LeadingZeroRule(),
             CaseRule(),
         ]
     )

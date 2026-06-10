@@ -1,6 +1,6 @@
 ---
 description: Осознанные допущения DateRule (распознавание дат)
-globs: normalizer/rules.py
+globs: normalizer/rules/date.py
 alwaysApply: false
 ---
 
