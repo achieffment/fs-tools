@@ -13,9 +13,8 @@ pause_exit() {
     exit "$1"
 }
 
-# Списки путей exclude/include: если файла нет, создаём пустой (проверки выключены).
-[ -e "$fold/exclude.txt" ] || : > "$fold/exclude.txt"
-[ -e "$fold/include.txt" ] || : > "$fold/include.txt"
+# Список путей .fs-ignore (стиль .gitignore): если файла нет, создаём пустой (фильтр выключен).
+[ -e "$fold/.fs-ignore" ] || : > "$fold/.fs-ignore"
 
 if [ ! -x "$pyex" ] || ! "$pyex" -c "import unidecode" >/dev/null 2>&1; then
     echo "Подготовка окружения (.venv)..." >&2
