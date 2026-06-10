@@ -10,8 +10,9 @@ alwaysApply: true
 
 1. **Код**: `normalizer/rules.py` (+ при необходимости `name.py`). Новое правило
    регистрируется в `build_normalizer()` и экспортируется в `__init__.py`/`__all__`.
-   Фильтры путей — `normalizer/exclude.py` (+ при необходимости `filesystem.py` для
-   probe/deepest-wins); инварианты — в `.cursor/rules/path-matching.mdc`.
+   Фильтр путей `.fs-ignore` — `normalizer/ignore.py` (+ при необходимости
+   `filesystem.py` для probe при `has_negation`); инварианты — в
+   `.cursor/rules/path-matching.mdc`.
 2. **Тесты**: `tests/test_normalize.py` (см. правило про тесты).
 3. **Примеры**: `examples/NN-<rule>/<case>/` (см. правило про примеры).
 4. **Документация**: `README.md` (возможности, таблица правил, примеры) и

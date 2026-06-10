@@ -7,8 +7,10 @@ alwaysApply: true
 
 Каждое правило нормализации покрыто тестами и проверяется. Новое или изменённое
 поведение обязательно сопровождается тестами в `tests/test_normalize.py`.
-Фильтры путей (`exclude`/`include`) — там же: юнит `_canon`/`_seg_glob`/`PathMatcher`,
-e2e `FilesystemNormalizer` + excluder/includer (deepest-wins, probe, регистрозависимость).
+Фильтр путей `.fs-ignore` — там же: юнит `FsIgnore.matches` (gitignore-семантика
+через `pathspec`: basename/якоря, `*`/`**`/`?`/`[abc]`, `dir/`, `!`-отрицание и
+порядок строк) + `load_fs_ignore`; e2e `FilesystemNormalizer` + ignorer (skip,
+override через `!`, probe при `has_negation`, регистрозависимость).
 
 Обязательные виды проверки:
 
