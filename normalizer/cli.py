@@ -7,6 +7,7 @@ from pathlib import Path
 
 from .filesystem import FilesystemNormalizer
 from .ignore import load_fs_ignore
+from .log import write_fs_log
 from .name import build_normalizer
 from .picker import pick_directory
 
@@ -35,4 +36,11 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Каталог: {root}")
     renamed, skipped = fsnm.apply(root)
     print(f"Готово. Переименовано: {renamed}, пропущено: {skipped}.")
+    # Журнал — вторичный артефакт: переименования уже выполнены, поэтому сбой записи
+    # не роняем трейсбеком, а лишь предупреждаем (в духе остальной обработки ошибок).
+    try:
+        lpath = write_fs_log(root, fsnm.renames)
+        print(f"Журнал: {lpath}")
+    except OSError as exc:
+        sys.stderr.write(f"Не удалось записать журнал .fs-log: {exc}\n")
     return 0

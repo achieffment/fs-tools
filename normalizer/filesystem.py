@@ -20,6 +20,8 @@ class FilesystemNormalizer:
     ):
         self.normalizer = normalizer
         self.ignorer = ignorer
+        # Заполняется в apply(): выполненные переименования (относительно root).
+        self.renames: list[tuple[Path, Path]] = []
 
     @staticmethod
     def _hidden(name: str) -> bool:
@@ -68,6 +70,10 @@ class FilesystemNormalizer:
         items = self._collect(root)
         # Самые вложенные — первыми: дети переименовываются раньше родителей.
         items.sort(key=lambda p: len(p.parts), reverse=True)
+        # Список выполненных переименований (относительно root) для журнала .fs-log;
+        # сбрасывается на каждом вызове. Пишутся только успешные os.rename — ошибки
+        # и конфликты сюда не попадают.
+        self.renames = []
         renamed = 0
         skipped = 0
         for srcp in items:
@@ -94,6 +100,7 @@ class FilesystemNormalizer:
                     os.rename(temp, dest)
                 else:
                     os.rename(srcp, dest)
+                self.renames.append((srcp.relative_to(root), dest.relative_to(root)))
                 renamed += 1
             except OSError as exc:
                 sys.stderr.write(f"Ошибка переименования {srcp} -> {dest}: {exc}\n")

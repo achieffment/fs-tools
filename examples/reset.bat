@@ -24,6 +24,10 @@ git -c core.ignorecase=false reset -q -- .
 REM 2. Удаляем неотслеживаемые объекты (мис-кейс, опустевшие нормализованные каталоги и пр.).
 git -c core.ignorecase=false clean -fd -- .
 
+REM 2a. Журнал .fs-log игнорируется git (он в .gitignore), поэтому clean -fd его
+REM     не трогает — удаляем явно (только в этом каталоге).
+del /q .fs-log >nul 2>nul
+
 REM 3. Возвращаем отслеживаемые файлы к версии из git (только в этом каталоге).
 git -c core.ignorecase=false checkout -- .
 

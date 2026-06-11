@@ -7,6 +7,7 @@ from __future__ import annotations
 from .cli import main
 from .filesystem import FilesystemNormalizer
 from .ignore import FsIgnore, load_fs_ignore
+from .log import FS_LOG, write_fs_log
 from .name import NameNormalizer, build_normalizer
 from .rules import (
     BracketsRule,
@@ -24,6 +25,8 @@ __all__ = [
     "FilesystemNormalizer",
     "FsIgnore",
     "load_fs_ignore",
+    "FS_LOG",
+    "write_fs_log",
     "NameNormalizer",
     "build_normalizer",
     "Rule",
