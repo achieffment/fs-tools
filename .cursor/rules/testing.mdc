@@ -13,7 +13,7 @@ alwaysApply: true
 Фильтр путей `.fs-ignore` — в `tests/test_normalize.py`: юнит `FsIgnore.matches`
 (gitignore-семантика через `pathspec`: basename/якоря, `*`/`**`/`?`/`[abc]`,
 экранирование `\[`, `dir/`, `!`-отрицание и порядок строк) + `load_fs_ignore`;
-e2e `FilesystemNormalizer` + ignorer (skip, override через `!`, probe при `incl`,
+e2e `FilesystemNormalizer` + ignorer (skip, override через `!`, probe при `_incl`,
 смена контракта `[abc]`/`?` → активные метасимволы, регистронезависимость и
 кросс-прогонная идемпотентность фильтра при капитализации родительских каталогов).
 

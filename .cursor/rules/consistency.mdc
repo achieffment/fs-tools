@@ -12,7 +12,7 @@ alwaysApply: true
    правило регистрируется в `build_normalizer()` (`name.py`) и ре-экспортируется
    в `normalizer/rules/__init__.py` и `normalizer/__init__.py` (`__all__`).
    Фильтр путей `.fs-ignore` — `normalizer/ignore.py` (+ при необходимости
-   `filesystem.py` для probe при `incl`); инварианты — в
+   `filesystem.py` для probe при `_incl`); инварианты — в
    `.cursor/rules/path-matching.mdc`.
 2. **Тесты**: `tests/rules/test_<rule>.py` (юнит правила) + кросс-секционные в
    `tests/test_normalize.py` (см. правило про тесты).

@@ -92,10 +92,10 @@ def _win_folder_dialog(initial: str | None = None) -> str | None:
     ours = {"FSNORM_TITLE", "FSNORM_INITIAL"}
     kept = [e for e in env.get("WSLENV", "").split(":") if e and e.split("/", 1)[0] not in ours]
     env["WSLENV"] = ":".join(kept + adds)
-    proc = _run([powershell, "-NoProfile", "-STA", "-Command", script], env=env)
-    if proc is None or proc.returncode != 0:
+    dialog = _run([powershell, "-NoProfile", "-STA", "-Command", script], env=env)
+    if dialog is None or dialog.returncode != 0:
         return None  # ошибка скрипта (отмена даёт код 0); откат на терминал
-    return proc.stdout.strip()  # "" при отмене
+    return dialog.stdout.strip()  # "" при отмене
 
 
 def _mac_folder_dialog(initial: str | None = None) -> str | None:
@@ -134,10 +134,10 @@ def _wslpath(flag: str, path: str) -> str | None:
     wslpath = shutil.which("wslpath")
     if not wslpath:
         return None
-    converted = _run([wslpath, flag, path])
-    if converted is None:
+    convert = _run([wslpath, flag, path])
+    if convert is None:
         return None
-    return converted.stdout.strip() or None
+    return convert.stdout.strip() or None
 
 
 def _to_win_path(unix_path: str) -> str | None:

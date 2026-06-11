@@ -98,10 +98,10 @@ class DateRule(Rule):
         else:
             day, month, year = parts  # день-первым
         try:
-            dt = datetime(int(year), int(month), int(day))
+            date = datetime(int(year), int(month), int(day))
         except ValueError:
             return None
-        return f"{dt.year:04d}-{dt.month:02d}-{dt.day:02d}"
+        return f"{date.year:04d}-{date.month:02d}-{date.day:02d}"
 
     @classmethod
     def _format_mmyy(cls, text: str) -> str | None:

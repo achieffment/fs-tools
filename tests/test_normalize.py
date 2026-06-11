@@ -340,7 +340,7 @@ def test_fsignore_matching(lines, rel, is_dir, ignored):
 def test_fsignore_empty_never_matches():
     ign = _ign()
     assert ign.matches(PurePosixPath("anything/at/all"), True) is False
-    assert ign.incl is False
+    assert ign._incl is False
 
 
 def test_fsignore_negation_last_match_wins():
@@ -348,7 +348,7 @@ def test_fsignore_negation_last_match_wins():
     ign = _ign("*.log", "!keep.log")
     assert ign.matches(PurePosixPath("a.log"), False) is True
     assert ign.matches(PurePosixPath("keep.log"), False) is False
-    assert ign.incl is True
+    assert ign._incl is True
 
 
 def test_fsignore_order_reexclude_after_reinclude():
@@ -372,7 +372,7 @@ def test_load_fs_ignore_empty_file(tmp_path):
     ign = load_fs_ignore(tmp_path)
     assert ign is not None
     assert ign.matches(PurePosixPath("home/user/Archive"), True) is False
-    assert ign.incl is False
+    assert ign._incl is False
 
 
 def test_load_fs_ignore_patterns_comments_negation(tmp_path):
@@ -384,7 +384,7 @@ def test_load_fs_ignore_patterns_comments_negation(tmp_path):
     assert ign.matches(PurePosixPath("x/Archive/y"), False) is True
     assert ign.matches(PurePosixPath("notes.bak"), False) is True
     assert ign.matches(PurePosixPath("important.bak"), False) is False
-    assert ign.incl is True
+    assert ign._incl is True
 
 
 def test_load_fs_ignore_does_not_modify_file(tmp_path):
@@ -546,13 +546,13 @@ def test_fs_negation_reincludes_file(tmp_path):
 
 def test_fs_hidden_not_reincluded_by_negation(tmp_path):
     # Скрытые (имя на '.') отсекаются `_hidden` ДО фильтра и внутрь не заходим,
-    # поэтому правило-'!' их не возвращает (даже при включённом probe, incl=True).
+    # поэтому правило-'!' их не возвращает (даже при включённом probe, _incl=True).
     (tmp_path / ".keep").write_text("x")            # скрытый файл
     hidden = tmp_path / ".cfg"
     hidden.mkdir()
     (hidden / "Отчёт 2020").write_text("y")          # внутрь скрытой папки не заходим
-    ign = _ign("Archive", "!*.keep", "!.cfg/**")    # '!' -> incl=True (probe)
-    assert ign.incl is True
+    ign = _ign("Archive", "!*.keep", "!.cfg/**")    # '!' -> _incl=True (probe)
+    assert ign._incl is True
     fs = FilesystemNormalizer(build_normalizer(), ign)
     renamed, skipped = fs.apply(tmp_path)
     assert (tmp_path / ".keep").exists()             # скрытый файл не тронут
@@ -567,7 +567,7 @@ def test_fs_negation_probe_descends_ignored_dir(tmp_path):
     data = tmp_path / "Archive" / "nested" / "Data"
     (data / "Папка").mkdir(parents=True)
     ign = _ign("Archive", "!**/Data/**")
-    assert ign.incl is True
+    assert ign._incl is True
     fs = FilesystemNormalizer(build_normalizer(), ign)
     fs.apply(tmp_path)
     assert (data / "Papka").is_dir()       # возвращённый потомок нормализован

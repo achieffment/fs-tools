@@ -32,10 +32,10 @@ class BracketsRule(Rule):
 
     @classmethod
     def _rep(cls, m: "re.Match[str]") -> str:
-        content = m.group(1) if m.group(1) is not None else m.group(2)
-        if cls._HAS_LETTER.search(content):
+        cont = m.group(1) if m.group(1) is not None else m.group(2)
+        if cls._HAS_LETTER.search(cont):
             return m.group(0)  # текст — скобки сохраняем
-        return content  # число/дата/пусто — скобки убираем
+        return cont  # число/дата/пусто — скобки убираем
 
     @classmethod
     def _strip_unpa(cls, stem: str) -> str:

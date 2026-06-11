@@ -76,7 +76,7 @@ def _case_insensitive(spec: pathspec.PathSpec[Any]) -> pathspec.PathSpec[Any]:
 class FsIgnore:
     """Обёртка над pathspec.PathSpec: матчинг пути относительно корня нормализации.
 
-    `incl` — есть ли в списке хотя бы одно правило-override (`!...`). При его
+    `_incl` — есть ли в списке хотя бы одно правило-override (`!...`). При его
     наличии обход не обрезает исключённые каталоги (внутри возможны возвращённые
     потомки); см. FilesystemNormalizer.
 
@@ -87,7 +87,7 @@ class FsIgnore:
 
     def __init__(self, spec: pathspec.PathSpec[Any], incl: bool):
         self._spec = _case_insensitive(spec)
-        self.incl = incl
+        self._incl = incl
 
     def matches(self, rel: Path, is_dir: bool) -> bool:
         """Сопоставляет путь, заданный ОТНОСИТЕЛЬНО корня нормализации.
