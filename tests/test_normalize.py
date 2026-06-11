@@ -312,9 +312,9 @@ def _ign(*lines):
         # Литеральные скобки/'?' — через экранирование '\':
         ([r"Файл \[1\]"], "Файл [1]", True, True),
         ([r"Файл \[1\]"], "Файл 1", True, False),
-        # Регистрозависимость (как в git на регистрозависимой ФС):
-        (["Archive"], "archive", True, False),
-        (["*.txt"], "Notes.TXT", False, False),
+        # Регистронезависимость (как git core.ignorecase=true): совпадает в любом регистре:
+        (["Archive"], "archive", True, True),
+        (["*.txt"], "Notes.TXT", False, True),
         # Комментарии и пустые строки игнорируются:
         (["# комментарий", "", "Archive"], "Archive", True, True),
     ],
@@ -478,8 +478,9 @@ def test_fs_ignore_anchored_path(tmp_path):
     assert (tmp_path / "Other" / "notes.txt").exists()
 
 
-def test_fs_ignore_case_sensitive(tmp_path):
-    # Паттерн Archive не исключает каталог archive (разный регистр).
+def test_fs_ignore_case_insensitive(tmp_path):
+    # Матчинг регистронезависим (как git core.ignorecase=true): паттерн Archive
+    # исключает и Archive, и archive — содержимое обоих не трогаем.
     upper = tmp_path / "Archive"
     lower = tmp_path / "archive"
     upper.mkdir()
@@ -489,7 +490,32 @@ def test_fs_ignore_case_sensitive(tmp_path):
     fs = FilesystemNormalizer(build_normalizer(), _ign("Archive"))
     fs.apply(tmp_path)
     assert (upper / "Файл.txt").exists()              # исключён
-    assert (lower / "fail.txt").exists()              # нормализован
+    assert (lower / "Файл.txt").exists()              # тоже исключён (регистр не важен)
+
+
+def test_fs_ignore_idempotent_across_runs_with_capitalized_parent(tmp_path):
+    # Кросс-прогонная идемпотентность фильтра: вышележащие каталоги (box/inner) не
+    # совпадают с паттерном и капитализируются CaseRule (box -> Box, inner -> Inner).
+    # На втором прогоне якорь /box/inner/*.bak должен совпасть с Box/Inner/... за
+    # счёт регистронезависимости — иначе исключённый файл нормализуется (баг).
+    inner = tmp_path / "box" / "inner"
+    inner.mkdir(parents=True)
+    (inner / "Секрет.bak").write_text("x")           # был бы нормализован -> sekret.bak
+    (tmp_path / ".fs-ignore").write_text("/box/inner/*.bak\n")
+
+    ign = load_fs_ignore(tmp_path)
+    assert ign is not None
+    FilesystemNormalizer(build_normalizer(), ign).apply(tmp_path)
+    # После первого прогона родители капитализированы, файл исключён и не тронут:
+    assert (tmp_path / "Box" / "Inner" / "Секрет.bak").exists()
+
+    # Второй прогон поверх результата (фильтр перечитывается из того же .fs-ignore):
+    ign2 = load_fs_ignore(tmp_path)
+    assert ign2 is not None
+    renamed, _ = FilesystemNormalizer(build_normalizer(), ign2).apply(tmp_path)
+    assert renamed == 0                              # ничего не меняется
+    assert (tmp_path / "Box" / "Inner" / "Секрет.bak").exists()
+    assert not (tmp_path / "Box" / "Inner" / "sekret.bak").exists()
 
 
 def test_fs_negation_reincludes_file(tmp_path):

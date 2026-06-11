@@ -17,13 +17,23 @@
 ведущий/срединный `/` якорит к его верхушке (см. FilesystemNormalizer). Поэтому
 паттерны кросс-платформенны без указания диска. Сам файл .fs-ignore скрыт (имя на
 `.`), при обходе пропускается и при сопоставлении НЕ изменяется (только чтение).
+
+Матчинг РЕГИСТРОНЕЗАВИСИМ (как git `core.ignorecase=true` — дефолт на Windows и
+macOS): паттерны пересобираются с флагом `re.IGNORECASE` (`_case_insensitive`,
+применяется в конструкторе `FsIgnore`).
+Это нужно, чтобы капитализация вышележащих каталогов правилом CaseRule (`file-glob`
+-> `File-glob`) не рвала якоря паттернов и фильтр оставался идемпотентным между
+прогонами. Ограничение: не-ASCII родитель транслитерируется целиком (`Документы`
+-> `Dokumenty`), и регистронезависимость такой случай не покрывает.
 """
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any
 
 import pathspec
+from pathspec import RegexPattern
 from pathspec.util import lookup_pattern
 
 
@@ -46,16 +56,37 @@ def _factory_name() -> str:
 _FACTORY = _factory_name()
 
 
+def _case_insensitive(spec: pathspec.PathSpec[Any]) -> pathspec.PathSpec[Any]:
+    """Пересобирает паттерны с флагом re.IGNORECASE, сохраняя include и порядок.
+
+    pathspec не управляет регистрочувствительностью посегментно, поэтому весь
+    матчинг делаем регистронезависимым (как git `core.ignorecase=true`). Пустые
+    строки/комментарии (`regex is None`) переносятся как есть.
+    """
+    patterns: list[Any] = []
+    for p in spec.patterns:
+        if p.regex is None:
+            patterns.append(p)
+            continue
+        rx = re.compile(p.regex.pattern, p.regex.flags | re.IGNORECASE)
+        patterns.append(RegexPattern(rx, include=p.include))
+    return pathspec.PathSpec(patterns)
+
+
 class FsIgnore:
     """Обёртка над pathspec.PathSpec: матчинг пути относительно корня нормализации.
 
     `incl` — есть ли в списке хотя бы одно правило-override (`!...`). При его
     наличии обход не обрезает исключённые каталоги (внутри возможны возвращённые
     потомки); см. FilesystemNormalizer.
+
+    Матчинг регистронезависим: `spec` пересобирается через `_case_insensitive`
+    в конструкторе, поэтому любой путь к FsIgnore (и `load_fs_ignore`, и прямое
+    создание) ведёт себя одинаково.
     """
 
     def __init__(self, spec: pathspec.PathSpec[Any], incl: bool):
-        self._spec = spec
+        self._spec = _case_insensitive(spec)
         self.incl = incl
 
     def matches(self, rel: Path, is_dir: bool) -> bool:
