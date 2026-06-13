@@ -6,3 +6,5 @@ __pycache__
 
 # Локальные правила Cursor — не для репозитория
 .cursor/rules/*.local.mdc
+
+/docs

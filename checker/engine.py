@@ -49,14 +49,14 @@ def _selected_names(prefix: tuple[str, ...], parts: tuple[str, ...]) -> list[str
     """
     if "**" not in prefix:  # 1:1 выравнивание сегмент <-> компонента
         return [p for seg, p in zip(prefix, parts) if _has_glob(seg)]
-    i = prefix.index("**")
-    left, right = prefix[:i], prefix[i + 1:]
-    mid = parts[len(left):len(parts) - len(right)] if right else parts[len(left):]
-    names = list(mid)  # всё, что поймал `**`, — это подстановка
-    names += [p for seg, p in zip(left, parts) if _has_glob(seg)]
-    if right:
-        tail = parts[len(parts) - len(right):]
-        names += [p for seg, p in zip(right, tail) if _has_glob(seg)]
+    ix = prefix.index("**")
+    lf, rt = prefix[:ix], prefix[ix + 1:]
+    md = parts[len(lf):len(parts) - len(rt)] if rt else parts[len(lf):]
+    names = list(md)  # всё, что поймал `**`, — это подстановка
+    names += [p for seg, p in zip(lf, parts) if _has_glob(seg)]
+    if rt:
+        rtail = parts[len(parts) - len(rt):]
+        names += [p for seg, p in zip(rt, rtail) if _has_glob(seg)]
     return names
 
 
@@ -84,7 +84,7 @@ class FsChecker:
         # Пустой префикс (правило из одного сегмента) => единственный якорь — сам root.
         # root.glob(".") НЕДОПУСТИМ (ValueError на Python 3.13+/3.14), поэтому особый случай.
         anchors: Iterable[Path] = [root] if not rule.prefix else root.glob("/".join(rule.prefix))
-        found = 0
+        anccnt = 0
         for adir in anchors:
             if not adir.is_dir():
                 continue
@@ -93,9 +93,9 @@ class FsChecker:
                 continue
             if any(self._negation.is_pruned(name) for name in _selected_names(rule.prefix, rel.parts)):
                 continue
-            found += 1
+            anccnt += 1
             target = adir / rule.mandate
             ok = target.is_dir() if rule.dir_only else target.exists()
             if not ok:
                 missing.add((rel / rule.mandate).as_posix())
-        return found
+        return anccnt
