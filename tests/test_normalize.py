@@ -896,3 +896,15 @@ def test_main_missing_directory_returns_one(tmp_path, monkeypatch):
     missing = tmp_path / "нет-такого"
     monkeypatch.setattr("normalizer.cli.pick_directory", lambda: str(missing))
     assert main([]) == 1
+
+
+def test_argument_bypasses_picker(tmp_path, monkeypatch):
+    # Аргумент-каталог (режим таймера) минует диалог: pick_directory не вызывается.
+    (tmp_path / "Отчёт.txt").write_text("x")
+
+    def _boom():
+        raise AssertionError("pick_directory не должен вызываться при аргументе-каталоге")
+
+    monkeypatch.setattr("normalizer.cli.pick_directory", _boom)
+    assert main([str(tmp_path)]) == 0
+    assert (tmp_path / "otchiot.txt").exists()
