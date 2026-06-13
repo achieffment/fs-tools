@@ -19,9 +19,9 @@ alwaysApply: false
   Старых `exclude.txt`/`include.txt` и движка `_canon`/`_seg_glob`/deepest-wins
   больше НЕТ.
 - Паттерны строятся через `pathspec.PathSpec.from_lines(_FACTORY, ...)`, где
-  `_FACTORY` выбирается из доступных (`gitignore`, иначе `gitwildmatch`) — не
-  привязывайся к версии pathspec и не возвращай жёсткий `"gitwildmatch"` (в новых
-  версиях он даёт DeprecationWarning).
+  `_FACTORY` импортируется из `normalizer/pathspec_compat.py` и выбирается из
+  доступных (`gitignore`, иначе `gitwildmatch`) — не привязывайся к версии pathspec
+  и не возвращай жёсткий `"gitwildmatch"` (в новых версиях он даёт DeprecationWarning).
 - Файл НИКОГДА не изменяется (только чтение, `utf-8-sig`). Нет файла → `None`
   (фильтр выключен); пустой/из комментариев → `FsIgnore` без правил (no-op).
   Комментарии (`#`) и пустые строки игнорирует сам `pathspec`. Комментарий — только

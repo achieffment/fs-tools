@@ -1,8 +1,8 @@
 """Единый фильтр путей в стиле .gitignore (файл .fs-ignore в нормализуемом каталоге).
 
-Семантика — настоящая gitignore (движок `pathspec`; фабрика паттернов выбирается
-`_factory_name()`: `gitignore`, иначе устаревший `gitwildmatch`). Обычная строка
-исключает объект из нормализации, строка с ведущим `!` — возвращает (override).
+Семантика — настоящая gitignore (движок `pathspec`; имя фабрики паттернов выбирается
+в `pathspec_compat._FACTORY`: `gitignore`, иначе устаревший `gitwildmatch`). Обычная
+строка исключает объект из нормализации, строка с ведущим `!` — возвращает (override).
 Порядок строк важен: выигрывает ПОСЛЕДНЯЯ совпавшая (как в git). Полный набор
 метасимволов gitignore активен: `*` (в пределах сегмента), `**` (cross-segment),
 `?` (один символ), `[abc]`/`[a-z]` (класс), завершающий `/` (только каталоги),
@@ -34,26 +34,8 @@ from typing import Any
 
 import pathspec
 from pathspec import RegexPattern
-from pathspec.util import lookup_pattern
 
-
-def _factory_name() -> str:
-    """Имя фабрики gitignore-паттернов, доступной в установленной pathspec.
-
-    В новых версиях алиас 'gitwildmatch' объявлен устаревшим в пользу 'gitignore',
-    а в pathspec<0.12-совместимых сборках есть только 'gitwildmatch'. Берём первое
-    доступное, чтобы не привязываться к версии и не плодить DeprecationWarning.
-    """
-    for name in ("gitignore", "gitwildmatch"):
-        try:
-            lookup_pattern(name)
-        except LookupError:
-            continue
-        return name
-    return "gitwildmatch"
-
-
-_FACTORY = _factory_name()
+from .pathspec_compat import _FACTORY
 
 
 def _case_insensitive(spec: pathspec.PathSpec[Any]) -> pathspec.PathSpec[Any]:
