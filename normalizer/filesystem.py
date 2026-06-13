@@ -20,8 +20,13 @@ class FilesystemNormalizer:
     ):
         self.normalizer = normalizer
         self.ignorer = ignorer
-        # Заполняется в apply(): выполненные переименования (относительно root).
+        # Заполняются в apply() (сбрасываются на каждом вызове):
+        # renames   — успешно выполненные переименования (относительно root);
+        # errors    — пары, для которых os.rename упал с OSError (реальный сбой);
+        # conflicts — число пропусков из-за занятого целевого имени (безопасно).
         self.renames: list[tuple[Path, Path]] = []
+        self.errors: list[tuple[Path, Path]] = []
+        self.conflicts = 0
 
     @staticmethod
     def _hidden(name: str) -> bool:
@@ -70,10 +75,12 @@ class FilesystemNormalizer:
         items = self._collect(root)
         # Самые вложенные — первыми: дети переименовываются раньше родителей.
         items.sort(key=lambda p: len(p.parts), reverse=True)
-        # Список выполненных переименований (относительно root) для журнала .fs-log;
-        # сбрасывается на каждом вызове. Пишутся только успешные os.rename — ошибки
-        # и конфликты сюда не попадают.
+        # Списки/счётчики сбрасываются на каждом вызове. В renames — только успешные
+        # os.rename (для журнала .fs-log); ошибки и конфликты туда не попадают, они
+        # учитываются отдельно (errors/conflicts) и тоже входят в общий skipped.
         self.renames = []
+        self.errors = []
+        self.conflicts = 0
         renamed = 0
         skipped = 0
         for srcp in items:
@@ -91,6 +98,7 @@ class FilesystemNormalizer:
                 # но указывает на сам srcp (samefile), и конфликтом не является.
                 if dest.exists() and not srcp.samefile(dest):
                     sys.stderr.write(f"Пропуск (конфликт): {srcp} -> {dest}\n")
+                    self.conflicts += 1
                     skipped += 1
                     continue
                 if case:
@@ -104,5 +112,6 @@ class FilesystemNormalizer:
                 renamed += 1
             except OSError as exc:
                 sys.stderr.write(f"Ошибка переименования {srcp} -> {dest}: {exc}\n")
+                self.errors.append((srcp.relative_to(root), dest.relative_to(root)))
                 skipped += 1
         return renamed, skipped

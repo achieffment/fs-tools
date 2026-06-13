@@ -18,6 +18,10 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """0 — прогон завершён без реальных ошибок (безопасные пропуски-конфликты входят
+    сюда); 1 — ошибка запуска (каталог не выбран/не найден/не каталог); 2 — прогон
+    завершён, но часть os.rename упала с OSError.
+    """
     _parse_args(argv)
     targ = pick_directory()
     if not targ:
@@ -35,12 +39,18 @@ def main(argv: list[str] | None = None) -> int:
     fsnm = FilesystemNormalizer(build_normalizer(), load_fs_ignore(root))
     print(f"Каталог: {root}")
     renamed, skipped = fsnm.apply(root)
-    print(f"Готово. Переименовано: {renamed}, пропущено: {skipped}.")
+    print(
+        f"Готово. Переименовано: {renamed}, пропущено: {skipped} "
+        f"(конфликты: {fsnm.conflicts}, ошибки: {len(fsnm.errors)})."
+    )
     # Журнал — вторичный артефакт: переименования уже выполнены, поэтому сбой записи
     # не роняем трейсбеком, а лишь предупреждаем (в духе остальной обработки ошибок).
+    # На код возврата сбой журнала не влияет.
     try:
         lpath = write_fs_log(root, fsnm.renames)
         print(f"Журнал: {lpath}")
     except OSError as exc:
         sys.stderr.write(f"Не удалось записать журнал .fs-log: {exc}\n")
-    return 0
+    # Код возврата: 2 — прогон завершён, но часть os.rename упала с OSError (реальный
+    # сбой). Безопасные пропуски-конфликты на код не влияют (остаются 0).
+    return 2 if fsnm.errors else 0

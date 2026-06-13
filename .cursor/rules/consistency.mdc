@@ -12,13 +12,17 @@ alwaysApply: true
    правило регистрируется в `build_normalizer()` (`name.py`) и ре-экспортируется
    в `normalizer/rules/__init__.py` и `normalizer/__init__.py` (`__all__`).
    Фильтр путей `.fs-ignore` — `normalizer/ignore.py` (+ при необходимости
-   `filesystem.py` для probe при `_incl`); инварианты — в
+   `filesystem.py` для probe при `_incl`); выбор фабрики паттернов pathspec вынесен
+   в `normalizer/pathspec_compat.py` (`_FACTORY`); инварианты — в
    `.cursor/rules/path-matching.mdc`.
    Журнал `.fs-log` — `normalizer/log.py` (`write_fs_log`): `filesystem.py`
    накапливает выполненные переименования в `self.renames`, `cli.py` пишет журнал
    после `apply`. Журнал — намеренное исключение из идемпотентности (дополняется
    на каждом запуске), он в корневом `.gitignore`, а `reset.*` убирают его явным
    `rm`/`del` (см. правило про тесты и кросс-платформенную безопасность).
+   Коды возврата CLI — `cli.py` (`main`): `0`/`1`/`2`, где `2` выводится из
+   `fsnm.errors` (сбои `os.rename`); конфликты (`fsnm.conflicts`) на код не влияют
+   (детали — в `.cursor/rules/cross-platform-safety.mdc`).
 2. **Тесты**: `tests/rules/test_<rule>.py` (юнит правила) + кросс-секционные в
    `tests/test_normalize.py` (см. правило про тесты). Журнал `.fs-log`
    (`write_fs_log` + сбор `renames`) — кросс-секционно в `tests/test_normalize.py`.

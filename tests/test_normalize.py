@@ -2,6 +2,7 @@
 
 Тесты отдельных правил — в tests/rules/test_<rule>.py. Фикстура `nn` — в conftest.py.
 """
+import os
 from datetime import datetime
 from pathlib import Path, PurePosixPath
 
@@ -14,9 +15,10 @@ from normalizer import (
     FsIgnore,
     build_normalizer,
     load_fs_ignore,
+    main,
     write_fs_log,
 )
-from normalizer.ignore import _FACTORY
+from normalizer.pathspec_compat import _FACTORY
 from normalizer.safety import enforce_safe_component
 
 
@@ -239,8 +241,36 @@ def test_fs_conflict_skipped(tmp_path):
     # Переименование в уже занятое имя пропускается, оба файла сохраняются.
     assert renamed == 0
     assert skipped >= 1
+    # Конфликт — безопасный пропуск: учитывается в conflicts, но НЕ в errors.
+    assert fs.conflicts >= 1
+    assert fs.errors == []
     assert (tmp_path / "a b.md").exists()
     assert (tmp_path / "a-b.md").exists()
+
+
+def test_fs_oserror_recorded_in_errors(tmp_path, monkeypatch):
+    # Реальный сбой os.rename (OSError, напр. зарезервированное имя/длина пути на
+    # Windows) безопасно пропускается: данные сохраняются, но фиксируется в errors.
+    (tmp_path / "Отчёт.txt").write_text("ДАННЫЕ")  # -> "otchiot.txt"
+
+    real_rename = os.rename
+
+    def failing_rename(src, dst, *args, **kwargs):
+        if Path(dst).name == "otchiot.txt":
+            raise OSError("симулированный сбой переименования")
+        return real_rename(src, dst, *args, **kwargs)
+
+    monkeypatch.setattr("normalizer.filesystem.os.rename", failing_rename)
+    fs = FilesystemNormalizer(build_normalizer())
+    renamed, skipped = fs.apply(tmp_path)
+    assert renamed == 0
+    assert skipped >= 1
+    assert len(fs.errors) == 1
+    src_rel, dest_rel = fs.errors[0]
+    assert (src_rel.as_posix(), dest_rel.as_posix()) == ("Отчёт.txt", "otchiot.txt")
+    assert fs.conflicts == 0
+    # Исходный файл уцелел вместе с данными.
+    assert (tmp_path / "Отчёт.txt").read_text() == "ДАННЫЕ"
 
 
 def test_fs_no_relocation_via_separator(tmp_path):
@@ -821,3 +851,48 @@ def test_fs_log_file_itself_not_normalized(tmp_path):
     fs.apply(tmp_path)
     assert (tmp_path / FS_LOG).is_file()
     assert all(FS_LOG not in src.as_posix() for src, _ in fs.renames)
+
+
+# --------------------------------------------------------------------------- #
+# CLI main(): коды возврата (0 — успех, 1 — ошибка запуска, 2 — сбои os.rename)
+# --------------------------------------------------------------------------- #
+def test_main_clean_run_returns_zero(tmp_path, monkeypatch):
+    (tmp_path / "Отчёт.txt").write_text("x")
+    monkeypatch.setattr("normalizer.cli.pick_directory", lambda: str(tmp_path))
+    assert main([]) == 0
+    assert (tmp_path / "otchiot.txt").exists()
+
+
+def test_main_conflict_only_returns_zero(tmp_path, monkeypatch):
+    # Конфликт — безопасный пропуск: код возврата остаётся 0 (как канонический
+    # прогон examples/ с единственным конфликтом 08-edge-cases).
+    (tmp_path / "a b.md").write_text("a")  # -> "a-b.md"
+    (tmp_path / "a-b.md").write_text("b")  # уже занято
+    monkeypatch.setattr("normalizer.cli.pick_directory", lambda: str(tmp_path))
+    assert main([]) == 0
+
+
+def test_main_rename_error_returns_two(tmp_path, monkeypatch):
+    (tmp_path / "Отчёт.txt").write_text("ДАННЫЕ")  # -> "otchiot.txt"
+    real_rename = os.rename
+
+    def failing_rename(src, dst, *args, **kwargs):
+        if Path(dst).name == "otchiot.txt":
+            raise OSError("симулированный сбой переименования")
+        return real_rename(src, dst, *args, **kwargs)
+
+    monkeypatch.setattr("normalizer.filesystem.os.rename", failing_rename)
+    monkeypatch.setattr("normalizer.cli.pick_directory", lambda: str(tmp_path))
+    assert main([]) == 2
+    assert (tmp_path / "Отчёт.txt").read_text() == "ДАННЫЕ"  # данные уцелели
+
+
+def test_main_no_directory_returns_one(monkeypatch):
+    monkeypatch.setattr("normalizer.cli.pick_directory", lambda: "")
+    assert main([]) == 1
+
+
+def test_main_missing_directory_returns_one(tmp_path, monkeypatch):
+    missing = tmp_path / "нет-такого"
+    monkeypatch.setattr("normalizer.cli.pick_directory", lambda: str(missing))
+    assert main([]) == 1
