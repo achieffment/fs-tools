@@ -13,7 +13,12 @@ from .picker import pick_directory
 
 
 def _parse_args(argv: list[str] | None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Нормализатор имён файлов и папок (рекурсивно). Каталог выбирается интерактивно при запуске (диалог проводника на Windows и в WSL, диалог macOS, либо ввод пути в терминале на обычном Linux).")
+    parser = argparse.ArgumentParser(description="Нормализатор имён файлов и папок (рекурсивно). Без аргумента каталог выбирается интерактивно (диалог проводника на Windows и в WSL, диалог macOS, либо ввод пути в терминале на обычном Linux). Каталог можно задать аргументом — для запуска по таймеру (cron/планировщик) без диалога.")
+    parser.add_argument(
+        "path",
+        nargs="?",
+        help="Каталог для нормализации. Если не задан — выбирается интерактивно.",
+    )
     return parser.parse_args(argv)
 
 
@@ -22,8 +27,9 @@ def main(argv: list[str] | None = None) -> int:
     сюда); 1 — ошибка запуска (каталог не выбран/не найден/не каталог); 2 — прогон
     завершён, но часть os.rename упала с OSError.
     """
-    _parse_args(argv)
-    targ = pick_directory()
+    args = _parse_args(argv)
+    # Аргумент-каталог минует диалог (режим таймера); иначе — интерактивный выбор.
+    targ = args.path if args.path else pick_directory()
     if not targ:
         sys.stderr.write("Каталог не выбран.\n")
         return 1
