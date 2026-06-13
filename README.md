@@ -106,18 +106,18 @@ python3 normalize_fs.py
 bash/zsh — в `~/.bashrc` или `~/.zshrc`:
 
 ```bash
-alias fsnorm="$HOME/Projects/Work/fs-normalizer/normalize.sh"
+alias fs-normalize="$HOME/Projects/Work/fs-normalizer/normalize.sh"
 ```
 
-Примените изменения (`source ~/.bashrc`) — и запускайте командой `fsnorm`.
+Примените изменения (`source ~/.bashrc`) — и запускайте командой `fs-normalize`.
 
 PowerShell — в файле профиля (`$PROFILE`). Используется функция-обёртка, чтобы корректно пробрасывать аргументы:
 
 ```powershell
-function fsnorm { & "C:\path\to\fs-normalizer\normalize.bat" @args }
+function fs-normalize { & "C:\path\to\fs-normalizer\normalize.bat" @args }
 ```
 
-Перечитайте профиль (`. $PROFILE`) — и запускайте командой `fsnorm`.
+Перечитайте профиль (`. $PROFILE`) — и запускайте командой `fs-normalize`.
 
 ## Фильтр путей (`.fs-ignore`)
 
