@@ -20,9 +20,11 @@ alwaysApply: true
    после `apply`. Журнал — намеренное исключение из идемпотентности (дополняется
    на каждом запуске), он в корневом `.gitignore`, а `reset.*` убирают его явным
    `rm`/`del` (см. правило про тесты и кросс-платформенную безопасность).
-   Коды возврата CLI — `cli.py` (`main`): `0`/`1`/`2`, где `2` выводится из
-   `fsnm.errors` (сбои `os.rename`); конфликты (`fsnm.conflicts`) на код не влияют
-   (детали — в `.cursor/rules/cross-platform-safety.mdc`).
+   Источник каталога — `cli.py` (`main`): опц. аргумент-каталог (`path`,
+   `nargs="?"`) минует диалог (режим cron/таймера), иначе — интерактивный
+   `pick_directory()`. Коды возврата CLI — `cli.py` (`main`): `0`/`1`/`2`, где `2`
+   выводится из `fsnm.errors` (сбои `os.rename`); конфликты (`fsnm.conflicts`) на код
+   не влияют (детали — в `.cursor/rules/cross-platform-safety.mdc`).
 2. **Тесты**: `tests/rules/test_<rule>.py` (юнит правила) + кросс-секционные в
    `tests/test_normalize.py` (см. правило про тесты). Журнал `.fs-log`
    (`write_fs_log` + сбор `renames`) — кросс-секционно в `tests/test_normalize.py`.
