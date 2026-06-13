@@ -13,7 +13,7 @@ pause_exit() {
     exit "$1"
 }
 
-if [ ! -x "$pyex" ] || ! "$pyex" -c "import pathspec" >/dev/null 2>&1; then
+if [ ! -x "$pyex" ] || ! "$pyex" -c "import pathspec, requests, dotenv" >/dev/null 2>&1; then
     echo "Подготовка окружения (.venv)..." >&2
     rm -rf "$venv"
     if ! python3 -m venv "$venv"; then

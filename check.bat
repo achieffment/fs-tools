@@ -6,7 +6,7 @@ set "fold=%~dp0"
 set "pyex=%fold%.venv\Scripts\python.exe"
 
 if not exist "%pyex%" goto setup
-"%pyex%" -c "import pathspec" 1>nul 2>nul
+"%pyex%" -c "import pathspec, requests, dotenv" 1>nul 2>nul
 if errorlevel 1 goto setup
 goto run
 

@@ -6,7 +6,7 @@ fold="$(cd -- "$(dirname -- "$0")" && pwd)"
 venv="$fold/.venv"
 pyex="$venv/bin/python"
 
-if [ ! -x "$pyex" ] || ! "$pyex" -c "import pathspec" >/dev/null 2>&1; then
+if [ ! -x "$pyex" ] || ! "$pyex" -c "import pathspec, requests, dotenv" >/dev/null 2>&1; then
     echo "Подготовка окружения (.venv)..." >&2
     rm -rf "$venv"
     if ! python3 -m venv "$venv"; then

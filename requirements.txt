@@ -1,4 +1,7 @@
 pathspec>=0.12
+requests>=2.31
+python-dotenv>=1.0
 
 # Для разработки/тестов:
 pytest>=8,<9
+types-requests>=2.31
