@@ -39,6 +39,7 @@ fs-checker/
 │   ├── picker.py               # выбор каталога (диалоги Windows/WSL/macOS, ввод в терминале)
 │   ├── pick_folder.ps1         # нативный диалог выбора папки Windows (IFileOpenDialog)
 │   ├── rule.py                 # разбор .fs-rule (правила + PathSpec негативов)
+│   ├── pathspec_compat.py      # совместимость версий pathspec (выбор фабрики паттернов)
 │   ├── engine.py               # разворачивание правил и сбор отсутствующих путей
 │   └── report.py               # формат вывода и сводки
 ├── tests/                      # тесты (pytest)

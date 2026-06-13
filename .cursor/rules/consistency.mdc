@@ -11,9 +11,11 @@ alwaysApply: true
 1. **Код**: семантика правил — `checker/rule.py` (разбор `.fs-rule`: положительные
    правила + `PathSpec` негативов) и `checker/engine.py` (разворачивание префиксов
    через `Path.glob`, прунинг негативов по `*`/`**`-выбранным компонентам, проверка
-   мандата). Вывод — `checker/report.py`, сценарий запуска и коды возврата —
-   `checker/cli.py`. Публичное API ре-экспортируется в `checker/__init__.py`
-   (`__all__`). Инварианты семантики — в `.cursor/rules/rule-matching.mdc`.
+   мандата). Выбор фабрики паттернов pathspec вынесен в
+   `checker/pathspec_compat.py` (`_FACTORY`). Вывод — `checker/report.py`, сценарий
+   запуска и коды возврата — `checker/cli.py`. Публичное API ре-экспортируется в
+   `checker/__init__.py` (`__all__`). Инварианты семантики — в
+   `.cursor/rules/rule-matching.mdc`.
 2. **Тесты**: `tests/test_rule.py` (парсинг), `tests/test_engine.py`
    (разворачивание/мандат/`_Archive`), `tests/test_cli.py` (коды возврата и
    сообщения), `tests/test_picker.py` (выбор каталога). Фикстуры — в

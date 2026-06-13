@@ -17,16 +17,17 @@ CLI **read-only** проверки структуры каталогов по п
 
 ## Структура
 
-    check_fs.py             точка входа; обёртки check.sh/.command/.bat (авто-venv + pip)
-    checker/__init__.py     публичное API — импортировать только отсюда
-    checker/cli.py          разбор аргументов, выбор каталога, загрузка правил, печать, коды возврата
-    checker/picker.py       выбор каталога (диалоги Windows/WSL/macOS, ввод в терминале, wslpath-конверсии)
-    checker/pick_folder.ps1 нативный диалог Windows (IFileOpenDialog)
-    checker/rule.py         разбор .fs-rule: положительные правила (glob-строки) + PathSpec негативов; FsRuleError при отсутствии файла
-    checker/engine.py       FsChecker.check(root): разворачивание префиксов через Path.glob, прунинг негативов по *-/**-выбранным компонентам, проверка мандата (exists()/is_dir()), сбор отсутствующих путей
-    checker/report.py       формат отчёта и сводки
-    tests/                  pytest: test_rule/test_engine/test_cli/test_picker + conftest
-    examples/               запускаемая песочница-фикстура + .fs-rule + README
+    check_fs.py                   точка входа; обёртки check.sh/.command/.bat (авто-venv + pip)
+    checker/__init__.py           публичное API — импортировать только отсюда
+    checker/cli.py                разбор аргументов, выбор каталога, загрузка правил, печать, коды возврата
+    checker/picker.py             выбор каталога (диалоги Windows/WSL/macOS, ввод в терминале, wslpath-конверсии)
+    checker/pick_folder.ps1       нативный диалог Windows (IFileOpenDialog)
+    checker/rule.py               разбор .fs-rule: положительные правила (glob-строки) + PathSpec негативов; FsRuleError при отсутствии файла
+    checker/pathspec_compat.py    совместимость версий pathspec: выбор фабрики gitignore-паттернов (_FACTORY)
+    checker/engine.py             FsChecker.check(root): разворачивание префиксов через Path.glob, прунинг негативов по *-/**-выбранным компонентам, проверка мандата (exists()/is_dir()), сбор отсутствующих путей
+    checker/report.py             формат отчёта и сводки
+    tests/                        pytest: test_rule/test_engine/test_cli/test_picker + conftest
+    examples/                     запускаемая песочница-фикстура + .fs-rule + README
 
 ## Контракт
 

@@ -19,30 +19,12 @@ from pathlib import Path
 from typing import Any
 
 import pathspec
-from pathspec.util import lookup_pattern
+
+from .pathspec_compat import _FACTORY
 
 
 class FsRuleError(Exception):
     """Файл .fs-rule отсутствует или не читается (некорректный запуск)."""
-
-
-def _factory_name() -> str:
-    """Имя фабрики gitignore-паттернов, доступной в установленной pathspec.
-
-    В новых версиях алиас 'gitwildmatch' объявлен устаревшим в пользу 'gitignore',
-    а в pathspec<0.12-совместимых сборках есть только 'gitwildmatch'. Берём первое
-    доступное, чтобы не привязываться к версии и не плодить DeprecationWarning.
-    """
-    for name in ("gitignore", "gitwildmatch"):
-        try:
-            lookup_pattern(name)
-        except LookupError:
-            continue
-        return name
-    return "gitwildmatch"
-
-
-_FACTORY = _factory_name()
 
 
 def _rstrip_rule(line: str) -> str:
