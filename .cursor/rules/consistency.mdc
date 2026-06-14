@@ -15,7 +15,7 @@ alwaysApply: true
    `checker/pathspec_compat.py` (`_FACTORY`). Вывод — `checker/report.py`, сценарий
    запуска и коды возврата — `checker/cli.py` (опц. аргумент-каталог для cron,
    запись журнала и веб-хук при нарушениях). Журнал нарушений — `checker/log.py`
-   (`.fs-log`, формат зеркалит `fs-normalizer`); уведомление — `checker/notify.py`
+   (`.fs-log`, универсальный формат журнала); уведомление — `checker/notify.py`
    (`.env` → веб-хук). Публичное API ре-экспортируется в `checker/__init__.py`
    (`__all__`). Инварианты семантики — в `.cursor/rules/rule-matching.mdc`.
 2. **Тесты**: `tests/test_rule.py` (парсинг), `tests/test_engine.py`
