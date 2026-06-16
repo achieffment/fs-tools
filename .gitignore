@@ -1,0 +1,18 @@
+.mypy_cache
+.pytest_cache
+.ruff_cache
+.venv
+__pycache__
+
+*.egg-info
+build/
+dist/
+
+/docs
+.fs-log
+
+.env
+*.env
+
+# Локальные правила Cursor — не для репозитория
+.cursor/rules/*.local.mdc

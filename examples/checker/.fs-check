@@ -1,0 +1,35 @@
+# Корневая цепочка структуры: каталоги обязаны существовать сами по себе
+# (без этих правил пропажа целой ветки осталась бы незамеченной)
+/Activities
+/Activities/Web
+/Activities/Web/Projects
+
+# Каждое занятие: обязательны Projects и Resources
+/Activities/*/Projects
+/Activities/*/Resources
+
+# Web: категории первого уровня — строго каталоги (завершающий /)
+/Activities/Web/Projects/Addl/
+/Activities/Web/Projects/Self/
+/Activities/Web/Projects/Work/
+
+# Back/Data в проектах Addl и Self (проект лежит прямо в категории)
+/Activities/Web/Projects/Addl/*/Back
+/Activities/Web/Projects/Addl/*/Data
+/Activities/Web/Projects/Self/*/Back
+/Activities/Web/Projects/Self/*/Data
+
+# Back/Data в проектах Work (внутри организаций: Work/<организация>/<проект>)
+/Activities/Web/Projects/Work/*/*/Back
+/Activities/Web/Projects/Work/*/*/Data
+
+# В каждом проекте Work обязателен файл Data/project.md.
+# Без завершающего / мандат — это файл ИЛИ папка (проверка exists()).
+/Activities/Web/Projects/Work/*/*/Data/project.md
+
+# Back/Data в архивных проектах на любом уровне Web/Projects
+/Activities/Web/Projects/**/_Archive/*/Back
+/Activities/Web/Projects/**/_Archive/*/Data
+
+# Служебный _Archive не должен попадать под обобщённые * и **
+!_Archive
