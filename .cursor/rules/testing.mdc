@@ -1,0 +1,53 @@
+---
+description: Обязательные виды и кейсы тестов
+alwaysApply: true
+---
+
+# Тесты
+
+Фреймворк — `pytest`. Корень проекта добавляется в `sys.path` в `tests/conftest.py`;
+там же фикстуры `make_tree` (фабрика временного дерева) и `write_config`, а также
+маркер `requires_rsync` (пропуск, если бинарь rsync не установлен).
+
+Обязательное покрытие:
+
+- **`test_config.py`** — разбор `.fs-sync.toml`: дефолты (`delete` = true для sync /
+  false для backup, пороги 100/25, `verify`/`after_push`), применение и
+  переопределение `[defaults]`, `local_root` относительно конфига; валидация
+  (уникальность `name`, существование `local_root`, безопасный `remote_root` — не
+  пустой и не корень `/`, enum `after_push`, типы полей) → `ConfigError`; разбор
+  `remote_root` (`split_remote`/`is_ssh_remote`).
+- **`test_ignore.py`** — трансляция в rsync (`build_filters`/`filter_args`): порядок
+  «артефакты → include(+) → exclude(-)»; безусловное и **невозвращаемое** исключение
+  артефактов (`.fs-sync.toml`, `.fs-log`, `.env`).
+- **`test_rsync.py`** — сборка команды (`-a`/`--itemize-changes`/`--stats`,
+  `--delete`/`--dry-run`, опции профиля, `-e ssh` только для SSH-цели, источник с
+  завершающим `/`); листинг точки (`build_listing`/`parse_listing` — файлы/каталоги,
+  пробелы в именах, корневая `.`); разбор итемизированного итога (передано/удалено,
+  каталоги и неизменённые строки пропущены); delete-guard через мок subprocess и
+  `DeletePlan` (пороги по количеству и доле); реальный rsync (`requires_rsync`):
+  передача, идемпотентность, зеркалирование `--delete`, исключение артефактов,
+  `source_files`/`remote_object_count`.
+- **`test_offload.py`** — `after_push` (`nothing`/`delete`/`archive`, прунинг
+  опустевших каталогов), dry-run не удаляет, сбой передачи не удаляет, **частичный
+  verify** удаляет только подтверждённое; реальный offload (`requires_rsync`), в т.ч.
+  исключённый фильтром файл не попадает в область и не удаляется.
+- **`test_cli.py`** — коды возврата: нет каталога/конфига/`rsync`/`ssh` → 1; успех → 0
+  и запись `.fs-log`; `--dry-run` ничего не передаёт и не пишет журнал; delete-guard →
+  3, `--force-delete` снимает; выбор `--profile`; неизвестный профиль → 1.
+- **`test_report.py`** — маркеры операций журнала (`+`/`-`/`>>`), формат заголовка и
+  сводки, строка блокировки delete-guard.
+- **`test_log.py`** — `write_fs_log`: создание/дополнение (append), метка времени,
+  отступ строк, пометка «(изменений нет)».
+- **`test_notify.py`** — мок `requests.post` и `.env`: тело `{"text": ...}` и Bearer,
+  приоритет `.env` над окружением, пропуск без `FSSYNC_WEBHOOK_URL`, гашение ошибок.
+- **`test_examples.py`** — `--dry-run` на `examples/` совпадает с `examples/README.md`.
+
+Проверка (инструменты в `.venv`; в PowerShell `&&` не поддерживается):
+
+    .venv/bin/python -m pytest -q
+    .venv/bin/python -m ruff check syncher tests
+    .venv/bin/python -m mypy --strict syncher sync_fs.py
+
+Всё должно быть зелёным. Критические сценарии (delete-guard, offload-verify, коды
+возврата, трансляция паттернов, авто-исключение артефактов) покрывай обязательно.

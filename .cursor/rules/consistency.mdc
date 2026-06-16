@@ -1,0 +1,37 @@
+---
+description: Консистентность кода, тестов, примеров и документации
+alwaysApply: true
+---
+
+# Консистентность всегда
+
+Код, тесты, примеры и документация — единое целое и не должны расходиться.
+Любое изменение поведения синхронизирует все четыре пласта:
+
+1. **Код**: разбор и валидация конфига — `syncher/config.py` (`.fs-sync.toml`,
+   модель `[defaults]`/`[[sync]]`/`[[backup]]`); трансляция правил include/exclude в
+   фильтры rsync — `syncher/ignore.py` (сопоставление выполняет сам rsync, своего
+   матчера нет); сборка/запуск rsync, листинг точки (`build_listing`/`parse_listing`,
+   `source_files`/`remote_object_count`), разбор итемизированного итога и delete-guard
+   — `syncher/rsync.py`; offload (verify → after_push, область — у rsync) —
+   `syncher/offload.py`; отчёт — `syncher/report.py`; сценарий и коды возврата —
+   `syncher/cli.py`; журнал `.fs-log` — `syncher/log.py`; веб-хук — `syncher/notify.py`.
+   Публичное API ре-экспортируется в `syncher/__init__.py` (`__all__`).
+2. **Тесты**: `tests/test_config.py`, `tests/test_ignore.py`, `tests/test_rsync.py`,
+   `tests/test_offload.py`, `tests/test_cli.py`, `tests/test_report.py`,
+   `tests/test_log.py`, `tests/test_notify.py`, `tests/test_examples.py`. Фикстуры и
+   `sys.path` — в `tests/conftest.py`; интеграционные кейсы с реальным rsync помечены
+   `requires_rsync` (локальный каталог→каталог, без сети).
+3. **Примеры**: песочница `examples/` (`.fs-sync.toml` + дерево-источник + локальные
+   каталоги-приёмники). Ожидаемый итог `--dry-run` зафиксирован в `examples/README.md`
+   и проверяется `tests/test_examples.py`.
+4. **Документация**: `README.md` (формат `.fs-sync.toml`, семантика правил, offload,
+   delete-guard, коды возврата, журнал, веб-хук, SSH/cron, ограничение Windows) и
+   `examples/README.md`.
+
+Инварианты: данные текут только **ПК → сервер**; без offload-профиля локальные файлы
+не удаляются; в offload локальное удаление/архивирование — только после подтверждённой
+(verify) передачи; повторный прогон без изменений ничего не передаёт и не удаляет.
+Любое изменение, затрагивающее формат конфига, трансляцию правил в rsync, поведение
+offload/delete-guard, формат журнала или контракт уведомлений, отражай во всех
+четырёх пластах. Перед завершением убедись, что ни один из них не отстал.
