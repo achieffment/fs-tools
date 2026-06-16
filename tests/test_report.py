@@ -1,0 +1,44 @@
+"""Тесты report: маркеры операций журнала и формат отчёта."""
+from pathlib import Path
+
+from syncher import ProfileReport, format_header, format_profile, format_report
+
+
+def test_operations_markers() -> None:
+    report = ProfileReport(
+        name="m",
+        kind="sync",
+        code=0,
+        sent=["a.txt"],
+        deleted=["old.txt"],
+        offloaded=["x.bin"],
+    )
+    assert report.operations() == ["+ a.txt", "- old.txt", ">> x.bin"]
+
+
+def test_format_header_modes(tmp_path: Path) -> None:
+    real = format_header(tmp_path, ["a", "b"], dry_run=False)
+    assert "боевой" in real and "a, b" in real
+    dry = format_header(tmp_path, [], dry_run=True)
+    assert "dry-run" in dry and "—" in dry
+
+
+def test_format_profile_counts() -> None:
+    report = ProfileReport(name="m", kind="sync", code=0, sent=["a", "b"], deleted=["c"])
+    text = format_profile(report)
+    assert "передано 2" in text and "удалено 1" in text and "выгружено 0" in text
+
+
+def test_format_profile_blocked() -> None:
+    report = ProfileReport(name="m", kind="sync", code=3, deleted=["a", "b"], blocked=True)
+    text = format_profile(report)
+    assert "защитой" in text and "--force-delete" in text
+
+
+def test_format_report_lists_all(tmp_path: Path) -> None:
+    reports = [
+        ProfileReport(name="a", kind="sync", code=0),
+        ProfileReport(name="b", kind="backup", code=2, errors=["boom"]),
+    ]
+    text = format_report(tmp_path, reports)
+    assert "Профиль «a»" in text and "Профиль «b»" in text
