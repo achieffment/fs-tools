@@ -42,7 +42,7 @@ main() {
     # 3. Возвращаем отслеживаемые файлы к версии из git (только в этом каталоге).
     git -c core.ignorecase=false checkout -- .
 
-    echo "Готово: examples/ возвращён к состоянию из git." >&2
+    echo "Готово: examples/normalizer/ возвращён к состоянию из git." >&2
 }
 
 main "$@"

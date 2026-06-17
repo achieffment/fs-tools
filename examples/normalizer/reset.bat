@@ -31,7 +31,7 @@ del /q .fs-log >nul 2>nul
 REM 3. Возвращаем отслеживаемые файлы к версии из git (только в этом каталоге).
 git -c core.ignorecase=false checkout -- .
 
-echo Готово: examples/ возвращён к состоянию из git.
+echo Готово: examples/normalizer/ возвращён к состоянию из git.
 goto end
 
 :notgit
