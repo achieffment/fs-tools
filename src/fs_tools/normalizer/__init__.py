@@ -2,7 +2,7 @@
 
 Публичное API: импортируйте отсюда, а не из подмодулей напрямую. Имена, тянущие
 `Unidecode` (правила, конвейер, `FilesystemNormalizer`), грузятся лениво — чтобы
-импорт пакета и команда `fs-nrm` не падали без extra `normalizer` до момента работы.
+импорт пакета и команда `fs-normalizer` не падали без extra `normalizer` до момента работы.
 """
 from __future__ import annotations
 

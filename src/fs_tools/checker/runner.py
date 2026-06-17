@@ -46,7 +46,7 @@ def run(root: Path) -> int:
         # Уведомление о невалидной структуре: текст лишь сигнализирует о проблеме,
         # детали — в .fs-log. Fire-and-forget, ошибки/таймаут не влияют на прогон.
         send_webhook(
-            f"fs-chk: в каталоге {root} отсутствуют пути ({len(result.missing)}). "
+            f"fs-checker: в каталоге {root} отсутствуют пути ({len(result.missing)}). "
             "Подробности — в .fs-log."
         )
     return 2 if result.missing else 0

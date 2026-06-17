@@ -15,8 +15,8 @@ checker = ["requests>=2.31", "python-dotenv>=1.0"]
 dev = ["pytest>=8,<9", "mypy", "ruff", "types-requests", "build"]
 
 [project.scripts]
-fs-nrm = "fs_tools.normalizer.runner:main"
-fs-chk = "fs_tools.checker.runner:main"
+fs-normalizer = "fs_tools.normalizer.runner:main"
+fs-checker = "fs_tools.checker.runner:main"
 fs-tools = "fs_tools.cli:main"
 
 [tool.setuptools.packages.find]

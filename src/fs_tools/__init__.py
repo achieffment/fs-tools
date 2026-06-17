@@ -5,7 +5,7 @@
 - `fs_tools.normalizer` — рекурсивная нормализация имён файлов и папок;
 - `fs_tools.checker` — проверка наличия путей по правилам `.fs-check`.
 
-Точки входа: команды `fs-nrm`/`fs-chk` и диспетчер `fs-tools <normalize|check>`.
+Точки входа: команды `fs-normalizer`/`fs-checker` и диспетчер `fs-tools <normalize|check>`.
 """
 from __future__ import annotations
 

@@ -32,7 +32,7 @@ src/fs_tools/
 └── __main__.py      # python -m fs_tools
 ```
 
-Точки входа (`pyproject.toml [project.scripts]`): `fs-nrm`, `fs-chk`, `fs-tools`.
+Точки входа (`pyproject.toml [project.scripts]`): `fs-normalizer`, `fs-checker`, `fs-tools`.
 
 ## Команды
 

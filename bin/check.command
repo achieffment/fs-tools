@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Кликабельная обёртка для macOS (Finder): готовит .venv при первом запуске,
-# вызывает fs-chk и ждёт клавишу перед выходом. Аргументы пробрасываются ("$@").
+# вызывает fs-checker и ждёт клавишу перед выходом. Аргументы пробрасываются ("$@").
 set -euo pipefail
 
 here="$(cd -- "$(dirname -- "$0")" && pwd)"
@@ -20,5 +20,5 @@ if ! _fs_tools_bootstrap "$root"; then
 fi
 
 stat=0
-"$FS_TOOLS_VBIN/fs-chk" "$@" || stat=$?
+"$FS_TOOLS_VBIN/fs-checker" "$@" || stat=$?
 pause_exit "$stat"
