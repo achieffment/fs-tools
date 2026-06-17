@@ -10,7 +10,7 @@ alwaysApply: true
 
 Распределение по пакетам (`src/fs_tools/`):
 
-- `shared/` — общий код обоих режимов: выбор каталога (`picker.py` +
+- `shared/` — общий код режимов: выбор каталога (`picker.py` +
  `pick_folder.ps1`), version-shim фабрики gitignore-паттернов
  (`pathspec_compat.py`, `_FACTORY`), доступ к единому `.env` (`env.py`: `load_env`
  однократно грузит `.env` в `os.environ` через `load_dotenv(override=False)` — процесс
@@ -28,24 +28,36 @@ alwaysApply: true
 - `checker/` — разбор `.fs-check` (`rule.py`), разворачивание и сбор нарушений
   (`engine.py`, класс `FsChecker`), отчёт (`report.py`), веб-хук (`notify.py`),
   обёртка журнала (`log.py`), точка входа (`runner.py`).
+- `syncher/` — чтение/валидация `.fs-sync.toml` (`config.py`, `tomllib`), трансляция
+  include/exclude в фильтры rsync (`ignore.py`), сборка/запуск rsync и delete-guard
+  (`rsync.py`), offload (`offload.py`), отчёт (`report.py`), веб-хук (`notify.py`,
+  `FSSYN_*`), обёртка журнала (`log.py`), точка входа (`runner.py`).
 
-Симметрия режимов намеренная: ядро каждого режима — `engine.py` с классом `Fs*`
+Симметрия двух первых режимов намеренная: ядро каждого — `engine.py` с классом `Fs*`
 (`FsNormalizer` / `FsChecker`); локальная переменная инстанса в `runner.run` — `fsnm`
-/ `fsch`. Сохраняй это соответствие при правках.
+/ `fsch`. Сохраняй это соответствие при правках. Режим `syncher` **несимметричен**: у
+него нет `engine.py`/`Fs*`-класса и нет `safety.py` (структура — функциональная:
+`config`/`ignore`/`rsync`/`offload`/`report`, конвейер собирается в `runner.run`).
+Симметрию сохраняют только врапнеры `log.py`/`runner.py` и раскладка тестов/примеров.
 
 Точки входа и коды возврата:
 
-- Каждый режим: `runner.main(argv) -> int` (тонкая обёртка над `shared.cli`) +
+- normalizer/checker: `runner.main(argv) -> int` (тонкая обёртка над `shared.cli`) +
   `run(root) -> int`. Аргумент-каталог (`path`, `nargs="?"`) минует диалог (режим
   cron/таймера), иначе — интерактивный `pick_directory()`. Коды `0`/`1`/`2`
   зафиксированы контрактом и проверяются тестами.
-- Диспетчер `fs_tools.cli:main` (`fs-tools <normalize|check>`) и `__main__.py`
+- syncher: `runner.main(argv) -> int` + `run(root, args) -> int`. Режим
+  **неинтерактивен** (picker не используется): без аргумента берётся CWD, диалог не
+  открывается. Коды `0/1/2/3` (наихудший среди профилей) зафиксированы контрактом.
+- Диспетчер `fs_tools.cli:main` (`fs-tools <normalize|check|sync>`) и `__main__.py`
   импортируют `runner` выбранного режима **лениво** (внутри обработчика), чтобы
-  `--help` и доступный режим работали без extra другого режима.
+  `--help` и доступный режим работали без extra другого режима. Подкоманда `sync`
+  объявляет флаги режима и пробрасывает их (а не только `path`).
 
 Журнал `.fs-log` — намеренное исключение из идемпотентности (дополняется на каждом
 запуске), он в `.gitignore`, а `reset.*` (только у normalizer) убирают его явным
-`rm`/`del`.
+`rm`/`del`. У `syncher` журнал пишется только в боевом прогоне (не в `--dry-run`),
+а откат песочницы — через `git restore`/`git clean` (без `reset.*`).
 
-Документация: единый `README.md` (две секции), `examples/README.md` (+ секции
+Документация: единый `README.md` (три секции), `examples/README.md` (+ секции
 режимов). Перед завершением убедись, что ни один пласт не отстал.
