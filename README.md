@@ -162,13 +162,19 @@ write_fs_log(target, fs.renames)                          # дописать .fs
   на литералы.
 
 ```gitignore
-/Activities                                  # фиксированные каталоги — отдельными правилами
+# фиксированные каталоги — отдельными правилами-литералами
+/Activities
 /Activities/Web/Projects
-/Activities/*/Projects                        # в каждом занятии
-/Activities/Web/Projects/Addl/                # строго каталог
-/Activities/Web/Projects/Work/*/*/Data/project.md   # обязательный файл
-/Activities/Web/Projects/**/_Archive/*/Back   # архивные проекты на любом уровне
-!_Archive                                     # _Archive не попадает под * и **
+# подстановка: в каждом занятии
+/Activities/*/Projects
+# строго каталог (завершающий /)
+/Activities/Web/Projects/Addl/
+# обязательный файл (мандат-файл)
+/Activities/Web/Projects/Work/*/*/Data/project.md
+# архивные проекты на любом уровне
+/Activities/Web/Projects/**/_Archive/*/Back
+# _Archive не попадает под * и **
+!_Archive
 ```
 
 Фиксированные промежуточные каталоги описывают отдельными правилами-литералами: иначе их
@@ -206,7 +212,7 @@ FSCHK_WEBHOOK_URL=https://example.com/hook
 FSCHK_WEBHOOK_TOK=секретный-токен
 ```
 
-Особенности (намеренные отличия от исходных утилит):
+Особенности конфигурации веб-хука:
 
 - **приоритет**: переменные окружения процесса важнее значений из `.env`;
 - **только HTTPS**: не-`https://` URL отвергается (токен не уходит по нешифрованному каналу).

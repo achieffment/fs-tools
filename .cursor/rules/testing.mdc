@@ -14,7 +14,7 @@ alwaysApply: true
   держатся в `conftest.py` подпапок: фабрика нормализатора `nn` (`build_normalizer`)
   — `tests/normalizer/conftest.py`; фикстуры дерева `make_tree` и `.fs-check`
   `write_rule` — `tests/checker/conftest.py`.
-- `tests/shared/test_picker.py` — один общий файл (дедуплицирован из обоих эталонов).
+- `tests/shared/test_picker.py` — один общий файл: выбор каталога не дублируется.
 - `tests/shared/test_log.py` — общие механики журнала (метка времени, отступ, append,
   utf-8). Мод-специфичные строки журнала проверяются в мод-тестах: пары `old -> new`
   и «(изменений нет)» — у normalizer; пути и «(нарушений нет)» — у checker.

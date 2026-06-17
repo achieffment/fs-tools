@@ -14,8 +14,8 @@ from importlib.resources import as_file, files
 _DEFAULT_TITLE = "Выберите каталог"
 _DEFAULT_PROMPT = "Укажите каталог."
 
-# Нейтральные имена переменных окружения для передачи параметров в pick_folder.ps1
-# и osascript (единые для обоих режимов; раньше расходились FSNORM_*/FSCHK_*).
+# Имена переменных окружения для передачи параметров в pick_folder.ps1 и osascript:
+# нейтральны к режиму, поэтому общий код выбора каталога не зависит от вызывающего.
 _ENV_INITIAL = "FSTOOLS_INITIAL"
 _ENV_TITLE = "FSTOOLS_TITLE"
 
