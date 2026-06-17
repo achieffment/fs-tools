@@ -1,6 +1,6 @@
 """Общий разбор аргументов CLI и валидация выбранного каталога.
 
-Используется обоими `runner.py` и диспетчером `fs_tools.cli`, чтобы разбор
+Используется всеми `runner.py` и диспетчером `fs_tools.cli`, чтобы разбор
 опционального позиционного `path` и приведение пути к корню не дублировались.
 """
 from __future__ import annotations
@@ -19,9 +19,13 @@ def make_parser(description: str) -> argparse.ArgumentParser:
     return parser
 
 
-def add_path_argument(parser: argparse.ArgumentParser) -> None:
-    """Добавляет опциональный позиционный `path` (общий и для подпарсеров диспетчера)."""
-    parser.add_argument("path", nargs="?", help=_PATH_HELP)
+def add_path_argument(parser: argparse.ArgumentParser, help_text: str = _PATH_HELP) -> None:
+    """Добавляет опциональный позиционный `path` (общий и для подпарсеров диспетчера).
+
+    `help_text` переопределяется неинтерактивными режимами (синхронизация диалог не
+    открывает — без аргумента берётся текущий каталог).
+    """
+    parser.add_argument("path", nargs="?", help=help_text)
 
 
 def resolve_root(targ: str | None) -> Path | None:

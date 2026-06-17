@@ -9,7 +9,8 @@
 (переменные окружения процесса важнее значений из `.env`) обеспечивает `override=False`.
 
 Зависимость `python-dotenv` импортируется лениво — внутри функции, чтобы модуль
-`shared` работал и в режиме normalizer без extra `checker`.
+`shared` работал без чужого extra (например, в режиме normalizer, которому `.env` не
+нужен; веб-хук читают checker и syncher).
 """
 from __future__ import annotations
 
@@ -57,7 +58,7 @@ def load_env() -> None:
     harden_permissions(path)
     try:
         from dotenv import load_dotenv
-    except ImportError:                             # без extra checker .env просто игнорируется
+    except ImportError:                             # без extra checker/syncher .env игнорируется
         _log.debug("python-dotenv не установлен — .env не читается")
         return
     load_dotenv(path, override=False)
