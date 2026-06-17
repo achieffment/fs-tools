@@ -26,8 +26,8 @@ def append_log(
     `when` нужен для тестов; по умолчанию берётся текущее локальное время. Возвращает
     путь к журналу.
     """
-    stamp = (when or datetime.now()).strftime("%Y-%m-%d %H:%M:%S")
-    body = [stamp]
+    date = (when or datetime.now()).strftime("%Y-%m-%d %H:%M:%S")
+    body = [date]
     if lines:
         body += [f"  {line}" for line in lines]
     else:
