@@ -19,6 +19,10 @@ alwaysApply: true
   `tests/normalizer/conftest.py`; запись `.fs-check` `write_rule` —
   `tests/checker/conftest.py`.
 - `tests/shared/test_picker.py` — один общий файл: выбор каталога не дублируется.
+- `tests/shared/test_env.py` — доступ к единому `.env`: путь, загрузка в `os.environ`
+  (`load_env`), приоритет «процесс > файл» (`override=False`), идемпотентность,
+  упрочнение прав. `load_env` мутирует `os.environ`, поэтому autouse-фикстура сбрасывает
+  `env._loaded` и восстанавливает окружение. Веб-хук-ключи проверяются у checker.
 - `tests/shared/test_log.py` — общие механики журнала (метка времени, отступ, append,
   utf-8). Мод-специфичные строки журнала проверяются в мод-тестах: пары `old -> new`
   и «(изменений нет)» — у normalizer; пути и «(нарушений нет)» — у checker.
@@ -32,9 +36,10 @@ alwaysApply: true
 - **checker**: парсинг `.fs-check`, разворачивание правил, коды возврата, picker,
   веб-хук (мок сети).
 - **Аргумент-каталог минует диалог** — для обоих режимов.
-- **Веб-хук**: окружение процесса важнее `.env`; ленивые импорты — на уровне модуля
-  `notify` нет атрибутов `requests`/`dotenv_values`, поэтому `.env` подменяется через
-  `notify._file_values`, а сеть — через `requests.post` реального модуля.
+- **Веб-хук**: окружение процесса важнее `.env` (проверяется в `test_env.py`); ленивые
+ импорты — на уровне модуля `notify` нет атрибута `requests`. В notify-тестах загрузка
+ `.env` изолируется подменой `shared.env.load_env` на no-op + `monkeypatch.setenv`, а
+ сеть — через `requests.post` реального модуля.
 
 Проверка (инструменты в `.venv`; в PowerShell `&&` не поддерживается):
 

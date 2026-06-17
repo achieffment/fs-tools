@@ -11,10 +11,13 @@ alwaysApply: true
 Распределение по пакетам (`src/fs_tools/`):
 
 - `shared/` — общий код обоих режимов: выбор каталога (`picker.py` +
-  `pick_folder.ps1`), version-shim фабрики gitignore-паттернов
-  (`pathspec_compat.py`, `_FACTORY`), единый журнал `.fs-log` (`log.py`,
-  `append_log` — содержимое строк и текст пустого блока задаются параметром), общий
-  разбор аргументов и `resolve_root` (`cli.py`). Барьер «имя — один компонент пути»
+ `pick_folder.ps1`), version-shim фабрики gitignore-паттернов
+ (`pathspec_compat.py`, `_FACTORY`), доступ к единому `.env` (`env.py`: `load_env`
+ однократно грузит `.env` в `os.environ` через `load_dotenv(override=False)` — процесс
+ важнее файла; плюс путь и `chmod 600`, ленивый `dotenv`), единый журнал
+ `.fs-log` (`log.py`, `append_log` — содержимое строк и текст пустого блока
+ задаются параметром), общий разбор аргументов и `resolve_root` (`cli.py`). Барьер
+ «имя — один компонент пути»
   (`safety.py`) живёт в `normalizer/`, а не в `shared/`: checker ничего не
   переименовывает.
 - `normalizer/` — правила (`rules/`), конвейер (`name.py`, `build_normalizer`), обход

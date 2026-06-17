@@ -1,14 +1,16 @@
 """Тесты веб-хука уведомлений (notify): тело, заголовок, приоритеты, гашение.
 
-Тяжёлые зависимости импортируются лениво внутри функций, поэтому на уровне модуля
-`notify` атрибутов `requests`/`dotenv_values` нет: значения .env подменяются через
-`notify._file_values`, а сеть — через `requests.post` реального модуля.
+Загрузку `.env` выполняет `shared.env.load_env` (мутирует `os.environ`); в тестах она
+подменяется на no-op, а конфиг задаётся прямо через `monkeypatch.setenv`. `requests`
+импортируется лениво, поэтому сеть мокается через `requests.post` реального модуля.
+Приоритет «процесс > .env» проверяется в `tests/shared/test_env.py`.
 """
 from typing import Any
 
 import pytest
 
 from fs_tools.checker import notify
+from fs_tools.shared import env
 
 
 class _Recorder:
@@ -27,7 +29,7 @@ class _Recorder:
 @pytest.fixture()
 def isolated(monkeypatch: pytest.MonkeyPatch) -> None:
     """Изоляция от реального .env и переменных окружения процесса."""
-    monkeypatch.setattr(notify, "_file_values", lambda: {})
+    monkeypatch.setattr(env, "load_env", lambda: None)
     monkeypatch.delenv(notify._URL_KEY, raising=False)
     monkeypatch.delenv(notify._TOK_KEY, raising=False)
 
@@ -40,10 +42,8 @@ def test_no_url_skips(monkeypatch: pytest.MonkeyPatch, isolated: None) -> None:
 
 
 def test_posts_text_and_bearer(monkeypatch: pytest.MonkeyPatch, isolated: None) -> None:
-    monkeypatch.setattr(notify, "_file_values", lambda: {
-        notify._URL_KEY: "https://example.com/hook",
-        notify._TOK_KEY: "secret",
-    })
+    monkeypatch.setenv(notify._URL_KEY, "https://example.com/hook")
+    monkeypatch.setenv(notify._TOK_KEY, "secret")
     rec = _Recorder()
     monkeypatch.setattr("requests.post", rec)
     assert notify.send_webhook("есть ошибки") is True
@@ -54,18 +54,8 @@ def test_posts_text_and_bearer(monkeypatch: pytest.MonkeyPatch, isolated: None) 
     assert call["headers"]["Authorization"] == "Bearer secret"
 
 
-def test_process_env_overrides_env_file(monkeypatch: pytest.MonkeyPatch, isolated: None) -> None:
-    # Намеренная смена приоритета: переменные окружения процесса важнее .env.
-    monkeypatch.setenv(notify._URL_KEY, "https://from-env/hook")
-    monkeypatch.setattr(notify, "_file_values", lambda: {notify._URL_KEY: "https://from-file/hook"})
-    rec = _Recorder()
-    monkeypatch.setattr("requests.post", rec)
-    notify.send_webhook("x")
-    assert rec.calls[0]["url"] == "https://from-env/hook"
-
-
 def test_no_token_omits_header(monkeypatch: pytest.MonkeyPatch, isolated: None) -> None:
-    monkeypatch.setattr(notify, "_file_values", lambda: {notify._URL_KEY: "https://example.com/hook"})
+    monkeypatch.setenv(notify._URL_KEY, "https://example.com/hook")
     rec = _Recorder()
     monkeypatch.setattr("requests.post", rec)
     notify.send_webhook("x")
@@ -74,10 +64,8 @@ def test_no_token_omits_header(monkeypatch: pytest.MonkeyPatch, isolated: None) 
 
 def test_non_https_url_skips(monkeypatch: pytest.MonkeyPatch, isolated: None) -> None:
     # URL обязан быть https — токен не уходит по нешифрованному каналу.
-    monkeypatch.setattr(notify, "_file_values", lambda: {
-        notify._URL_KEY: "http://example.com/hook",
-        notify._TOK_KEY: "secret",
-    })
+    monkeypatch.setenv(notify._URL_KEY, "http://example.com/hook")
+    monkeypatch.setenv(notify._TOK_KEY, "secret")
     rec = _Recorder()
     monkeypatch.setattr("requests.post", rec)
     assert notify.send_webhook("x") is False
@@ -85,7 +73,7 @@ def test_non_https_url_skips(monkeypatch: pytest.MonkeyPatch, isolated: None) ->
 
 
 def test_swallows_exceptions(monkeypatch: pytest.MonkeyPatch, isolated: None) -> None:
-    monkeypatch.setattr(notify, "_file_values", lambda: {notify._URL_KEY: "https://example.com/hook"})
+    monkeypatch.setenv(notify._URL_KEY, "https://example.com/hook")
     rec = _Recorder()
     rec.raise_exc = RuntimeError("network down")
     monkeypatch.setattr("requests.post", rec)

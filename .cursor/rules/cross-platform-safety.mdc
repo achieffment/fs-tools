@@ -28,8 +28,9 @@ alwaysApply: true
   через `WSLENV`), `osascript` на macOS, ввод в терминале на обычном Linux; при
   сбое любого диалога — откат в терминал. Сохраняй эти fallback'и.
 - **Ресурс `pick_folder.ps1`** ищется через `importlib.resources.files("fs_tools.shared")`,
-  НЕ вычислением пути от `__file__` (иначе не найдётся в установленном wheel). То же
-  для `.env`: путь через `FS_TOOLS_HOME`/CWD, не от `__file__`.
+ НЕ вычислением пути от `__file__` (иначе не найдётся в установленном wheel). То же
+ для `.env` (`shared/env.py`): путь через `FS_TOOLS_HOME`/CWD, не от `__file__`;
+ загрузка — `load_dotenv(override=False)` (переменные процесса важнее значений файла).
 
 ## Осознанные допущения (не баги)
 
