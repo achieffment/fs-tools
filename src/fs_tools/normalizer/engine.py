@@ -10,7 +10,7 @@ from .ignore import FsIgnore
 from .name import NameNormalizer
 
 
-class FilesystemNormalizer:
+class FsNormalizer:
     """Сбор путей (с обрезкой скрытых) и переименование deepest-first."""
 
     def __init__(

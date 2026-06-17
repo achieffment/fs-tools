@@ -29,7 +29,7 @@ def test_main_rename_error_returns_two(tmp_path, monkeypatch):
             raise OSError("симулированный сбой переименования")
         return real_rename(src, dst, *args, **kwargs)
 
-    monkeypatch.setattr("fs_tools.normalizer.filesystem.os.rename", failing_rename)
+    monkeypatch.setattr("fs_tools.normalizer.engine.os.rename", failing_rename)
     monkeypatch.setattr("fs_tools.normalizer.runner.pick_directory", lambda *a, **k: str(tmp_path))
     assert main([]) == 2
     assert (tmp_path / "Отчёт.txt").read_text() == "ДАННЫЕ"  # данные уцелели

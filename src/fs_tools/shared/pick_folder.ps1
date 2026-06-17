@@ -2,7 +2,7 @@
 # В отличие от OpenFileDialog/BrowseForFolder, SetFolder + уникальный SetClientGuid
 # жёстко открывают диалог на нужной папке (игнорируя запомненную последнюю папку, MRU)
 # и принимают UNC-путь WSL (\\wsl.localhost\...), сохраняя свободную навигацию.
-# Входные данные через env: FSTOOLS_INITIAL (стартовая папка), FSTOOLS_TITLE (заголовок).
+# Входные данные через env: FSTOOLS_FOLDER (стартовая папка), FSTOOLS_HEADER (заголовок).
 # Вывод: выбранный путь в stdout, либо ничего при отмене.
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 Add-Type -AssemblyName System.Windows.Forms
@@ -104,7 +104,7 @@ $owner.Opacity = 0
 $owner.Show()
 $owner.Activate()
 try {
-  $path = [FsTools.Picker]::Pick($env:FSTOOLS_INITIAL, $env:FSTOOLS_TITLE, $owner.Handle)
+  $path = [FsTools.Picker]::Pick($env:FSTOOLS_FOLDER, $env:FSTOOLS_HEADER, $owner.Handle)
 } finally {
   $owner.Close()
   $owner.Dispose()

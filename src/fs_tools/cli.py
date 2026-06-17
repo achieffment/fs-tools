@@ -21,10 +21,10 @@ def main(argv: list[str] | None = None) -> int:
     )
     sub = parser.add_subparsers(dest="mode", required=True, metavar="<normalize|check>")
 
-    p_norm = sub.add_parser("normalize", help="нормализовать имена файлов и папок")
-    add_path_argument(p_norm)
-    p_check = sub.add_parser("check", help="проверить наличие путей по .fs-check")
-    add_path_argument(p_check)
+    p_fsnm = sub.add_parser("normalize", help="нормализовать имена файлов и папок")
+    add_path_argument(p_fsnm)
+    p_fsch = sub.add_parser("check", help="проверить наличие путей по .fs-check")
+    add_path_argument(p_fsch)
 
     args = parser.parse_args(argv)
 

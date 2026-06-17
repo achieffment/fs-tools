@@ -1,324 +1,21 @@
-"""Кросс-секционные тесты: пайплайн, идемпотентность, безопасность, ФС и фильтр.
+"""Тесты фильтра .fs-ignore (ignore.py).
 
-Тесты отдельных правил — в rules/test_<rule>.py. Фикстура `nn` — в conftest.py.
+Матчинг в стиле .gitignore (движок pathspec) относительно корня нормализации,
+чтение `load_fs_ignore` и интеграция фильтра с FsNormalizer (e2e на временной папке).
 """
-import os
-from datetime import datetime
-from pathlib import Path, PurePosixPath
+from pathlib import PurePosixPath
 
 import pathspec
 import pytest
 
 from fs_tools.normalizer import (
-    FS_LOG,
-    FilesystemNormalizer,
     FsIgnore,
+    FsNormalizer,
     build_normalizer,
     load_fs_ignore,
-    write_fs_log,
 )
-from fs_tools.normalizer.safety import enforce_safe_component
 from fs_tools.shared.pathspec_compat import _FACTORY
 
-
-# --------------------------------------------------------------------------- #
-# Конвейер целиком (файлы)
-# --------------------------------------------------------------------------- #
-@pytest.mark.parametrize(
-    "name, expected",
-    [
-        ("Отчёт.TXT", "otchiot.TXT"),
-        ("1_file.TXT", "01_file.TXT"),
-        ("v2 readme.MD", "v2-readme.MD"),
-        ("20.05.2020_dump", "2020-05-20_dump"),
-        ("dump_20.05.2020", "dump_2020-05-20"),
-        ("05.2020_report", "2020-05-00_report"),
-        # '_' не разделитель MM_YYYY: цифра-индекс перед датой не «съедает» год,
-        # готовая дата сохраняется, результат идемпотентен:
-        ("7_2020.05.20", "07_2020-05-20"),
-        ("3 2021.03.10", "03_2021-03-10"),
-        ("2020.05", "2020-05-00"),
-        ("2020", "2020-00-00"),
-        ("-file_01-.png", "file_01.png"),
-        ("файл 1.JPG", "fail-01.JPG"),
-        # Одиночная цифра рядом с кромочным «мусором»: ведущий ноль за один
-        # проход (LeadingZeroRule идёт после TrimEdgeRule). Регресс идемпотентности.
-        ("том 5!.txt", "tom-05.txt"),
-        ("глава 9-.md", "glava-09.md"),
-        ("2020-05-05-file.txt", "2020-05-05_file.txt"),
-        ("dump-2020-05-05.txt", "dump_2020-05-05.txt"),
-        # Дубли файлового менеджера ('(1)' и '[1]') -> скобки убираются, ведущий ноль:
-        ("Файл (1).docx", "fail-01.docx"),
-        ("Файл (12).docx", "fail-12.docx"),
-        ("Файл [1].docx", "fail-01.docx"),
-        # Текст в скобках -> скобки сохраняются (концевая скобка не срезается):
-        ("инн (Нового договора нет).txt", "inn-(novogo-dogovora-net).txt"),
-        ("инн [Нового договора нет].txt", "inn-[novogo-dogovora-net].txt"),
-        # Пробел-дефис-пробел схлопывается в одно тире:
-        ("Резюме - подготовка.txt", "reziume-podgotovka.txt"),
-        # Намеренное двойное тире (без пробелов) сохраняется:
-        ("file--improved.txt", "file--improved.txt"),
-        # Незакрытые/несовпадающие скобки вырезаются (как невалидный мусор):
-        ("Файл (1.docx", "fail-01.docx"),
-        ("Файл (1].docx", "fail-01.docx"),
-        ("инн (Нового договора нет.txt", "inn-novogo-dogovora-net.txt"),
-        # '+'/'#' — символы имени: хвостовые не срезаются (иначе 'C#'/'C++' -> 'C'):
-        ("C#.txt", "c#.txt"),
-        ("C++.txt", "c++.txt"),
-        ("notepad++", "notepad++"),
-        # Мягкий знак удаляется (не превращается в апостроф):
-        ("Письмо.txt", "pismo.txt"),
-        # Кавычки-«ёлочки» (unidecode -> '<<'/'>>') запрещены на Windows: вырезаются:
-        (
-            "Заявление директору ООО «Печоралифтсервис».docx",
-            "zaiavlenie-direktoru-ooo-pechoraliftservis.docx",
-        ),
-    ],
-)
-def test_file_pipeline(nn, name, expected):
-    assert nn.normalize(name, is_dir=False) == expected
-
-
-# --------------------------------------------------------------------------- #
-# Конвейер целиком (папки)
-# --------------------------------------------------------------------------- #
-@pytest.mark.parametrize(
-    "name, expected",
-    [
-        ("отчёт за март", "Otchiot-za-mart"),
-        ("Отчёт 2020", "Otchiot_2020-00-00"),
-        ("my docs", "My-docs"),
-        # Ведущие пробелы/дефисы не должны мешать капитализации с первого прогона:
-        ("  отчёт", "Otchiot"),
-        ("   фывфыв   фывфыв ---", "Fyvfyv-fyvfyv"),
-        ("--- папка", "Papka"),
-        ("-файл с пробелом", "Fail-s-probelom"),
-        # '+'/'#' — символы имени: папки 'C#'/'C++' не схлопываются в 'C':
-        ("C#", "C#"),
-        ("C++", "C++"),
-        ("F#", "F#"),
-        # Ведущий '_' сохраняется и у папок; первая буква после него — заглавная:
-        ("_private", "_Private"),
-        ("__cache__", "__Cache"),
-    ],
-)
-def test_dir_pipeline(nn, name, expected):
-    assert nn.normalize(name, is_dir=True) == expected
-
-
-# --------------------------------------------------------------------------- #
-# Идемпотентность
-# --------------------------------------------------------------------------- #
-@pytest.mark.parametrize(
-    "name, is_dir",
-    [
-        ("20.05.2020_dump", False),
-        ("05.2020", False),
-        ("2020", False),
-        ("Отчёт 2020", True),
-        ("v2 readme.MD", False),
-        ("2020-05-05-file.txt", False),
-        ("dump-2020-05-05.txt", False),
-        # Скобки (круглые и квадратные) и схлопывание дефисов:
-        ("Файл (1)", False),
-        ("инн (Нового договора нет)", False),
-        ("Файл [1]", False),
-        ("инн [Нового договора нет]", False),
-        ("Резюме - подготовка", False),
-        ("file--improved", False),
-        # '+'/'#' сохраняются по краям и стабильны на повторном прогоне:
-        ("C#", True),
-        ("C++", True),
-        ("notepad++", False),
-        # Незакрытые скобки вырезаются за один прогон, дальше стабильно:
-        ("Файл (1", False),
-        ("инн (Нового договора нет", False),
-        # Одиночная цифра рядом с кромочным «мусором»: ведущий ноль ставится за
-        # один проход, иначе '5' -> '05' проявлялось бы только на втором прогоне:
-        ("том 5!", False),
-        ("report 5!", False),
-        ("5.", False),
-        ("глава 9-", True),
-        # Папки с ведущим мусором — капитализация за один прогон:
-        ("  отчёт", True),
-        ("   фывфыв   фывфыв ---", True),
-        ("--- папка", True),
-        # Папки с ведущим '_' — стабильны после первого прогона:
-        ("_private", True),
-        ("__cache__", True),
-        # Одиночная цифра-индекс ПЕРЕД датой: ведущий ноль даёт '0X_YYYY-...', но
-        # '_' не считается разделителем месяц-год, поэтому готовая дата не ломается
-        # на втором прогоне (раньше '03_2021-03-10' -> '2021-03-00_03-10').
-        ("3 2021.03.10", False),
-        ("5 20.05.2020", False),
-        ("7_2020.05.20", False),
-        ("@@ café 3 05.2020 ##", False),
-        ("___naïve 7 2020___", False),
-        ("--- Привет 5 20.05.2020 !!!", True),
-        ("  проект №7 2020", True),
-    ],
-)
-def test_idempotent(nn, name, is_dir):
-    once = nn.normalize(name, is_dir)
-    twice = nn.normalize(once, is_dir)
-    assert once == twice
-
-
-def test_empty_stem_guard(nn):
-    # Имя из символов, которые после транслитерации/чистки исчезают -> без изменений.
-    assert nn.normalize("@@@.png", is_dir=False) == "@@@.png"
-
-# --------------------------------------------------------------------------- #
-# Безопасность: общий барьер enforce_safe_component (один компонент пути).
-# Разделители/управляющие -> '-', запрещённые на Windows символы вырезаются.
-# --------------------------------------------------------------------------- #
-@pytest.mark.parametrize(
-    "raw, expected",
-    [
-        ("a/b", "a-b"),                          # '/' -> '-' (один компонент пути)
-        ("a\\b", "a-b"),                         # '\' -> '-'
-        ("a//b\\\\c", "a-b-c"),                  # цепочки разделителей схлопываются в один '-'
-        ("a\x00b\x1fc", "a-b-c"),                # управляющие символы -> '-'
-        ('a<b>c:d"e|f?g*h', "abcdefgh"),         # запрещённые на Windows вырезаются
-        ("<>:|?*", ""),                          # имя из одного «мусора» -> пусто
-        ("clean_name-01", "clean_name-01"),      # безопасное имя не меняется (идемпотентность)
-    ],
-)
-def test_enforce_safe_component(raw, expected):
-    assert enforce_safe_component(raw) == expected
-
-
-@pytest.mark.parametrize("raw", ["a/b", "a\\b", 'x<y>:"|?*', "a\x00b", "<>:|?*"])
-def test_enforce_safe_component_idempotent(raw):
-    once = enforce_safe_component(raw)
-    assert enforce_safe_component(once) == once
-
-
-# --------------------------------------------------------------------------- #
-# FilesystemNormalizer (e2e на временной папке)
-# --------------------------------------------------------------------------- #
-def _make_tree(root):
-    (root / "Отчёт 2020").mkdir()
-    (root / "Отчёт 2020" / "20.05.2020_dump").write_text("x")
-    (root / "1_file.TXT").write_text("x")
-    (root / "v2 readme.MD").write_text("x")
-    hidden = root / ".git"
-    hidden.mkdir()
-    (hidden / "CONFIG").write_text("x")
-    (root / ".env").write_text("x")
-
-
-def test_fs_end_to_end(tmp_path):
-    _make_tree(tmp_path)
-    fs = FilesystemNormalizer(build_normalizer())
-    fs.apply(tmp_path)
-
-    assert (tmp_path / "Otchiot_2020-00-00").is_dir()
-    assert (tmp_path / "Otchiot_2020-00-00" / "2020-05-20_dump").exists()
-    assert (tmp_path / "01_file.TXT").exists()
-    assert (tmp_path / "v2-readme.MD").exists()
-    # Скрытые не тронуты:
-    assert (tmp_path / ".git").is_dir()
-    assert (tmp_path / ".git" / "CONFIG").exists()
-    assert (tmp_path / ".env").exists()
-
-
-def test_fs_idempotent_second_run_empty(tmp_path):
-    _make_tree(tmp_path)
-    fs = FilesystemNormalizer(build_normalizer())
-    fs.apply(tmp_path)
-    renamed, skipped = fs.apply(tmp_path)
-    assert renamed == 0
-
-
-def test_fs_conflict_skipped(tmp_path):
-    (tmp_path / "a b.md").write_text("a")  # -> "a-b.md"
-    (tmp_path / "a-b.md").write_text("b")  # уже "a-b.md"
-    fs = FilesystemNormalizer(build_normalizer())
-    renamed, skipped = fs.apply(tmp_path)
-    # Переименование в уже занятое имя пропускается, оба файла сохраняются.
-    assert renamed == 0
-    assert skipped >= 1
-    # Конфликт — безопасный пропуск: учитывается в conflicts, но НЕ в errors.
-    assert fs.conflicts >= 1
-    assert fs.errors == []
-    assert (tmp_path / "a b.md").exists()
-    assert (tmp_path / "a-b.md").exists()
-
-
-def test_fs_oserror_recorded_in_errors(tmp_path, monkeypatch):
-    # Реальный сбой os.rename (OSError, напр. зарезервированное имя/длина пути на
-    # Windows) безопасно пропускается: данные сохраняются, но фиксируется в errors.
-    (tmp_path / "Отчёт.txt").write_text("ДАННЫЕ")  # -> "otchiot.txt"
-
-    real_rename = os.rename
-
-    def failing_rename(src, dst, *args, **kwargs):
-        if Path(dst).name == "otchiot.txt":
-            raise OSError("симулированный сбой переименования")
-        return real_rename(src, dst, *args, **kwargs)
-
-    monkeypatch.setattr("fs_tools.normalizer.filesystem.os.rename", failing_rename)
-    fs = FilesystemNormalizer(build_normalizer())
-    renamed, skipped = fs.apply(tmp_path)
-    assert renamed == 0
-    assert skipped >= 1
-    assert len(fs.errors) == 1
-    src_rel, dest_rel = fs.errors[0]
-    assert (src_rel.as_posix(), dest_rel.as_posix()) == ("Отчёт.txt", "otchiot.txt")
-    assert fs.conflicts == 0
-    # Исходный файл уцелел вместе с данными.
-    assert (tmp_path / "Отчёт.txt").read_text() == "ДАННЫЕ"
-
-
-def test_fs_no_relocation_via_separator(tmp_path):
-    # Регресс на критический баг: имя с дробью раньше давало '10-1/2.dat' и os.rename
-    # МОЛЧА перемещал файл в соседний каталог '10-1'. Теперь имя остаётся одним
-    # компонентом пути, файл нормализуется на месте, ничего не теряется.
-    secret = tmp_path / "10½.dat"
-    secret.write_text("СЕКРЕТ")
-    sibling = tmp_path / "10-1"
-    sibling.mkdir()
-    (sibling / "keep.txt").write_text("сосед")
-    fs = FilesystemNormalizer(build_normalizer())
-    fs.apply(tmp_path)
-    # Данные остались прямо в корне (не уехали внутрь соседнего каталога):
-    survivors = [p for p in tmp_path.iterdir() if p.is_file() and p.read_text() == "СЕКРЕТ"]
-    assert len(survivors) == 1
-    assert "/" not in survivors[0].name and "\\" not in survivors[0].name
-    assert (tmp_path / "10½.dat").exists() is False  # переименован
-
-
-def test_fs_guillemets_renamed_no_data_loss(tmp_path):
-    # Регресс на WinError 123: имя с кавычками-«ёлочками» давало '<<'/'>>' через
-    # unidecode, и одиночный '<' в середине ломал переименование на Windows.
-    # Теперь запрещённые символы вырезаются, файл нормализуется на месте.
-    doc = tmp_path / "Заявление ООО «Печоралифтсервис».docx"
-    doc.write_text("ДАННЫЕ")
-    fs = FilesystemNormalizer(build_normalizer())
-    fs.apply(tmp_path)
-    survivors = [p for p in tmp_path.iterdir() if p.is_file() and p.read_text() == "ДАННЫЕ"]
-    assert len(survivors) == 1
-    name = survivors[0].name
-    assert not any(ch in name for ch in '<>:"|?*')
-    assert name == "zaiavlenie-ooo-pechoraliftservis.docx"
-    assert doc.exists() is False  # переименован
-
-
-def test_fs_case_collision_no_data_loss(tmp_path):
-    # Регистрозависимая ФС: "File.md" нормализуется в "file.md", где уже есть
-    # другой файл. Это конфликт — переименование должно пропускаться, а не
-    # перезатирать существующий файл.
-    (tmp_path / "File.md").write_text("upper")
-    (tmp_path / "file.md").write_text("lower")
-    if len(list(tmp_path.iterdir())) < 2:
-        pytest.skip("регистронезависимая ФС: файлы-двойники не сосуществуют")
-    fs = FilesystemNormalizer(build_normalizer())
-    renamed, skipped = fs.apply(tmp_path)
-    assert renamed == 0
-    assert skipped >= 1
-    assert (tmp_path / "File.md").read_text() == "upper"
-    assert (tmp_path / "file.md").read_text() == "lower"
 
 # --------------------------------------------------------------------------- #
 # FsIgnore — матчинг в стиле .gitignore (движок pathspec), относительно корня
@@ -448,6 +145,7 @@ _ACTIVITIES_LINES = (
 def test_fsignore_activities_projects_data(rel, ignored):
     assert _ign(*_ACTIVITIES_LINES).matches(PurePosixPath(rel), True) is ignored
 
+
 # --------------------------------------------------------------------------- #
 # load_fs_ignore — чтение .fs-ignore из выбранного каталога (корня нормализации)
 # --------------------------------------------------------------------------- #
@@ -497,7 +195,7 @@ def test_load_fs_ignore_utf8_bom(tmp_path):
 
 
 # --------------------------------------------------------------------------- #
-# FilesystemNormalizer + .fs-ignore (e2e на временной папке)
+# FsNormalizer + .fs-ignore (e2e на временной папке)
 # --------------------------------------------------------------------------- #
 def test_fs_ignored_dir_not_renamed_or_descended(tmp_path):
     # Исключённый каталог не переименовывается, внутрь не заходим (содержимое
@@ -506,7 +204,7 @@ def test_fs_ignored_dir_not_renamed_or_descended(tmp_path):
     archive.mkdir()
     (archive / "Отчёт 2020").write_text("x")  # имя осталось бы ненормализованным
     (tmp_path / "Отчёт 2020").write_text("y")
-    fs = FilesystemNormalizer(build_normalizer(), _ign("Archive"))
+    fs = FsNormalizer(build_normalizer(), _ign("Archive"))
     fs.apply(tmp_path)
     # Исключённый каталог и его содержимое не тронуты:
     assert (tmp_path / "Archive").is_dir()
@@ -521,7 +219,7 @@ def test_fs_ignored_not_counted(tmp_path):
     archive.mkdir()
     (archive / "Файл (1).txt").write_text("x")  # был бы переименован
     (tmp_path / "Файл (1).txt").write_text("y")  # сосед -> переименование
-    fs = FilesystemNormalizer(build_normalizer(), _ign("Archive"))
+    fs = FsNormalizer(build_normalizer(), _ign("Archive"))
     renamed, skipped = fs.apply(tmp_path)
     assert renamed == 1  # только сосед
     assert skipped == 0
@@ -532,7 +230,7 @@ def test_fs_ignore_file_by_name(tmp_path):
     # Паттерн может совпасть с именем самого файла.
     (tmp_path / "Keep").write_text("x")  # имя нормализуемо, но исключено
     (tmp_path / "Drop me").write_text("y")
-    fs = FilesystemNormalizer(build_normalizer(), _ign("Keep"))
+    fs = FsNormalizer(build_normalizer(), _ign("Keep"))
     renamed, skipped = fs.apply(tmp_path)
     assert (tmp_path / "Keep").exists()  # не тронут
     assert (tmp_path / "drop-me").exists()  # сосед нормализован
@@ -544,7 +242,7 @@ def test_fs_without_ignorer_behaves_as_before(tmp_path):
     # ignorer=None (по умолчанию) -> прежнее поведение.
     (tmp_path / "Archive").mkdir()
     (tmp_path / "Archive" / "Отчёт.txt").write_text("x")
-    fs = FilesystemNormalizer(build_normalizer())
+    fs = FsNormalizer(build_normalizer())
     fs.apply(tmp_path)
     assert (tmp_path / "Archive" / "otchiot.txt").exists()
 
@@ -557,7 +255,7 @@ def test_fs_ignore_basename_anywhere(tmp_path):
     (tmp_path / "Docs" / "notes.txt").write_text("1")
     (tmp_path / "Deep" / "Inner" / "notes.txt").write_text("2")
     (tmp_path / "Docs" / "Заметки.txt").write_text("3")
-    fs = FilesystemNormalizer(build_normalizer(), _ign("notes.txt"))
+    fs = FsNormalizer(build_normalizer(), _ign("notes.txt"))
     renamed, skipped = fs.apply(tmp_path)
     # notes.txt не тронуты и не посчитаны:
     assert (tmp_path / "Docs" / "notes.txt").exists()
@@ -575,7 +273,7 @@ def test_fs_ignore_anchored_path(tmp_path):
     (tmp_path / "Other").mkdir()
     (tmp_path / "Sub" / "notes.txt").write_text("1")
     (tmp_path / "Other" / "notes.txt").write_text("2")
-    fs = FilesystemNormalizer(build_normalizer(), _ign("Sub/notes.txt"))
+    fs = FsNormalizer(build_normalizer(), _ign("Sub/notes.txt"))
     fs.apply(tmp_path)
     assert (tmp_path / "Sub" / "notes.txt").exists()    # исключён
     # 'Other/notes.txt' не исключён; имя уже нормализовано -> остаётся
@@ -591,7 +289,7 @@ def test_fs_ignore_case_insensitive(tmp_path):
     lower.mkdir()
     (upper / "Файл.txt").write_text("x")
     (lower / "Файл.txt").write_text("y")
-    fs = FilesystemNormalizer(build_normalizer(), _ign("Archive"))
+    fs = FsNormalizer(build_normalizer(), _ign("Archive"))
     fs.apply(tmp_path)
     assert (upper / "Файл.txt").exists()              # исключён
     assert (lower / "Файл.txt").exists()              # тоже исключён (регистр не важен)
@@ -609,14 +307,14 @@ def test_fs_ignore_idempotent_across_runs_with_capitalized_parent(tmp_path):
 
     ign = load_fs_ignore(tmp_path)
     assert ign is not None
-    FilesystemNormalizer(build_normalizer(), ign).apply(tmp_path)
+    FsNormalizer(build_normalizer(), ign).apply(tmp_path)
     # После первого прогона родители капитализированы, файл исключён и не тронут:
     assert (tmp_path / "Box" / "Inner" / "Секрет.bak").exists()
 
     # Второй прогон поверх результата (фильтр перечитывается из того же .fs-ignore):
     ign2 = load_fs_ignore(tmp_path)
     assert ign2 is not None
-    renamed, _ = FilesystemNormalizer(build_normalizer(), ign2).apply(tmp_path)
+    renamed, _ = FsNormalizer(build_normalizer(), ign2).apply(tmp_path)
     assert renamed == 0                              # ничего не меняется
     assert (tmp_path / "Box" / "Inner" / "Секрет.bak").exists()
     assert not (tmp_path / "Box" / "Inner" / "sekret.bak").exists()
@@ -628,7 +326,7 @@ def test_fs_negation_reincludes_file(tmp_path):
     (tmp_path / "Docs" / "Черновик.tmp").write_text("x")  # остаётся исключён
     (tmp_path / "Docs" / "Важное.keep").write_text("y")    # возвращён
     ign = _ign("Docs/*", "!Docs/*.keep")
-    fs = FilesystemNormalizer(build_normalizer(), ign)
+    fs = FsNormalizer(build_normalizer(), ign)
     fs.apply(tmp_path)
     assert (tmp_path / "Docs" / "Черновик.tmp").exists()   # исключён -> не тронут
     assert (tmp_path / "Docs" / "vazhnoe.keep").exists()   # включён -> нормализован
@@ -643,7 +341,7 @@ def test_fs_hidden_not_reincluded_by_negation(tmp_path):
     (hidden / "Отчёт 2020").write_text("y")          # внутрь скрытой папки не заходим
     ign = _ign("Archive", "!*.keep", "!.cfg/**")    # '!' -> _incl=True (probe)
     assert ign._incl is True
-    fs = FilesystemNormalizer(build_normalizer(), ign)
+    fs = FsNormalizer(build_normalizer(), ign)
     renamed, skipped = fs.apply(tmp_path)
     assert (tmp_path / ".keep").exists()             # скрытый файл не тронут
     assert (hidden / "Отчёт 2020").exists()          # содержимое скрытой папки не тронуто
@@ -658,7 +356,7 @@ def test_fs_negation_probe_descends_ignored_dir(tmp_path):
     (data / "Папка").mkdir(parents=True)
     ign = _ign("Archive", "!**/Data/**")
     assert ign._incl is True
-    fs = FilesystemNormalizer(build_normalizer(), ign)
+    fs = FsNormalizer(build_normalizer(), ign)
     fs.apply(tmp_path)
     assert (data / "Papka").is_dir()       # возвращённый потомок нормализован
     assert (tmp_path / "Archive").is_dir()  # промежуточный Archive не тронут
@@ -698,7 +396,7 @@ def test_fs_activities_projects_data_reincluded(tmp_path):
 
     ign = load_fs_ignore(tmp_path)
     assert ign is not None
-    renamed, skipped = FilesystemNormalizer(build_normalizer(), ign).apply(tmp_path)
+    renamed, skipped = FsNormalizer(build_normalizer(), ign).apply(tmp_path)
 
     # Содержимое Data нормализовано (дата -> ISO) в обоих сайтах:
     assert (data / "vygruzka_2021-00-00").exists()
@@ -729,7 +427,7 @@ def test_fs_ignore_bracket_class_active(tmp_path):
     b.mkdir()
     (a / "вложение").write_text("x")
     (b / "вложение").write_text("y")
-    fs = FilesystemNormalizer(build_normalizer(), _ign("отчёт[12]"))
+    fs = FsNormalizer(build_normalizer(), _ign("отчёт[12]"))
     fs.apply(tmp_path)
     assert (a / "вложение").exists()  # исключён классом -> не тронут
     survivors = [p for p in tmp_path.rglob("*") if p.is_file() and p.read_text() == "y"]
@@ -746,7 +444,7 @@ def test_fs_ignore_literal_bracket_escaped(tmp_path):
     b.mkdir()
     (a / "вложение").write_text("x")
     (b / "вложение").write_text("y")
-    fs = FilesystemNormalizer(build_normalizer(), _ign(r"Файл \[1\]"))
+    fs = FsNormalizer(build_normalizer(), _ign(r"Файл \[1\]"))
     fs.apply(tmp_path)
     assert (a / "вложение").exists()  # исключён литерально -> не тронут
     survivors = [p for p in tmp_path.rglob("*") if p.is_file() and p.read_text() == "y"]
@@ -765,7 +463,7 @@ def test_fs_ignore_read_from_normalized_dir(tmp_path):
     (tmp_path / "Other" / "Отчёт 2020").write_text("y")  # сосед нормализуется
     ign = load_fs_ignore(tmp_path)
     assert ign is not None
-    fs = FilesystemNormalizer(build_normalizer(), ign)
+    fs = FsNormalizer(build_normalizer(), ign)
     renamed, skipped = fs.apply(tmp_path)
     assert (tmp_path / "Sub" / "Отчёт 2020").exists()            # исключён
     assert (tmp_path / "Other" / "otchiot_2020-00-00").exists()  # нормализован
@@ -773,77 +471,3 @@ def test_fs_ignore_read_from_normalized_dir(tmp_path):
     # Посчитан только переименованный сосед: .fs-ignore не попал в счётчики.
     assert renamed == 1
     assert skipped == 0
-
-
-# --------------------------------------------------------------------------- #
-# Журнал .fs-log (write_fs_log + сбор renames в FilesystemNormalizer)
-# --------------------------------------------------------------------------- #
-def test_write_fs_log_creates_file(tmp_path):
-    when = datetime(2026, 6, 11, 13, 39, 0)
-    renames = [(Path("Отчёт за март"), Path("Otchiot-za-mart"))]
-    lpath = write_fs_log(tmp_path, renames, when=when)
-    assert lpath == tmp_path / FS_LOG
-    text = lpath.read_text(encoding="utf-8")
-    assert "2026-06-11 13:39:00" in text
-    assert "  Отчёт за март -> Otchiot-za-mart" in text
-
-
-def test_write_fs_log_empty_marks_no_changes(tmp_path):
-    when = datetime(2026, 6, 11, 14, 2, 11)
-    lpath = write_fs_log(tmp_path, [], when=when)
-    text = lpath.read_text(encoding="utf-8")
-    assert "2026-06-11 14:02:11" in text
-    assert "(изменений нет)" in text
-
-
-def test_write_fs_log_appends(tmp_path):
-    write_fs_log(tmp_path, [(Path("a"), Path("b"))], when=datetime(2026, 6, 11, 13, 0, 0))
-    lpath = write_fs_log(tmp_path, [], when=datetime(2026, 6, 11, 14, 0, 0))
-    text = lpath.read_text(encoding="utf-8")
-    # Оба блока сохранены (дополнение, а не перезапись):
-    assert "2026-06-11 13:00:00" in text
-    assert "  a -> b" in text
-    assert "2026-06-11 14:00:00" in text
-    assert "(изменений нет)" in text
-
-
-def test_fs_renames_collected(tmp_path):
-    _make_tree(tmp_path)
-    fs = FilesystemNormalizer(build_normalizer())
-    fs.apply(tmp_path)
-    pairs = {(src.as_posix(), dest.as_posix()) for src, dest in fs.renames}
-    assert ("1_file.TXT", "01_file.TXT") in pairs
-    assert ("v2 readme.MD", "v2-readme.MD") in pairs
-    # Дочерний объект записан раньше родителя (deepest-first), путь — относительный.
-    assert ("Отчёт 2020/20.05.2020_dump", "Отчёт 2020/2020-05-20_dump") in pairs
-    # Скрытые в журнал не попадают:
-    assert all(".git" not in src.as_posix() for src, _ in fs.renames)
-    assert all(not src.as_posix().startswith(".env") for src, _ in fs.renames)
-
-
-def test_fs_renames_reset_on_second_run(tmp_path):
-    _make_tree(tmp_path)
-    fs = FilesystemNormalizer(build_normalizer())
-    fs.apply(tmp_path)
-    assert fs.renames  # первый прогон что-то переименовал
-    fs.apply(tmp_path)
-    # На нормализованном дереве переименований нет — список сброшен.
-    assert fs.renames == []
-
-
-def test_fs_conflict_not_logged(tmp_path):
-    (tmp_path / "a b.md").write_text("a")  # -> "a-b.md"
-    (tmp_path / "a-b.md").write_text("b")  # уже занято
-    fs = FilesystemNormalizer(build_normalizer())
-    fs.apply(tmp_path)
-    # В журнал попадает только выполненное; конфликт (пропуск) не логируется.
-    assert fs.renames == []
-
-
-def test_fs_log_file_itself_not_normalized(tmp_path):
-    # .fs-log скрыт (на '.') — обходом пропускается, не переименовывается.
-    (tmp_path / FS_LOG).write_text("2026-06-11 13:00:00\n  (изменений нет)\n\n")
-    fs = FilesystemNormalizer(build_normalizer())
-    fs.apply(tmp_path)
-    assert (tmp_path / FS_LOG).is_file()
-    assert all(FS_LOG not in src.as_posix() for src, _ in fs.renames)

@@ -19,7 +19,7 @@ _DESCRIPTION = (
     "в терминале на обычном Linux). Каталог можно задать аргументом — для запуска по "
     "таймеру (cron/планировщик) без диалога."
 )
-_TITLE = "Выберите каталог для нормализации"
+_HEADER = "Выберите каталог для нормализации"
 _PROMPT = "Укажите каталог для нормализации."
 
 
@@ -29,14 +29,14 @@ def run(root: Path) -> int:
     (нет `Unidecode`): печатается понятное сообщение, а не трассировка.
     """
     try:
-        from .filesystem import FilesystemNormalizer
+        from .engine import FsNormalizer
         from .ignore import load_fs_ignore
         from .log import write_fs_log
         from .name import build_normalizer
     except ImportError as exc:
         sys.stderr.write(f"{exc}\n")
         return 1
-    fsnm = FilesystemNormalizer(build_normalizer(), load_fs_ignore(root))
+    fsnm = FsNormalizer(build_normalizer(), load_fs_ignore(root))
     print(f"Каталог: {root}")
     renamed, skipped = fsnm.apply(root)
     print(
@@ -60,7 +60,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = make_parser(_DESCRIPTION)
     args = parser.parse_args(argv)
     # Аргумент-каталог минует диалог (режим таймера); иначе — интерактивный выбор.
-    targ = args.path if args.path else pick_directory(_TITLE, _PROMPT)
+    targ = args.path if args.path else pick_directory(_HEADER, _PROMPT)
     root = resolve_root(targ)
     if root is None:
         return 1

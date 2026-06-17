@@ -18,7 +18,7 @@ _DESCRIPTION = (
     "macOS, либо ввод пути в терминале на обычном Linux). Каталог можно задать "
     "аргументом — для запуска по таймеру (cron/планировщик) без диалога."
 )
-_TITLE = "Выберите каталог для проверки"
+_HEADER = "Выберите каталог для проверки"
 _PROMPT = "Укажите каталог для проверки."
 
 
@@ -33,23 +33,23 @@ def run(root: Path) -> int:
     except FsRuleError as exc:
         sys.stderr.write(f"Ошибка: {exc}\n")
         return 1
-    result = FsChecker(fs_rule).check(root)
-    print(format_report(root, result))
-    if result.missing:
+    fsch = FsChecker(fs_rule).check(root)
+    print(format_report(root, fsch))
+    if fsch.missing:
         # Журнал — вторичный артефакт: проверка уже выполнена, поэтому сбой записи
         # не роняем трейсбеком, а лишь предупреждаем (на код возврата не влияет).
         try:
-            lpath = write_fs_log(root, result.missing)
+            lpath = write_fs_log(root, fsch.missing)
             print(f"Журнал: {lpath}")
         except OSError as exc:
             sys.stderr.write(f"Не удалось записать журнал .fs-log: {exc}\n")
         # Уведомление о невалидной структуре: текст лишь сигнализирует о проблеме,
         # детали — в .fs-log. Fire-and-forget, ошибки/таймаут не влияют на прогон.
         send_webhook(
-            f"fs-checker: в каталоге {root} отсутствуют пути ({len(result.missing)}). "
+            f"fs-checker: в каталоге {root} отсутствуют пути ({len(fsch.missing)}). "
             "Подробности — в .fs-log."
         )
-    return 2 if result.missing else 0
+    return 2 if fsch.missing else 0
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -57,7 +57,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = make_parser(_DESCRIPTION)
     args = parser.parse_args(argv)
     # Аргумент-каталог минует диалог (режим таймера); иначе — интерактивный выбор.
-    targ = args.path if args.path else pick_directory(_TITLE, _PROMPT)
+    targ = args.path if args.path else pick_directory(_HEADER, _PROMPT)
     root = resolve_root(targ)
     if root is None:
         return 1

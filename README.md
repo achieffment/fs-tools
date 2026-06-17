@@ -134,14 +134,14 @@ python -m fs_tools normalize    # эквивалент fs-tools normalize
 ```python
 from pathlib import Path
 
-from fs_tools.normalizer import build_normalizer, FilesystemNormalizer, load_fs_ignore, write_fs_log
+from fs_tools.normalizer import build_normalizer, FsNormalizer, load_fs_ignore, write_fs_log
 
 build_normalizer().normalize("Отчёт 2020", is_dir=True)   # 'Otchiot_2020-00-00'
 
 target = Path("/path/to/dir")
-fs = FilesystemNormalizer(build_normalizer(), load_fs_ignore(target))
-renamed, skipped = fs.apply(target)
-write_fs_log(target, fs.renames)                          # дописать .fs-log
+fsnm = FsNormalizer(build_normalizer(), load_fs_ignore(target))
+renamed, skipped = fsnm.apply(target)
+write_fs_log(target, fsnm.renames)                        # дописать .fs-log
 ```
 
 ---
@@ -227,8 +227,8 @@ from pathlib import Path
 from fs_tools.checker import FsChecker, format_report, load_fs_rule
 
 root = Path("/path/to/dir")
-result = FsChecker(load_fs_rule(root)).check(root)
-print(format_report(root, result))            # result.missing — отсортированный список
+fsch = FsChecker(load_fs_rule(root)).check(root)
+print(format_report(root, fsch))              # fsch.missing — отсортированный список
 ```
 
 ---

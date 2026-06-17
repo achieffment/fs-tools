@@ -1,6 +1,6 @@
 ---
 description: Инварианты и осознанные допущения фильтра путей .fs-ignore (gitignore/pathspec)
-globs: src/fs_tools/normalizer/ignore.py,src/fs_tools/normalizer/filesystem.py
+globs: src/fs_tools/normalizer/ignore.py,src/fs_tools/normalizer/engine.py
 alwaysApply: false
 ---
 
@@ -44,10 +44,10 @@ alwaysApply: false
 
 ## Относительность и обход
 
-- Матчинг ОТНОСИТЕЛЬНО корня `apply`: `FilesystemNormalizer` считает
+- Матчинг ОТНОСИТЕЛЬНО корня `apply`: `FsNormalizer` считает
   `path.relative_to(root)` и зовёт `FsIgnore.matches(rel, is_dir)`; каталогам
   добавляется завершающий `/`.
-- `probe` (в `filesystem.py`) включается при `FsIgnore._incl` (есть правило-`!`):
+- `probe` (в `engine.py`) включается при `FsIgnore._incl` (есть правило-`!`):
   исключённые каталоги обходятся (внутри возможны возвращённые потомки). Без `!`
   исключённый каталог обрезается.
 - Исключённые объекты не попадают в счётчики `renamed`/`skipped`.

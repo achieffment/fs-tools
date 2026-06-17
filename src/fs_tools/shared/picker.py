@@ -1,6 +1,6 @@
 """Выбор каталога: нативный диалог Windows/WSL, диалог macOS, ввод в терминале.
 
-Заголовок диалога и текст приглашения параметризуются (`pick_directory(title,
+Заголовок диалога и текст приглашения параметризуются (`pick_directory(header,
 prompt)`) — режимы передают свои строки, общий код выбора платформы один.
 """
 from __future__ import annotations
@@ -11,13 +11,13 @@ import subprocess
 import sys
 from importlib.resources import as_file, files
 
-_DEFAULT_TITLE = "Выберите каталог"
+_DEFAULT_HEADER = "Выберите каталог"
 _DEFAULT_PROMPT = "Укажите каталог."
 
 # Имена переменных окружения для передачи параметров в pick_folder.ps1 и osascript:
 # нейтральны к режиму, поэтому общий код выбора каталога не зависит от вызывающего.
-_ENV_INITIAL = "FSTOOLS_INITIAL"
-_ENV_TITLE = "FSTOOLS_TITLE"
+_ENV_FOLDER = "FSTOOLS_FOLDER"
+_ENV_HEADER = "FSTOOLS_HEADER"
 
 
 def _pick_folder_ps1() -> str | None:
@@ -82,12 +82,12 @@ def _run(cmd: list[str], env: dict[str, str] | None = None) -> "subprocess.Compl
 def _set_initial(env: dict[str, str], initial: str | None) -> None:
     """Кладёт стартовую папку в переменную окружения или убирает устаревшее значение."""
     if initial:
-        env[_ENV_INITIAL] = initial
+        env[_ENV_FOLDER] = initial
     else:
-        env.pop(_ENV_INITIAL, None)  # не подхватывать устаревшее значение
+        env.pop(_ENV_FOLDER, None)  # не подхватывать устаревшее значение
 
 
-def _win_folder_dialog(initial: str | None = None, title: str = _DEFAULT_TITLE) -> str | None:
+def _win_folder_dialog(initial: str | None = None, header: str = _DEFAULT_HEADER) -> str | None:
     """Нативный диалог выбора папки Windows (pick_folder.ps1, IFileOpenDialog).
 
     Стартовая папка и заголовок передаются через env, чтобы не экранировать их в
@@ -105,13 +105,13 @@ def _win_folder_dialog(initial: str | None = None, title: str = _DEFAULT_TITLE) 
     if script is None:
         return None
     env = os.environ.copy()
-    env[_ENV_TITLE] = title
+    env[_ENV_HEADER] = header
     _set_initial(env, initial)
     # В WSL пользовательские переменные окружения не попадают в Windows-процессы
     # (powershell.exe), пока они не перечислены в WSLENV. Без флага значение
     # передаётся как есть — UNC-путь уже в Windows-формате, переводить его не нужно.
-    adds = [_ENV_TITLE] + ([_ENV_INITIAL] if initial else [])
-    ours = {_ENV_TITLE, _ENV_INITIAL}
+    adds = [_ENV_HEADER] + ([_ENV_FOLDER] if initial else [])
+    ours = {_ENV_HEADER, _ENV_FOLDER}
     kept = [e for e in env.get("WSLENV", "").split(":") if e and e.split("/", 1)[0] not in ours]
     env["WSLENV"] = ":".join(kept + adds)
     dialog = _run([powershell, "-NoProfile", "-STA", "-Command", script], env=env)
@@ -120,7 +120,7 @@ def _win_folder_dialog(initial: str | None = None, title: str = _DEFAULT_TITLE) 
     return dialog.stdout.strip()  # "" при отмене
 
 
-def _mac_folder_dialog(initial: str | None = None, title: str = _DEFAULT_TITLE) -> str | None:
+def _mac_folder_dialog(initial: str | None = None, header: str = _DEFAULT_HEADER) -> str | None:
     """Нативный диалог выбора папки macOS через osascript.
 
     initial — POSIX-путь предвыбранной папки (передаётся через env, чтобы не
@@ -131,11 +131,11 @@ def _mac_folder_dialog(initial: str | None = None, title: str = _DEFAULT_TITLE) 
     if not osascript:
         return None
     script = (
-        f'set p to (system attribute "{_ENV_INITIAL}")\n'
+        f'set p to (system attribute "{_ENV_FOLDER}")\n'
         'if p is not "" then\n'
-        f'  POSIX path of (choose folder with prompt "{title}" default location (POSIX file p))\n'
+        f'  POSIX path of (choose folder with prompt "{header}" default location (POSIX file p))\n'
         "else\n"
-        f'  POSIX path of (choose folder with prompt "{title}")\n'
+        f'  POSIX path of (choose folder with prompt "{header}")\n'
         "end if"
     )
     env = os.environ.copy()
@@ -156,10 +156,10 @@ def _wslpath(flag: str, path: str) -> str | None:
     wslpath = shutil.which("wslpath")
     if not wslpath:
         return None
-    convert = _run([wslpath, flag, path])
-    if convert is None:
+    conv = _run([wslpath, flag, path])
+    if conv is None:
         return None
-    return convert.stdout.strip() or None
+    return conv.stdout.strip() or None
 
 
 def _to_win_path(unix_path: str) -> str | None:
@@ -172,7 +172,7 @@ def _to_wsl_path(win_path: str) -> str | None:
     return _wslpath("-u", win_path)
 
 
-def pick_directory(title: str = _DEFAULT_TITLE, prompt: str = _DEFAULT_PROMPT) -> str:
+def pick_directory(header: str = _DEFAULT_HEADER, prompt: str = _DEFAULT_PROMPT) -> str:
     """Windows/WSL — нативный проводник Windows (IFileOpenDialog); macOS — osascript;
     обычный Linux — ввод в терминале. Папка по умолчанию везде — рабочий каталог
     (os.getcwd()): для alias/консоли это каталог вызова, для ярлыка/двойного клика
@@ -182,12 +182,12 @@ def pick_directory(title: str = _DEFAULT_TITLE, prompt: str = _DEFAULT_PROMPT) -
     """
     cwd = os.getcwd()
     if _is_win():
-        path = _win_folder_dialog(cwd, title)
+        path = _win_folder_dialog(cwd, header)
         if path is None:
             return _prompt_directory("Проводник Windows недоступен.", default=cwd)
         return path  # путь или "" (отмена)
     if _is_mac():
-        path = _mac_folder_dialog(cwd, title)
+        path = _mac_folder_dialog(cwd, header)
         if path is None:
             return _prompt_directory("Стандартный диалог macOS недоступен.", default=cwd)
         return path  # путь или "" (отмена)
@@ -195,7 +195,7 @@ def pick_directory(title: str = _DEFAULT_TITLE, prompt: str = _DEFAULT_PROMPT) -
         # Каталог вызова (WSL-путь) -> Windows-путь (UNC) для InitialDirectory диалога.
         # Если конвертация не удалась (None), диалог откроется без стартовой папки.
         win_init = _to_win_path(cwd)
-        win_path = _win_folder_dialog(win_init, title)
+        win_path = _win_folder_dialog(win_init, header)
         if win_path is None:
             return _prompt_directory("Проводник Windows недоступен.", default=cwd)
         if not win_path:

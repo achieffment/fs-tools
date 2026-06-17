@@ -68,7 +68,7 @@ def test_pick_directory_windows_uses_cwd_as_initial(monkeypatch, tmp_path, _forc
     monkeypatch.chdir(tmp_path)
     captured: dict[str, str | None] = {}
 
-    def fake_dialog(initial=None, title=None):
+    def fake_dialog(initial=None, header=None):
         captured["initial"] = initial
         return "SELECTED"
 
@@ -100,7 +100,7 @@ def test_pick_directory_wsl_converts_cwd_and_roundtrips(monkeypatch, _force_wsl)
     monkeypatch.setattr(picker, "_to_win_path", fake_to_win)
     captured: dict[str, str | None] = {}
 
-    def fake_dialog(initial=None, title=None):
+    def fake_dialog(initial=None, header=None):
         captured["initial"] = initial
         return r"\\wsl.localhost\D\chosen"
 
@@ -118,7 +118,7 @@ def test_pick_directory_wsl_no_initial_when_conversion_fails(monkeypatch, _force
     monkeypatch.setattr(picker, "_to_win_path", lambda p: None)
     captured: dict[str, str | None] = {}
 
-    def fake_dialog(initial=None, title=None):
+    def fake_dialog(initial=None, header=None):
         captured["initial"] = initial
         return r"\\wsl.localhost\D\chosen"
 
@@ -134,7 +134,7 @@ def test_pick_directory_wsl_selects_windows_folder(monkeypatch, _force_wsl):
     # Из-под WSL выбрали Windows-папку: диалог вернул C:\..., путь должен пройти
     # через _to_wsl_path (wslpath -u: C:\Users\me -> /mnt/c/Users/me).
     monkeypatch.setattr(picker, "_to_win_path", lambda p: r"\\wsl.localhost\D\proj")
-    monkeypatch.setattr(picker, "_win_folder_dialog", lambda initial=None, title=None: r"C:\Users\me")
+    monkeypatch.setattr(picker, "_win_folder_dialog", lambda initial=None, header=None: r"C:\Users\me")
     seen: dict[str, str] = {}
 
     def fake_to_wsl(p: str) -> str:
@@ -151,7 +151,7 @@ def test_pick_directory_windows_selects_wsl_folder(monkeypatch, _force_windows):
     # Из-под нативной Windows выбрали папку WSL: UNC-путь возвращается как есть,
     # без конвертации (её делает только ветка WSL).
     unc = r"\\wsl.localhost\Ubuntu-24.04_dev\home\achieffment\proj"
-    monkeypatch.setattr(picker, "_win_folder_dialog", lambda initial=None, title=None: unc)
+    monkeypatch.setattr(picker, "_win_folder_dialog", lambda initial=None, header=None: unc)
     monkeypatch.setattr(
         picker, "_to_wsl_path", lambda p: pytest.fail("конвертация не нужна на Windows")
     )
@@ -171,7 +171,7 @@ def test_pick_directory_mac_uses_cwd_as_initial(monkeypatch, tmp_path, _force_ma
     monkeypatch.chdir(tmp_path)
     captured: dict[str, str | None] = {}
 
-    def fake_dialog(initial=None, title=None):
+    def fake_dialog(initial=None, header=None):
         captured["initial"] = initial
         return "/Users/me/sel"
 
@@ -183,13 +183,13 @@ def test_pick_directory_mac_uses_cwd_as_initial(monkeypatch, tmp_path, _force_ma
 def test_pick_directory_mac_falls_back_to_prompt(monkeypatch, tmp_path, _force_mac):
     # osascript недоступен (None) -> ввод пути в терминале с дефолтом = cwd.
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr(picker, "_mac_folder_dialog", lambda initial=None, title=None: None)
+    monkeypatch.setattr(picker, "_mac_folder_dialog", lambda initial=None, header=None: None)
     monkeypatch.setattr("builtins.input", lambda: "")
     assert picker.pick_directory() == os.getcwd()
 
 
 # --------------------------------------------------------------------------- #
-# _win_folder_dialog (не-GUI части: передача FSTOOLS_INITIAL через env, вывод)
+# _win_folder_dialog (не-GUI части: передача FSTOOLS_FOLDER через env, вывод)
 # --------------------------------------------------------------------------- #
 def test_win_folder_dialog_passes_initial_and_title_via_env(monkeypatch):
     monkeypatch.setattr(picker.shutil, "which", lambda name: "/fake/powershell.exe")
@@ -205,12 +205,12 @@ def test_win_folder_dialog_passes_initial_and_title_via_env(monkeypatch):
     assert result == "C:\\chosen"
     env = captured["env"]
     assert isinstance(env, dict)
-    assert env["FSTOOLS_INITIAL"] == r"C:\Users\me\proj"
-    assert env["FSTOOLS_TITLE"]  # заголовок передаётся в скрипт
+    assert env["FSTOOLS_FOLDER"] == r"C:\Users\me\proj"
+    assert env["FSTOOLS_HEADER"]  # заголовок передаётся в скрипт
     # WSLENV нужен, чтобы переменные дошли до powershell.exe из-под WSL.
     wslenv = env["WSLENV"].split(":")
-    assert "FSTOOLS_INITIAL" in wslenv
-    assert "FSTOOLS_TITLE" in wslenv
+    assert "FSTOOLS_FOLDER" in wslenv
+    assert "FSTOOLS_HEADER" in wslenv
     # В команду уходит содержимое pick_folder.ps1 с C#-блоком IFileOpenDialog.
     cmd = captured["cmd"]
     assert isinstance(cmd, list)
@@ -230,7 +230,7 @@ def test_win_folder_dialog_none_when_script_missing(monkeypatch):
 
 def test_win_folder_dialog_without_initial_clears_env(monkeypatch):
     monkeypatch.setattr(picker.shutil, "which", lambda name: "/fake/powershell.exe")
-    monkeypatch.setenv("FSTOOLS_INITIAL", "stale")
+    monkeypatch.setenv("FSTOOLS_FOLDER", "stale")
     captured: dict[str, dict[str, str]] = {}
 
     def fake_run(cmd, **kwargs):
@@ -240,11 +240,11 @@ def test_win_folder_dialog_without_initial_clears_env(monkeypatch):
     monkeypatch.setattr(picker.subprocess, "run", fake_run)
     result = picker._win_folder_dialog(None)
     assert result == ""  # отмена / пустой вывод
-    assert "FSTOOLS_INITIAL" not in captured["env"]
+    assert "FSTOOLS_FOLDER" not in captured["env"]
     # Без стартовой папки в WSLENV остаётся только заголовок.
     wslenv = captured["env"]["WSLENV"].split(":")
-    assert "FSTOOLS_INITIAL" not in wslenv
-    assert "FSTOOLS_TITLE" in wslenv
+    assert "FSTOOLS_FOLDER" not in wslenv
+    assert "FSTOOLS_HEADER" in wslenv
 
 
 def test_win_folder_dialog_none_when_no_powershell(monkeypatch):
@@ -279,8 +279,8 @@ def test_win_folder_dialog_preserves_existing_wslenv(monkeypatch):
     wslenv = captured["env"]["WSLENV"].split(":")
     assert "PATH/l" in wslenv
     assert "GOPATH/p" in wslenv
-    assert "FSTOOLS_INITIAL" in wslenv
-    assert "FSTOOLS_TITLE" in wslenv
+    assert "FSTOOLS_FOLDER" in wslenv
+    assert "FSTOOLS_HEADER" in wslenv
 
 
 # --------------------------------------------------------------------------- #
@@ -300,7 +300,7 @@ def test_mac_folder_dialog_returns_path_and_passes_initial(monkeypatch):
     assert result == "/Users/me/sel"
     env = captured["env"]
     assert isinstance(env, dict)
-    assert env["FSTOOLS_INITIAL"] == "/Users/me/proj"
+    assert env["FSTOOLS_FOLDER"] == "/Users/me/proj"
     cmd = captured["cmd"]
     assert isinstance(cmd, list)
     assert cmd[1] == "-e"  # скрипт передаётся инлайном через -e

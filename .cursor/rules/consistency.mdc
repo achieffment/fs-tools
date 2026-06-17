@@ -18,13 +18,17 @@ alwaysApply: true
   (`safety.py`) живёт в `normalizer/`, а не в `shared/`: checker ничего не
   переименовывает.
 - `normalizer/` — правила (`rules/`), конвейер (`name.py`, `build_normalizer`), обход
-  и переименование (`filesystem.py`), фильтр `.fs-ignore` (`ignore.py`), обёртка
-  журнала (`log.py`, `write_fs_log`), точка входа (`runner.py`). Новое правило
-  регистрируется в `build_normalizer()` и ре-экспортируется в `rules/__init__.py` и
-  `normalizer/__init__.py` (`__all__`).
+  и переименование (`engine.py`, класс `FsNormalizer`), фильтр `.fs-ignore`
+  (`ignore.py`), обёртка журнала (`log.py`, `write_fs_log`), точка входа
+  (`runner.py`). Новое правило регистрируется в `build_normalizer()` и
+  ре-экспортируется в `rules/__init__.py` и `normalizer/__init__.py` (`__all__`).
 - `checker/` — разбор `.fs-check` (`rule.py`), разворачивание и сбор нарушений
-  (`engine.py`), отчёт (`report.py`), веб-хук (`notify.py`), обёртка журнала
-  (`log.py`), точка входа (`runner.py`).
+  (`engine.py`, класс `FsChecker`), отчёт (`report.py`), веб-хук (`notify.py`),
+  обёртка журнала (`log.py`), точка входа (`runner.py`).
+
+Симметрия режимов намеренная: ядро каждого режима — `engine.py` с классом `Fs*`
+(`FsNormalizer` / `FsChecker`); локальная переменная инстанса в `runner.run` — `fsnm`
+/ `fsch`. Сохраняй это соответствие при правках.
 
 Точки входа и коды возврата:
 
