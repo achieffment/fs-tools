@@ -117,8 +117,11 @@ def split_target(target_root: str) -> tuple[bool, str | None, str]:
     """Разобрать target_root на (is_ssh, host, path).
 
     SSH-форма — `host:path` (двоеточие до первого `/`): host непустой. Иначе значение
-    считается локальным путём (host=None). Чисто rsync-конвенция переноса каталогов.
+    считается локальным путём (host=None). Отдельно учитываем Windows-диск `X:/...`:
+    это всегда локальный путь, а не SSH-цель.
     """
+    if len(target_root) >= 3 and target_root[1] == ":" and target_root[2] in ("/", "\\"):
+        return False, None, target_root
     sep = target_root.find(":")
     slh = target_root.find("/")
     if sep > 0 and (slh == -1 or sep < slh):

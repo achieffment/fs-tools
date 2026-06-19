@@ -67,15 +67,33 @@ def ssh_available() -> bool:
 
 def _source(source_path: Path) -> str:
     """Путь-источник для rsync: posix + завершающий `/` (содержимое каталога)."""
-    return source_path.as_posix().rstrip("/") + "/"
+    return _local_rsync_path(source_path.as_posix()).rstrip("/") + "/"
+
+
+def _local_rsync_path(path: str) -> str:
+    """Нормализовать локальный путь для rsync/cwRsync.
+
+    На Windows путь вида `E:/...` rsync трактует как `host:path` (удалённая цель),
+    поэтому для локальных аргументов переводим его в `/cygdrive/e/...`.
+    На обычных POSIX-путях значение возвращается как есть.
+    """
+    bare = path.replace("\\", "/")
+    if len(bare) >= 3 and bare[1] == ":" and bare[2] == "/" and bare[0].isalpha():
+        disk = bare[0].lower()
+        tail = bare[3:].lstrip("/")
+        if tail:
+            return f"/cygdrive/{disk}/{tail}"
+        return f"/cygdrive/{disk}"
+    return bare
 
 
 def _dest(target_path: str) -> str:
     """Путь-приёмник: завершающий `/`, чтобы синхронизировать содержимое в каталог."""
     is_ssh, host, path = split_target(target_path)
-    norm = path.rstrip("/") + "/"
     if is_ssh and host is not None:
+        norm = path.rstrip("/") + "/"
         return f"{host}:{norm}"
+    norm = _local_rsync_path(path).rstrip("/") + "/"
     return norm
 
 

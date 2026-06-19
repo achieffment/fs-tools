@@ -59,6 +59,30 @@ def test_build_command_ssh_opts_only_for_ssh(tmp_path: Path) -> None:
     assert "-e" not in cmd2                     # локальная цель — ssh не нужен
 
 
+def test_build_command_windows_source_with_ssh_dest() -> None:
+    profile = Profile(
+        name="p",
+        kind="sync",
+        source_path=Path("E:/Home/Access"),
+        target_path="user@host:/mnt/disk/Home/Access",
+    )
+    cmd = build_command(profile, dry_run=True, delete=False)
+    assert cmd[-2] == "/cygdrive/e/Home/Access/"
+    assert cmd[-1] == "user@host:/mnt/disk/Home/Access/"
+
+
+def test_build_command_windows_local_dest_is_not_remote() -> None:
+    profile = Profile(
+        name="p",
+        kind="sync",
+        source_path=Path("E:/Home/Access"),
+        target_path="D:/Backup/Access",
+    )
+    cmd = build_command(profile, dry_run=False, delete=False)
+    assert cmd[-2] == "/cygdrive/e/Home/Access/"
+    assert cmd[-1] == "/cygdrive/d/Backup/Access/"
+
+
 def test_parse_itemized_sent_and_deleted() -> None:
     out = (
         ">f+++++++++ a.txt\n"

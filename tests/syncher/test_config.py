@@ -174,6 +174,7 @@ def test_invalid_toml_rejected(tmp_path: Path) -> None:
     [
         ("user@host:/path", (True, "user@host", "/path")),
         ("alias:/data/x", (True, "alias", "/data/x")),
+        ("E:/Home/Access", (False, None, "E:/Home/Access")),
         ("/local/abs", (False, None, "/local/abs")),
         ("relative/dir", (False, None, "relative/dir")),
     ],
@@ -184,4 +185,5 @@ def test_split_target(value: str, expected: tuple[bool, str | None, str]) -> Non
 
 def test_is_ssh_target() -> None:
     assert is_ssh_target("user@host:/p") is True
+    assert is_ssh_target("E:/Home/Access") is False
     assert is_ssh_target("/local/p") is False
