@@ -28,15 +28,16 @@ class ConfigError(Exception):
 class Profile:
     """Один профиль синхронизации (sync) или выгрузки (backup).
 
-    `local_root` уже приведён к абсолютному пути относительно каталога с конфигом.
-    `remote_root` сохранён как в конфиге (SSH-форма `user@host:/path`, alias из
-    ~/.ssh/config либо локальный путь). `kind` — 'sync' или 'backup'.
+    Внешний TOML-контракт использует legacy-ключи `local_root`, `remote_root`,
+    `archive_dir`, `after_push = "archive"`. Внутри модели эти значения хранятся в
+    унифицированных полях `source_path`/`target_path`/`backup_path`; `kind` — 'sync'
+    или 'backup'.
     """
 
     name: str
     kind: str
-    local_root: Path
-    remote_root: str
+    source_path: Path
+    target_path: str
     exclude: list[str] = field(default_factory=list)
     include: list[str] = field(default_factory=list)
     delete: bool = True
@@ -51,7 +52,7 @@ class Profile:
     ssh_opts: list[str] = field(default_factory=list)
     after_push: str = "nothing"
     verify: bool = True
-    archive_dir: Path | None = None
+    backup_path: Path | None = None
 
 
 @dataclass
@@ -59,10 +60,10 @@ class Config:
     """Разобранный .fs-sync.toml: каталог-корень и упорядоченный список профилей."""
 
     root: Path
-    profiles: list[Profile]
+    roll: list[Profile]
 
     def by_name(self, name: str) -> Profile | None:
-        for profile in self.profiles:
+        for profile in self.roll:
             if profile.name == name:
                 return profile
         return None
@@ -102,7 +103,7 @@ def _validate_remote_root(remote_root: str, profile: str) -> None:
     """remote_root: непустой и безопасный (не корень `/`, непустой путь после `:`)."""
     if not remote_root.strip():
         raise ConfigError(f"профиль «{profile}»: «remote_root» не задан")
-    is_ssh, _, path = split_remote(remote_root)
+    is_ssh, _, path = split_target(remote_root)
     if not path:
         raise ConfigError(f"профиль «{profile}»: «remote_root» — пустой путь")
     if path == "/":
@@ -112,65 +113,65 @@ def _validate_remote_root(remote_root: str, profile: str) -> None:
         )
 
 
-def split_remote(remote_root: str) -> tuple[bool, str | None, str]:
-    """Разобрать remote_root на (is_ssh, host, path).
+def split_target(target_root: str) -> tuple[bool, str | None, str]:
+    """Разобрать target_root на (is_ssh, host, path).
 
     SSH-форма — `host:path` (двоеточие до первого `/`): host непустой. Иначе значение
     считается локальным путём (host=None). Чисто rsync-конвенция переноса каталогов.
     """
-    sep = remote_root.find(":")
-    slash = remote_root.find("/")
-    if sep > 0 and (slash == -1 or sep < slash):
-        host = remote_root[:sep]
-        path = remote_root[sep + 1:]
+    sep = target_root.find(":")
+    slh = target_root.find("/")
+    if sep > 0 and (slh == -1 or sep < slh):
+        host = target_root[:sep]
+        path = target_root[sep + 1:]
         return True, host, path
-    return False, None, remote_root
+    return False, None, target_root
 
 
-def is_ssh_remote(remote_root: str) -> bool:
-    """True, если remote_root указывает на SSH-цель (требует наличия `ssh`)."""
-    return split_remote(remote_root)[0]
+def is_ssh_target(target_root: str) -> bool:
+    """True, если target_root указывает на SSH-цель (требует наличия `ssh`)."""
+    return split_target(target_root)[0]
 
 
 def _build_profile(
     kind: str,
-    raw: dict[str, Any],
+    bare: dict[str, Any],
     defaults: dict[str, Any],
     root: Path,
 ) -> Profile:
-    name = raw.get("name")
+    name = bare.get("name")
     if not isinstance(name, str) or not name.strip():
         raise ConfigError(f"профиль [[{kind}]]: обязательное поле «name» отсутствует или пустое")
 
     def pick(key: str) -> Any:
-        return raw[key] if key in raw else defaults.get(key)
+        return bare[key] if key in bare else defaults.get(key)
 
-    local_raw = pick("local_root")
-    if not isinstance(local_raw, str) or not local_raw.strip():
+    source_bare = pick("local_root")
+    if not isinstance(source_bare, str) or not source_bare.strip():
         raise ConfigError(f"профиль «{name}»: обязательное поле «local_root» отсутствует")
-    local_root = Path(local_raw).expanduser()
-    if not local_root.is_absolute():
-        local_root = root / local_root
-    local_root = local_root.resolve()
-    if not local_root.is_dir():
-        raise ConfigError(f"профиль «{name}»: «local_root» не существует: {local_root}")
+    source_path = Path(source_bare).expanduser()
+    if not source_path.is_absolute():
+        source_path = root / source_path
+    source_path = source_path.resolve()
+    if not source_path.is_dir():
+        raise ConfigError(f"профиль «{name}»: «local_root» не существует: {source_path}")
 
-    remote_raw = pick("remote_root")
-    if not isinstance(remote_raw, str):
+    target_bare = pick("remote_root")
+    if not isinstance(target_bare, str):
         raise ConfigError(f"профиль «{name}»: обязательное поле «remote_root» отсутствует")
-    _validate_remote_root(remote_raw, name)
+    _validate_remote_root(target_bare, name)
     # Локальный remote_root отсчитывается от каталога конфига (как local_root), а не
     # от cwd процесса; SSH-цель остаётся как есть. Приёмник может не существовать —
     # resolve(strict) не применяем, rsync создаст его при передаче.
-    if not is_ssh_remote(remote_raw):
-        remote_path = Path(remote_raw).expanduser()
-        if not remote_path.is_absolute():
-            remote_path = root / remote_path
-        remote_value = remote_path.as_posix()
+    if not is_ssh_target(target_bare):
+        target_resolved = Path(target_bare).expanduser()
+        if not target_resolved.is_absolute():
+            target_resolved = root / target_resolved
+        target_path = target_resolved.as_posix()
     else:
-        remote_value = remote_raw
+        target_path = target_bare
 
-    profile = Profile(name=name, kind=kind, local_root=local_root, remote_root=remote_value)
+    profile = Profile(name=name, kind=kind, source_path=source_path, target_path=target_path)
     profile.delete = True if kind == "sync" else False
 
     if (val := pick("exclude")) is not None:
@@ -206,15 +207,15 @@ def _build_profile(
                     f"профиль «{name}»: «after_push» = «{after}», допустимо: "
                     f"{', '.join(_AFTER_PUSH)}"
                 )
-            profile.after_push = after
+            profile.after_push = "backup" if after == "archive" else after
         if (val := pick("verify")) is not None:
             profile.verify = _as_bool(val, name, "verify")
         if (val := pick("archive_dir")) is not None:
-            archive_raw = _as_str(val, name, "archive_dir")
-            archive_dir = Path(archive_raw).expanduser()
-            if not archive_dir.is_absolute():
-                archive_dir = root / archive_dir
-            profile.archive_dir = archive_dir
+            backup_bare = _as_str(val, name, "archive_dir")
+            backup_path = Path(backup_bare).expanduser()
+            if not backup_path.is_absolute():
+                backup_path = root / backup_path
+            profile.backup_path = backup_path
     return profile
 
 
@@ -229,26 +230,26 @@ def parse_config(text: str, root: Path) -> Config:
     if not isinstance(defaults, dict):
         raise ConfigError("секция [defaults] должна быть таблицей")
 
-    profiles: list[Profile] = []
+    roll: list[Profile] = []
     for kind in ("sync", "backup"):
         entries = data.get(kind, [])
         if not isinstance(entries, list):
             raise ConfigError(f"секция [[{kind}]] должна быть массивом таблиц")
-        for raw in entries:
-            if not isinstance(raw, dict):
+        for bare in entries:
+            if not isinstance(bare, dict):
                 raise ConfigError(f"секция [[{kind}]] должна быть массивом таблиц")
-            profiles.append(_build_profile(kind, raw, defaults, root))
+            roll.append(_build_profile(kind, bare, defaults, root))
 
-    if not profiles:
+    if not roll:
         raise ConfigError(f"{CONFIG_NAME}: не найдено ни одного профиля [[sync]]/[[backup]]")
 
     seen: set[str] = set()
-    for profile in profiles:
+    for profile in roll:
         if profile.name in seen:
             raise ConfigError(f"имя профиля «{profile.name}» не уникально")
         seen.add(profile.name)
 
-    return Config(root=root, profiles=profiles)
+    return Config(root=root, roll=roll)
 
 
 def load_config(root: Path) -> Config:

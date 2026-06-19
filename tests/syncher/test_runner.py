@@ -16,12 +16,12 @@ from fs_tools.syncher.runner import main
 requires_rsync = pytest.mark.skipif(shutil.which("rsync") is None, reason="rsync не установлен")
 
 
-def _sync_config(local: Path, dst: Path, **fields: str) -> str:
+def _sync_config(source: Path, dst: Path, **fields: str) -> str:
     extra = "".join(f"{k} = {v}\n" for k, v in fields.items())
     return (
         '[[sync]]\n'
         'name = "main"\n'
-        f'local_root = "{local.as_posix()}"\n'
+        f'local_root = "{source.as_posix()}"\n'
         f'remote_root = "{dst.as_posix()}"\n'
         f"{extra}"
     )

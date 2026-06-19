@@ -75,18 +75,18 @@ bin/sync.bat examples/syncher --dry-run         # Windows (через WSL/cwrsyn
 `obsolete-project/`.
 
 Профиль «vault» в `--dry-run` показывает план передачи трёх файлов архива из папок
-`2026-01/` и `2026-02/`; локальные файлы не трогаются, перенос в `_fs-archive`
+`2026-01/` и `2026-02/`; локальные файлы не трогаются, перенос в `_fs-backup`
 выполняется только в боевом режиме после подтверждённой передачи.
 
 ## Боевой прогон и сброс
 
 Боевой прогон (без `--dry-run`) **изменяет** песочницу: наполняет `server/`,
 зеркалит удаление каталога `obsolete-project/`, а offload переносит файлы из
-`archive/` в `_fs-archive/`. Восстановить исходное состояние можно из git:
+`archive/` в `_fs-backup/`. Восстановить исходное состояние можно из git:
 
 ```bash
 git restore examples/syncher
-git clean -fd examples/syncher    # уберёт _fs-archive/, .fs-log и прочие следы прогона
+git clean -fd examples/syncher    # уберёт _fs-backup/, .fs-log и прочие следы прогона
 ```
 
 > Пустые каталоги git не хранит, поэтому в `server-archive/` лежит файл-заглушка

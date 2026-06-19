@@ -31,7 +31,7 @@ alwaysApply: false
   `ssh_opts` (список строк).
 - Только `[[backup]]`: `after_push` (`delete`|`archive`|`nothing`, дефолт `nothing`),
   `verify` (bool, дефолт `true`), `archive_dir` (для `archive`; дефолт
-  `<local_root>/../_fs-archive/<profile>/<YYYY-MM-DD>/`).
+  `<local_root>/../_fs-backup/<profile>/<YYYY-MM-DD>/`).
 
 ## Валидация → `ConfigError` (код возврата 1)
 
@@ -43,3 +43,7 @@ alwaysApply: false
 
 Поле профиля перекрывает одноимённое из `[defaults]`. Меняя набор полей или дефолты,
 синхронизируй `config.py`, тесты, README и `examples/syncher/`.
+
+Legacy-ключи TOML — внешний контракт утилиты. Внутренняя модель может использовать
+свои имена (`source_path`/`target_path`/`backup_path`) и маппинг, но поведение `rsync`
+и других библиотек остаётся штатным.
