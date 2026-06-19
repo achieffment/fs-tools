@@ -40,6 +40,18 @@ bin/sync.bat examples/syncher --dry-run         # Windows (через WSL/cwrsyn
 Эквивалент напрямую: `fs-syncher examples/syncher --dry-run` (или
 `fs-tools sync examples/syncher --dry-run`).
 
+### Запуск из WSL с Windows-диска
+
+Если проект расположен на Windows-диске, запускайте Linux-обёртку и передавайте корень
+песочницы в формате `/mnt/<disk>/...`:
+
+```bash
+/home/<user>/Home/Components/fs-tools/bin/sync.sh /mnt/e/Home/Components/fs-tools/examples/syncher --dry-run
+```
+
+Такой запуск использует единый Linux-стек `rsync`/`ssh` и избегает смешивания
+Windows OpenSSH и chocolatey/cwrsync runtime.
+
 ## Что демонстрирует `.fs-sync.toml`
 
 - **`[defaults]`** — общие пороги delete-guard для всех профилей;

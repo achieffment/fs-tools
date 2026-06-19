@@ -53,6 +53,27 @@ pip install -e ".[normalizer,checker,syncher,dev]" # + инструменты р
 После установки доступны команды `fs-normalizer`, `fs-checker`, `fs-syncher`,
 `fs-tools` (и `python -m fs_tools`).
 
+### Windows (Chocolatey + rsync)
+
+Для запуска `fs-syncher` напрямую из Windows установите `rsync` через Chocolatey:
+
+1. Установите Chocolatey по официальной инструкции:
+   [https://chocolatey.org/install#individual](https://chocolatey.org/install#individual)
+2. Откройте терминал **от имени администратора** и установите rsync:
+
+```powershell
+choco install rsync -y
+```
+
+3. Проверьте доступность бинаря:
+
+```powershell
+rsync --version
+```
+
+Если `rsync` не найден в IDE-терминале после установки, полностью перезапустите IDE
+и создайте новый терминал (чтобы обновился `PATH`).
+
 ### Обёртки `bin/`
 
 Для запуска без ручной подготовки окружения есть обёртки в [`bin/`](bin/): при первом
@@ -297,12 +318,40 @@ bin\sync.bat "E:\Home" --dry-run --profile access --verbose
 Такой профиль синхронизирует только `E:\Home\Access` и не требует UNC-путей вроде
 `\\localhost\...`.
 
+#### Сценарий через WSL (рекомендуется)
+
+Если данные лежат на Windows-диске, запускайте `sync.sh` из WSL, а каталог передавайте
+в формате `/mnt/<disk>/...`:
+
+```bash
+sudo apt update
+sudo apt install -y rsync openssh-client
+/home/<user>/Home/Components/fs-tools/bin/sync.sh /mnt/e/Home --dry-run --profile access --verbose
+```
+
+Здесь `/mnt/e/Home` соответствует `E:\Home`, а `local_root = "Access"` в
+`.fs-sync.toml` остаётся относительным и безопасно ограничивает область синхронизации.
+
 #### Troubleshooting: `The source and destination cannot both be remote`
 
 Эта ошибка появляется, когда локальный путь источника передан в `rsync` как
 `E:/...`, и он ошибочно трактуется как `host:path`. В актуальной версии
 `fs-syncher` локальный Windows-путь автоматически нормализуется в локальный формат
 `/cygdrive/e/...`; если ошибка повторяется, обновите пакет до текущей версии.
+
+#### Troubleshooting: `code 12` / `Permission denied (publickey)` на Windows
+
+Для cwrsync-стека `rsync` и `ssh` должны работать в одном окружении. Если в системе
+одновременно есть Windows OpenSSH и chocolatey-ssh, задайте транспорт явно:
+
+```powershell
+$env:HOME = "/cygdrive/c/Users/<user>"
+$env:RSYNC_RSH = "/cygdrive/c/ProgramData/chocolatey/lib/rsync/tools/bin/ssh.exe"
+bin\sync.bat "E:\Home" --dry-run --profile access --verbose
+```
+
+Если ключ защищён passphrase, используйте `ssh-agent` в выбранном окружении или
+выделенный ключ для автоматизированных запусков.
 
 ### Формат `.fs-sync.toml`
 
