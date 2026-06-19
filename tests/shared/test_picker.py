@@ -11,26 +11,31 @@ from fs_tools.shared import picker
 # _prompt_directory
 # --------------------------------------------------------------------------- #
 def test_prompt_returns_default_on_empty_input(monkeypatch):
+    """Проверяет сценарий: prompt returns default on empty input."""
     monkeypatch.setattr("builtins.input", lambda: "")
-    assert picker._prompt_directory("причина", default="/tmp/foo") == "/tmp/foo"
+    assert picker.prompt_directory("причина", default="/tmp/foo") == "/tmp/foo"
 
 
 def test_prompt_returns_typed_value_over_default(monkeypatch):
+    """Проверяет сценарий: prompt returns typed value over default."""
     monkeypatch.setattr("builtins.input", lambda: "  /tmp/bar  ")
-    assert picker._prompt_directory("причина", default="/tmp/foo") == "/tmp/bar"
+    assert picker.prompt_directory("причина", default="/tmp/foo") == "/tmp/bar"
 
 
 def test_prompt_empty_without_default(monkeypatch):
+    """Проверяет сценарий: prompt empty without default."""
     monkeypatch.setattr("builtins.input", lambda: "")
-    assert picker._prompt_directory("причина") == ""
+    assert picker.prompt_directory("причина") == ""
 
 
 def test_prompt_returns_empty_on_eof(monkeypatch):
+    """Проверяет сценарий: prompt returns empty on eof."""
     def _raise():
+        """Вспомогательная функция для теста."""
         raise EOFError
 
     monkeypatch.setattr("builtins.input", _raise)
-    assert picker._prompt_directory("причина", default="/tmp/foo") == ""
+    assert picker.prompt_directory("причина", default="/tmp/foo") == ""
 
 
 # --------------------------------------------------------------------------- #
@@ -38,18 +43,21 @@ def test_prompt_returns_empty_on_eof(monkeypatch):
 # --------------------------------------------------------------------------- #
 @pytest.fixture()
 def _force_plain_linux(monkeypatch):
+    """Вспомогательная функция для теста."""
     monkeypatch.setattr(picker, "_is_win", lambda: False)
     monkeypatch.setattr(picker, "_is_mac", lambda: False)
     monkeypatch.setattr(picker, "_is_wsl", lambda: False)
 
 
 def test_pick_directory_linux_defaults_to_cwd(monkeypatch, tmp_path, _force_plain_linux):
+    """Проверяет сценарий: pick directory linux defaults to cwd."""
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr("builtins.input", lambda: "")
     assert picker.pick_directory() == os.getcwd()
 
 
 def test_pick_directory_linux_uses_typed_path(monkeypatch, tmp_path, _force_plain_linux):
+    """Проверяет сценарий: pick directory linux uses typed path."""
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr("builtins.input", lambda: str(tmp_path / "sub"))
     assert picker.pick_directory() == str(tmp_path / "sub")
@@ -60,15 +68,18 @@ def test_pick_directory_linux_uses_typed_path(monkeypatch, tmp_path, _force_plai
 # --------------------------------------------------------------------------- #
 @pytest.fixture()
 def _force_windows(monkeypatch):
+    """Вспомогательная функция для теста."""
     monkeypatch.setattr(picker, "_is_win", lambda: True)
     monkeypatch.setattr(picker, "_is_mac", lambda: False)
 
 
 def test_pick_directory_windows_uses_cwd_as_initial(monkeypatch, tmp_path, _force_windows):
+    """Проверяет сценарий: pick directory windows uses cwd as initial."""
     monkeypatch.chdir(tmp_path)
     captured: dict[str, str | None] = {}
 
-    def fake_dialog(initial=None, header=None):
+    def fake_dialog(initial=None, _header=None):
+        """Выполняет шаг: fake dialog."""
         captured["initial"] = initial
         return "SELECTED"
 
@@ -83,6 +94,7 @@ def test_pick_directory_windows_uses_cwd_as_initial(monkeypatch, tmp_path, _forc
 # --------------------------------------------------------------------------- #
 @pytest.fixture()
 def _force_wsl(monkeypatch):
+    """Вспомогательная функция для теста."""
     monkeypatch.setattr(picker, "_is_win", lambda: False)
     monkeypatch.setattr(picker, "_is_mac", lambda: False)
     monkeypatch.setattr(picker, "_is_wsl", lambda: True)
@@ -91,16 +103,19 @@ def _force_wsl(monkeypatch):
 def test_pick_directory_wsl_converts_cwd_and_roundtrips(monkeypatch, _force_wsl):
     # Сценарий «всё в WSL»: cwd -> Windows-путь (UNC) для InitialDirectory,
     # результат выбора -> обратно в путь WSL.
+    """Проверяет сценарий: pick directory wsl converts cwd and roundtrips."""
     converted_args: list[str] = []
 
     def fake_to_win(p: str) -> str:
+        """Выполняет шаг: fake to win."""
         converted_args.append(p)
         return r"\\wsl.localhost\D\sel"
 
     monkeypatch.setattr(picker, "_to_win_path", fake_to_win)
     captured: dict[str, str | None] = {}
 
-    def fake_dialog(initial=None, header=None):
+    def fake_dialog(initial=None, _header=None):
+        """Выполняет шаг: fake dialog."""
         captured["initial"] = initial
         return r"\\wsl.localhost\D\chosen"
 
@@ -115,10 +130,12 @@ def test_pick_directory_wsl_converts_cwd_and_roundtrips(monkeypatch, _force_wsl)
 
 def test_pick_directory_wsl_no_initial_when_conversion_fails(monkeypatch, _force_wsl):
     # Если cwd не конвертируется, диалог открывается без стартовой папки (initial=None).
+    """Проверяет сценарий: pick directory wsl no initial when conversion fails."""
     monkeypatch.setattr(picker, "_to_win_path", lambda p: None)
     captured: dict[str, str | None] = {}
 
-    def fake_dialog(initial=None, header=None):
+    def fake_dialog(initial=None, _header=None):
+        """Выполняет шаг: fake dialog."""
         captured["initial"] = initial
         return r"\\wsl.localhost\D\chosen"
 
@@ -133,11 +150,15 @@ def test_pick_directory_wsl_no_initial_when_conversion_fails(monkeypatch, _force
 def test_pick_directory_wsl_selects_windows_folder(monkeypatch, _force_wsl):
     # Из-под WSL выбрали Windows-папку: диалог вернул C:\..., путь должен пройти
     # через _to_wsl_path (wslpath -u: C:\Users\me -> /mnt/c/Users/me).
+    """Проверяет сценарий: pick directory wsl selects windows folder."""
     monkeypatch.setattr(picker, "_to_win_path", lambda p: r"\\wsl.localhost\D\proj")
-    monkeypatch.setattr(picker, "_win_folder_dialog", lambda initial=None, header=None: r"C:\Users\me")
+    monkeypatch.setattr(
+        picker, "_win_folder_dialog", lambda initial=None, _header=None: r"C:\Users\me"
+    )
     seen: dict[str, str] = {}
 
     def fake_to_wsl(p: str) -> str:
+        """Выполняет шаг: fake to wsl."""
         seen["arg"] = p
         return "/mnt/c/Users/me"
 
@@ -150,8 +171,11 @@ def test_pick_directory_wsl_selects_windows_folder(monkeypatch, _force_wsl):
 def test_pick_directory_windows_selects_wsl_folder(monkeypatch, _force_windows):
     # Из-под нативной Windows выбрали папку WSL: UNC-путь возвращается как есть,
     # без конвертации (её делает только ветка WSL).
+    """Проверяет сценарий: pick directory windows selects wsl folder."""
     unc = r"\\wsl.localhost\Ubuntu-24.04_dev\home\achieffment\proj"
-    monkeypatch.setattr(picker, "_win_folder_dialog", lambda initial=None, header=None: unc)
+    monkeypatch.setattr(
+        picker, "_win_folder_dialog", lambda initial=None, _header=None: unc
+    )
     monkeypatch.setattr(
         picker, "_to_wsl_path", lambda p: pytest.fail("конвертация не нужна на Windows")
     )
@@ -163,15 +187,18 @@ def test_pick_directory_windows_selects_wsl_folder(monkeypatch, _force_windows):
 # --------------------------------------------------------------------------- #
 @pytest.fixture()
 def _force_mac(monkeypatch):
+    """Вспомогательная функция для теста."""
     monkeypatch.setattr(picker, "_is_win", lambda: False)
     monkeypatch.setattr(picker, "_is_mac", lambda: True)
 
 
 def test_pick_directory_mac_uses_cwd_as_initial(monkeypatch, tmp_path, _force_mac):
+    """Проверяет сценарий: pick directory mac uses cwd as initial."""
     monkeypatch.chdir(tmp_path)
     captured: dict[str, str | None] = {}
 
-    def fake_dialog(initial=None, header=None):
+    def fake_dialog(initial=None, _header=None):
+        """Выполняет шаг: fake dialog."""
         captured["initial"] = initial
         return "/Users/me/sel"
 
@@ -182,8 +209,11 @@ def test_pick_directory_mac_uses_cwd_as_initial(monkeypatch, tmp_path, _force_ma
 
 def test_pick_directory_mac_falls_back_to_prompt(monkeypatch, tmp_path, _force_mac):
     # osascript недоступен (None) -> ввод пути в терминале с дефолтом = cwd.
+    """Проверяет сценарий: pick directory mac falls back to prompt."""
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr(picker, "_mac_folder_dialog", lambda initial=None, header=None: None)
+    monkeypatch.setattr(
+        picker, "_mac_folder_dialog", lambda initial=None, _header=None: None
+    )
     monkeypatch.setattr("builtins.input", lambda: "")
     assert picker.pick_directory() == os.getcwd()
 
@@ -192,16 +222,18 @@ def test_pick_directory_mac_falls_back_to_prompt(monkeypatch, tmp_path, _force_m
 # _win_folder_dialog (не-GUI части: передача FSTOOLS_FOLDER через env, вывод)
 # --------------------------------------------------------------------------- #
 def test_win_folder_dialog_passes_initial_and_title_via_env(monkeypatch):
+    """Проверяет сценарий: win folder dialog passes initial and title via env."""
     monkeypatch.setattr(picker.shutil, "which", lambda name: "/fake/powershell.exe")
     captured: dict[str, object] = {}
 
-    def fake_run(cmd, **kwargs):
-        captured["env"] = kwargs["env"]
+    def fake_run(cmd, **_kwargs):
+        """Выполняет шаг: fake run."""
+        captured["env"] = _kwargs["env"]
         captured["cmd"] = cmd
         return subprocess.CompletedProcess(cmd, 0, stdout="C:\\chosen\n", stderr="")
 
     monkeypatch.setattr(picker.subprocess, "run", fake_run)
-    result = picker._win_folder_dialog(r"C:\Users\me\proj")
+    result = picker.win_folder_dialog(r"C:\Users\me\proj")
     assert result == "C:\\chosen"
     env = captured["env"]
     assert isinstance(env, dict)
@@ -218,27 +250,31 @@ def test_win_folder_dialog_passes_initial_and_title_via_env(monkeypatch):
 
 
 def test_win_folder_dialog_none_when_script_missing(monkeypatch):
+    """Проверяет сценарий: win folder dialog none when script missing."""
     monkeypatch.setattr(picker.shutil, "which", lambda name: "/fake/powershell.exe")
     monkeypatch.setattr(picker, "_pick_folder_ps1", lambda: None)
 
-    def fail_run(cmd, **kwargs):  # не должен вызываться
+    def fail_run(cmd, **_kwargs):  # не должен вызываться
+        """Выполняет шаг: fail run."""
         raise AssertionError("subprocess.run не должен запускаться без скрипта")
 
     monkeypatch.setattr(picker.subprocess, "run", fail_run)
-    assert picker._win_folder_dialog(r"C:\Users\me\proj") is None
+    assert picker.win_folder_dialog(r"C:\Users\me\proj") is None
 
 
 def test_win_folder_dialog_without_initial_clears_env(monkeypatch):
+    """Проверяет сценарий: win folder dialog without initial clears env."""
     monkeypatch.setattr(picker.shutil, "which", lambda name: "/fake/powershell.exe")
     monkeypatch.setenv("FSTOOLS_FOLDER", "stale")
     captured: dict[str, dict[str, str]] = {}
 
-    def fake_run(cmd, **kwargs):
-        captured["env"] = kwargs["env"]
+    def fake_run(cmd, **_kwargs):
+        """Выполняет шаг: fake run."""
+        captured["env"] = _kwargs["env"]
         return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
 
     monkeypatch.setattr(picker.subprocess, "run", fake_run)
-    result = picker._win_folder_dialog(None)
+    result = picker.win_folder_dialog(None)
     assert result == ""  # отмена / пустой вывод
     assert "FSTOOLS_FOLDER" not in captured["env"]
     # Без стартовой папки в WSLENV остаётся только заголовок.
@@ -248,34 +284,39 @@ def test_win_folder_dialog_without_initial_clears_env(monkeypatch):
 
 
 def test_win_folder_dialog_none_when_no_powershell(monkeypatch):
+    """Проверяет сценарий: win folder dialog none when no powershell."""
     monkeypatch.setattr(picker.shutil, "which", lambda name: None)
-    assert picker._win_folder_dialog(r"C:\Users\me\proj") is None
+    assert picker.win_folder_dialog(r"C:\Users\me\proj") is None
 
 
 def test_win_folder_dialog_none_on_nonzero_returncode(monkeypatch):
     # Отмена даёт код 0; ненулевой код — ошибка скрипта -> None (откат на терминал),
     # даже если в stdout что-то осталось.
+    """Проверяет сценарий: win folder dialog none on nonzero returncode."""
     monkeypatch.setattr(picker.shutil, "which", lambda name: "/fake/powershell.exe")
 
-    def fake_run(cmd, **kwargs):
+    def fake_run(cmd, **_kwargs):
+        """Выполняет шаг: fake run."""
         return subprocess.CompletedProcess(cmd, 3, stdout="C:\\junk\n", stderr="boom")
 
     monkeypatch.setattr(picker.subprocess, "run", fake_run)
-    assert picker._win_folder_dialog(r"C:\Users\me\proj") is None
+    assert picker.win_folder_dialog(r"C:\Users\me\proj") is None
 
 
 def test_win_folder_dialog_preserves_existing_wslenv(monkeypatch):
     # Уже объявленные в WSLENV переменные не должны теряться при добавлении FSTOOLS_*.
+    """Проверяет сценарий: win folder dialog preserves existing wslenv."""
     monkeypatch.setattr(picker.shutil, "which", lambda name: "/fake/powershell.exe")
     monkeypatch.setenv("WSLENV", "PATH/l:GOPATH/p")
     captured: dict[str, dict[str, str]] = {}
 
-    def fake_run(cmd, **kwargs):
-        captured["env"] = kwargs["env"]
+    def fake_run(cmd, **_kwargs):
+        """Выполняет шаг: fake run."""
+        captured["env"] = _kwargs["env"]
         return subprocess.CompletedProcess(cmd, 0, stdout="C:\\x\n", stderr="")
 
     monkeypatch.setattr(picker.subprocess, "run", fake_run)
-    picker._win_folder_dialog(r"C:\Users\me\proj")
+    picker.win_folder_dialog(r"C:\Users\me\proj")
     wslenv = captured["env"]["WSLENV"].split(":")
     assert "PATH/l" in wslenv
     assert "GOPATH/p" in wslenv
@@ -287,16 +328,18 @@ def test_win_folder_dialog_preserves_existing_wslenv(monkeypatch):
 # _mac_folder_dialog (osascript)
 # --------------------------------------------------------------------------- #
 def test_mac_folder_dialog_returns_path_and_passes_initial(monkeypatch):
+    """Проверяет сценарий: mac folder dialog returns path and passes initial."""
     monkeypatch.setattr(picker.shutil, "which", lambda name: "/usr/bin/osascript")
     captured: dict[str, object] = {}
 
-    def fake_run(cmd, **kwargs):
-        captured["env"] = kwargs["env"]
+    def fake_run(cmd, **_kwargs):
+        """Выполняет шаг: fake run."""
+        captured["env"] = _kwargs["env"]
         captured["cmd"] = cmd
         return subprocess.CompletedProcess(cmd, 0, stdout="/Users/me/sel\n", stderr="")
 
     monkeypatch.setattr(picker.subprocess, "run", fake_run)
-    result = picker._mac_folder_dialog("/Users/me/proj")
+    result = picker.mac_folder_dialog("/Users/me/proj")
     assert result == "/Users/me/sel"
     env = captured["env"]
     assert isinstance(env, dict)
@@ -308,67 +351,77 @@ def test_mac_folder_dialog_returns_path_and_passes_initial(monkeypatch):
 
 def test_mac_folder_dialog_cancel_returns_empty(monkeypatch):
     # osascript при отмене (-128) завершается с ненулевым кодом -> "" (отмена).
+    """Проверяет сценарий: mac folder dialog cancel returns empty."""
     monkeypatch.setattr(picker.shutil, "which", lambda name: "/usr/bin/osascript")
 
-    def fake_run(cmd, **kwargs):
+    def fake_run(cmd, **_kwargs):
+        """Выполняет шаг: fake run."""
         return subprocess.CompletedProcess(cmd, 1, stdout="", stderr="User canceled.")
 
     monkeypatch.setattr(picker.subprocess, "run", fake_run)
-    assert picker._mac_folder_dialog("/Users/me/proj") == ""
+    assert picker.mac_folder_dialog("/Users/me/proj") == ""
 
 
 def test_mac_folder_dialog_none_when_no_osascript(monkeypatch):
+    """Проверяет сценарий: mac folder dialog none when no osascript."""
     monkeypatch.setattr(picker.shutil, "which", lambda name: None)
-    assert picker._mac_folder_dialog("/Users/me/proj") is None
+    assert picker.mac_folder_dialog("/Users/me/proj") is None
 
 
 # --------------------------------------------------------------------------- #
 # wslpath-конверсии (_to_win_path / _to_wsl_path)
 # --------------------------------------------------------------------------- #
 def test_to_win_path_converts(monkeypatch):
+    """Проверяет сценарий: to win path converts."""
     monkeypatch.setattr(picker.shutil, "which", lambda name: "/usr/bin/wslpath")
     captured: dict[str, object] = {}
 
-    def fake_run(cmd, **kwargs):
+    def fake_run(cmd, **_kwargs):
+        """Выполняет шаг: fake run."""
         captured["cmd"] = cmd
         return subprocess.CompletedProcess(cmd, 0, stdout="\\\\wsl.localhost\\D\\p\n", stderr="")
 
     monkeypatch.setattr(picker.subprocess, "run", fake_run)
-    assert picker._to_win_path("/home/u/p") == r"\\wsl.localhost\D\p"
+    assert picker.to_win_path("/home/u/p") == r"\\wsl.localhost\D\p"
     cmd = captured["cmd"]
     assert isinstance(cmd, list)
     assert cmd[1] == "-w"  # туда: WSL -> Windows
 
 
 def test_to_win_path_none_on_empty_output(monkeypatch):
+    """Проверяет сценарий: to win path none on empty output."""
     monkeypatch.setattr(picker.shutil, "which", lambda name: "/usr/bin/wslpath")
     monkeypatch.setattr(
         picker.subprocess, "run",
-        lambda cmd, **kw: subprocess.CompletedProcess(cmd, 1, stdout="", stderr="err"),
+        lambda cmd, **_kw: subprocess.CompletedProcess(cmd, 1, stdout="", stderr="err"),
     )
-    assert picker._to_win_path("/bad") is None
+    assert picker.to_win_path("/bad") is None
 
 
 def test_to_win_path_none_when_no_wslpath(monkeypatch):
+    """Проверяет сценарий: to win path none when no wslpath."""
     monkeypatch.setattr(picker.shutil, "which", lambda name: None)
-    assert picker._to_win_path("/home/u/p") is None
+    assert picker.to_win_path("/home/u/p") is None
 
 
 def test_to_wsl_path_converts(monkeypatch):
+    """Проверяет сценарий: to wsl path converts."""
     monkeypatch.setattr(picker.shutil, "which", lambda name: "/usr/bin/wslpath")
     captured: dict[str, object] = {}
 
-    def fake_run(cmd, **kwargs):
+    def fake_run(cmd, **_kwargs):
+        """Выполняет шаг: fake run."""
         captured["cmd"] = cmd
         return subprocess.CompletedProcess(cmd, 0, stdout="/mnt/c/Users/me\n", stderr="")
 
     monkeypatch.setattr(picker.subprocess, "run", fake_run)
-    assert picker._to_wsl_path(r"C:\Users\me") == "/mnt/c/Users/me"
+    assert picker.to_wsl_path(r"C:\Users\me") == "/mnt/c/Users/me"
     cmd = captured["cmd"]
     assert isinstance(cmd, list)
     assert cmd[1] == "-u"  # обратно: Windows -> WSL
 
 
 def test_to_wsl_path_none_when_no_wslpath(monkeypatch):
+    """Проверяет сценарий: to wsl path none when no wslpath."""
     monkeypatch.setattr(picker.shutil, "which", lambda name: None)
-    assert picker._to_wsl_path(r"C:\Users\me") is None
+    assert picker.to_wsl_path(r"C:\Users\me") is None

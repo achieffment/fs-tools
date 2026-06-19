@@ -27,6 +27,7 @@ class OffloadResult:
 
     @property
     def ok(self) -> bool:
+        """True, когда профиль завершился без ошибок передачи и offload."""
         return self.rc == 0 and not self.errlist
 
 

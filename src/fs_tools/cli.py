@@ -8,37 +8,20 @@
 from __future__ import annotations
 
 import argparse
+import importlib
+from typing import Callable, cast
 
 from .shared.cli import add_path_argument
 
 
-def _add_sync_flags(parser: argparse.ArgumentParser) -> None:
-    """Флаги режима синхронизации в подпарсере (диспетчер обязан их пробросить)."""
-    parser.add_argument("--profile", action="append", metavar="NAME")
-    parser.add_argument("--all", action="store_true")
-    parser.add_argument("--dry-run", action="store_true")
-    parser.add_argument("--force-delete", action="store_true")
-    parser.add_argument("--verbose", action="store_true")
-
-
-def _sync_argv(args: argparse.Namespace) -> list[str]:
-    """Восстановить argv режима синхронизации из разобранных диспетчером флагов."""
-    argv: list[str] = [args.path] if args.path else []
-    for name in args.profile or []:
-        argv += ["--profile", name]
-    if args.all:
-        argv.append("--all")
-    if args.dry_run:
-        argv.append("--dry-run")
-    if args.force_delete:
-        argv.append("--force-delete")
-    if args.verbose:
-        argv.append("--verbose")
-    return argv
-
-
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(
+    """Разобрать `fs-tools` CLI и вызвать runner выбранного режима."""
+    # Sync-флаги объявляются через общий модуль, чтобы не дублировать контракт CLI.
+    sync_cli_args = importlib.import_module(".syncher.cli_args", __package__)
+    add_sync_flags = sync_cli_args.add_sync_flags
+    sync_argv_from_namespace = sync_cli_args.sync_argv_from_namespace
+
+    pars = argparse.ArgumentParser(
         prog="fs-tools",
         description=(
             "Кросс-платформенные операции с файловой системой: нормализация имён "
@@ -46,29 +29,38 @@ def main(argv: list[str] | None = None) -> int:
             "синхронизация каталога с сервером через rsync (sync)."
         ),
     )
-    sub = parser.add_subparsers(
+    sub = pars.add_subparsers(
         dest="mode", required=True, metavar="<normalize|check|sync>"
     )
 
     p_fsnm = sub.add_parser("normalize", help="нормализовать имена файлов и папок")
     add_path_argument(p_fsnm)
+
     p_fsch = sub.add_parser("check", help="проверить наличие путей по .fs-check")
     add_path_argument(p_fsch)
-    p_fssy = sub.add_parser("sync", help="синхронизировать каталог с сервером (rsync)")
-    add_path_argument(p_fssy, "Каталог для синхронизации. Если не задан — текущий рабочий каталог.")
-    _add_sync_flags(p_fssy)
 
-    args = parser.parse_args(argv)
+    p_fssy = sub.add_parser("sync", help="синхронизировать каталог с сервером (rsync)")
+    add_path_argument(p_fssy)
+    add_sync_flags(p_fssy)
 
     # Ленивый импорт режима: тянем только то, что нужно выбранной подкоманде.
+    args = pars.parse_args(argv)
     if args.mode == "normalize":
-        from .normalizer.runner import main as run_mode
-
+        run_mode = cast(
+            Callable[[list[str] | None], int],
+            importlib.import_module(".normalizer.runner", __package__).main,
+        )
         return run_mode([args.path] if args.path else [])
     if args.mode == "check":
-        from .checker.runner import main as run_mode
-
+        run_mode = cast(
+            Callable[[list[str] | None], int],
+            importlib.import_module(".checker.runner", __package__).main,
+        )
         return run_mode([args.path] if args.path else [])
-    from .syncher.runner import main as run_sync
-
-    return run_sync(_sync_argv(args))
+    if args.mode == "sync":
+        run_mode = cast(
+            Callable[[list[str] | None], int],
+            importlib.import_module(".syncher.runner", __package__).main,
+        )
+        return run_mode(sync_argv_from_namespace(args))
+    return 1

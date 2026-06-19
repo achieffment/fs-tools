@@ -10,45 +10,59 @@ from fs_tools.syncher import offload as offload_mod
 from fs_tools.syncher.offload import apply_after_push
 
 # Пропуск интеграционных тестов, если в системе нет rsync.
-requires_rsync = pytest.mark.skipif(shutil.which("rsync") is None, reason="rsync не установлен")
+requires_rsync = pytest.mark.skipif(
+    shutil.which("rsync") is None,
+    reason="rsync не установлен",
+)
 
 
 def _backup(source_path: Path, **kw: Any) -> Profile:
-    base = dict(name="bak", kind="backup", source_path=source_path, target_path="/srv/bak", delete=False)
+    """Вспомогательная функция для теста."""
+    base = {
+        "name": "bak",
+        "kind": "backup",
+        "source_path": source_path,
+        "target_path": "/srv/bak",
+        "delete": False,
+    }
     base.update(kw)
     return Profile(**base)
 
 
 def test_apply_after_push_nothing(tmp_path: Path) -> None:
+    """Проверяет сценарий: apply after push nothing."""
     (tmp_path / "a.txt").write_text("a", encoding="utf-8")
     profile = _backup(tmp_path, after_push="nothing")
     offload, errlist = apply_after_push(profile, ["a.txt"])
-    assert offload == [] and errlist == []
+    assert not offload and not errlist
     assert (tmp_path / "a.txt").exists()
 
 
 def test_apply_after_push_delete(tmp_path: Path) -> None:
+    """Проверяет сценарий: apply after push delete."""
     (tmp_path / "sub").mkdir()
     (tmp_path / "sub" / "a.txt").write_text("a", encoding="utf-8")
     profile = _backup(tmp_path, after_push="delete")
     offload, errlist = apply_after_push(profile, ["sub/a.txt"])
-    assert offload == ["sub/a.txt"] and errlist == []
+    assert offload == ["sub/a.txt"] and not errlist
     assert not (tmp_path / "sub" / "a.txt").exists()
     assert not (tmp_path / "sub").exists()       # опустевший каталог удалён
     assert tmp_path.exists()                     # сам корень не трогаем
 
 
 def test_apply_after_push_backup(tmp_path: Path) -> None:
+    """Проверяет сценарий: apply after push backup."""
     (tmp_path / "a.txt").write_text("a", encoding="utf-8")
     backup = tmp_path / "_arch"
     profile = _backup(tmp_path, after_push="backup", backup_path=backup)
     offload, errlist = apply_after_push(profile, ["a.txt"])
-    assert offload == ["a.txt"] and errlist == []
+    assert offload == ["a.txt"] and not errlist
     assert not (tmp_path / "a.txt").exists()
     assert (backup / "a.txt").read_text(encoding="utf-8") == "a"
 
 
 def test_run_offload_dry_run_keeps_files(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Проверяет сценарий: run offload dry run keeps files."""
     (tmp_path / "a.txt").write_text("a", encoding="utf-8")
 
     class _Out:
@@ -61,11 +75,12 @@ def test_run_offload_dry_run_keeps_files(monkeypatch: pytest.MonkeyPatch, tmp_pa
     profile = _backup(tmp_path, after_push="delete")
     result = run_offload(profile, dry_run=True)
     assert result.sent == ["a.txt"]
-    assert result.offload == []
+    assert not result.offload
     assert (tmp_path / "a.txt").exists()         # dry-run ничего не удаляет
 
 
 def test_run_offload_failed_push_no_delete(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Проверяет сценарий: run offload failed push no delete."""
     (tmp_path / "a.txt").write_text("a", encoding="utf-8")
 
     class _Out:
@@ -83,6 +98,7 @@ def test_run_offload_failed_push_no_delete(monkeypatch: pytest.MonkeyPatch, tmp_
 
 
 def test_run_offload_verify_partial(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Проверяет сценарий: run offload verify partial."""
     (tmp_path / "ok.txt").write_text("ok", encoding="utf-8")
     (tmp_path / "bad.txt").write_text("bad", encoding="utf-8")
 
@@ -109,6 +125,7 @@ def test_run_offload_verify_partial(monkeypatch: pytest.MonkeyPatch, tmp_path: P
 
 @requires_rsync
 def test_real_offload_delete_after_verified(tmp_path: Path) -> None:
+    """Проверяет сценарий: real offload delete after verified."""
     src = tmp_path / "src"
     dst = tmp_path / "dst"
     src.mkdir()
@@ -128,13 +145,20 @@ def test_real_offload_delete_after_verified(tmp_path: Path) -> None:
 def test_real_offload_excluded_file_not_deleted(tmp_path: Path) -> None:
     # Файл, исключённый фильтром, не попадает в область offload и не удаляется,
     # даже если verify (по другим файлам) прошёл успешно.
+    """Проверяет сценарий: real offload excluded file not deleted."""
     src = tmp_path / "src"
     dst = tmp_path / "dst"
     src.mkdir()
     dst.mkdir()
     (src / "keep.txt").write_text("k", encoding="utf-8")
     (src / "scratch.tmp").write_text("t", encoding="utf-8")
-    profile = _backup(src, target_path=str(dst), exclude=["*.tmp"], after_push="delete", verify=True)
+    profile = _backup(
+        src,
+        target_path=str(dst),
+        exclude=["*.tmp"],
+        after_push="delete",
+        verify=True,
+    )
     result = run_offload(profile, dry_run=False)
     assert result.ok
     assert result.offload == ["keep.txt"]

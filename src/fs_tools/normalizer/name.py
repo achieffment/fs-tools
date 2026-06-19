@@ -28,12 +28,14 @@ class NameNormalizer:
 
     @classmethod
     def _split_ext(cls, name: str) -> tuple[str, str]:
+        """Отделить файловое расширение, если хвост похож на неполностью-числовой ext."""
         m = cls._EXT_RE.search(name)
         if m and not m.group(1).isdigit():
             return name[: m.start()], name[m.start():]
         return name, ""
 
     def normalize(self, name: str, is_dir: bool) -> str:
+        """Нормализовать имя объекта, сохранив расширение файла без изменений."""
         if is_dir:
             stem, ext = name, ""
         else:

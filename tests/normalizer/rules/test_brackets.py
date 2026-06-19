@@ -1,6 +1,7 @@
 """BracketsRule: скобки с числом/датой убираются, с текстом сохраняются."""
 import pytest
 
+from fs_tools import normalizer
 from fs_tools.normalizer import BracketsRule
 
 
@@ -33,12 +34,12 @@ from fs_tools.normalizer import BracketsRule
     ],
 )
 def test_brackets_rule(bare, expected):
+    """Проверяет сценарий: brackets rule."""
     assert BracketsRule().apply(bare, is_dir=False) == expected
 
 
 def test_brackets_rule_exported():
     # Публичное API не должно разойтись: новое правило экспортируется из пакета.
-    import fs_tools.normalizer as normalizer
-
+    """Проверяет сценарий: brackets rule exported."""
     assert "BracketsRule" in normalizer.__all__
     assert normalizer.BracketsRule is BracketsRule

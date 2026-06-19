@@ -63,6 +63,7 @@ class Config:
     roll: list[Profile]
 
     def by_name(self, name: str) -> Profile | None:
+        """Найти профиль по имени или вернуть None, если его нет."""
         for profile in self.roll:
             if profile.name == name:
                 return profile
@@ -103,7 +104,7 @@ def _validate_remote_root(remote_root: str, profile: str) -> None:
     """remote_root: непустой и безопасный (не корень `/`, непустой путь после `:`)."""
     if not remote_root.strip():
         raise ConfigError(f"профиль «{profile}»: «remote_root» не задан")
-    is_ssh, _, path = split_target(remote_root)
+    _, _, path = split_target(remote_root)
     if not path:
         raise ConfigError(f"профиль «{profile}»: «remote_root» — пустой путь")
     if path == "/":
@@ -175,7 +176,7 @@ def _build_profile(
         target_path = target_bare
 
     profile = Profile(name=name, kind=kind, source_path=source_path, target_path=target_path)
-    profile.delete = True if kind == "sync" else False
+    profile.delete = kind == "sync"
 
     if (val := pick("exclude")) is not None:
         profile.exclude = _as_str_list(val, name, "exclude")

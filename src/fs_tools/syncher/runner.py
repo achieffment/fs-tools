@@ -3,8 +3,8 @@
 Коды возврата: 0 — успех (включая «изменений нет»); 1 — ошибка запуска (нет каталога/
 конфига, ошибка валидации, нет rsync или ssh для SSH-цели); 2 — rsync/offload
 завершились ошибкой; 3 — остановлено delete-guard. Итог прогона = наихудший код среди
-профилей по шкале 0 < 2 < 3. Режим неинтерактивен: без аргумента берётся текущий
-каталог, диалог выбора не открывается.
+профилей по шкале 0 < 2 < 3. Без аргумента каталог выбирается интерактивно (диалог
+проводника на Windows и в WSL, диалог macOS, либо ввод пути в терминале на Linux).
 """
 from __future__ import annotations
 
@@ -12,7 +12,9 @@ import argparse
 import sys
 from pathlib import Path
 
-from ..shared.cli import add_path_argument, resolve_root
+from ..shared.cli import make_parser, resolve_root
+from ..shared.picker import pick_directory
+from .cli_args import add_sync_flags
 from .config import Config, ConfigError, Profile, is_ssh_target, load_config
 from .log import write_fs_log
 from .notify import send_webhook
@@ -28,42 +30,22 @@ from .rsync import (
 
 _DESCRIPTION = (
     "Односторонняя синхронизация локального каталога с сервером (ПК → сервер) через "
-    "rsync. Состав задаётся в .fs-sync.toml в корне каталога. Каталог — позиционный "
-    "аргумент (для cron/планировщика); без него берётся текущий. Диалог выбора не "
-    "открывается."
+    "rsync. Состав задаётся в .fs-sync.toml в корне каталога. Без аргумента каталог "
+    "выбирается интерактивно (диалог проводника на Windows и в WSL, диалог macOS, "
+    "либо ввод пути в терминале на Linux). Каталог можно задать аргументом — без диалога."
 )
+_HEADER = "Выберите каталог для синхронизации"
+_PROMPT = "Укажите каталог для синхронизации."
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="fs-syncher", description=_DESCRIPTION)
-    add_path_argument(parser, "Каталог для синхронизации. Если не задан — текущий рабочий каталог.")
-    parser.add_argument(
-        "--profile",
-        action="append",
-        metavar="NAME",
-        help="Запустить только указанный профиль (флаг повторяемый).",
+    pars = make_parser(
+        _DESCRIPTION,
+        prog="fs-syncher",
+        path_help="Каталог для синхронизации. Если не задан — выбирается интерактивно.",
     )
-    parser.add_argument(
-        "--all",
-        action="store_true",
-        help="Явно запустить все профили (поведение по умолчанию).",
-    )
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Показать план без передачи/удаления (приоритетнее dry_run профиля).",
-    )
-    parser.add_argument(
-        "--force-delete",
-        action="store_true",
-        help="Снять защиту от массового удаления (delete-guard).",
-    )
-    parser.add_argument(
-        "--verbose",
-        action="store_true",
-        help="Печатать подробный вывод rsync.",
-    )
-    return parser
+    add_sync_flags(pars)
+    return pars
 
 
 def _select_roll(config: Config, names: list[str] | None) -> list[Profile]:
@@ -185,8 +167,9 @@ def main(argv: list[str] | None = None) -> int:
     """0 — успех; 1 — ошибка запуска; 2 — ошибка rsync/offload; 3 — delete-guard."""
     args = _build_parser().parse_args(argv)
 
-    # Без аргумента берётся текущий каталог (режим неинтерактивен — диалога нет).
-    root = resolve_root(args.path or ".")
+    # Аргумент-каталог минует диалог; иначе — интерактивный выбор.
+    targ = args.path if args.path else pick_directory(_HEADER, _PROMPT)
+    root = resolve_root(targ)
     if root is None:
         return 1
 

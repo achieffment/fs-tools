@@ -7,20 +7,26 @@
 """
 from __future__ import annotations
 
+import importlib
 import sys
 from pathlib import Path
 
-from ..shared.cli import make_parser, resolve_root
-from ..shared.picker import pick_directory
+from ..shared.cli import ModeMainSpec, run_mode_main
 
 _DESCRIPTION = (
     "Нормализатор имён файлов и папок (рекурсивно). Без аргумента каталог выбирается "
     "интерактивно (диалог проводника на Windows и в WSL, диалог macOS, либо ввод пути "
-    "в терминале на обычном Linux). Каталог можно задать аргументом — для запуска по "
-    "таймеру (cron/планировщик) без диалога."
+    "в терминале на обычном Linux). Каталог можно задать аргументом — без диалога."
 )
 _HEADER = "Выберите каталог для нормализации"
 _PROMPT = "Укажите каталог для нормализации."
+_MAIN_SPEC = ModeMainSpec(
+    description=_DESCRIPTION,
+    prog="fs-normalizer",
+    path_help="Каталог для нормализации. Если не задан — выбирается интерактивно.",
+    header=_HEADER,
+    prompt=_PROMPT,
+)
 
 
 def run(root: Path) -> int:
@@ -29,10 +35,14 @@ def run(root: Path) -> int:
     (нет `Unidecode`): печатается понятное сообщение, а не трассировка.
     """
     try:
-        from .engine import FsNormalizer
-        from .ignore import load_fs_ignore
-        from .log import write_fs_log
-        from .name import build_normalizer
+        FsNormalizer = importlib.import_module(".engine", __package__).FsNormalizer
+        load_fs_ignore = importlib.import_module(
+            ".ignore", __package__
+        ).load_fs_ignore
+        write_fs_log = importlib.import_module(".log", __package__).write_fs_log
+        build_normalizer = importlib.import_module(
+            ".name", __package__
+        ).build_normalizer
     except ImportError as exc:
         sys.stderr.write(f"{exc}\n")
         return 1
@@ -57,11 +67,8 @@ def main(argv: list[str] | None = None) -> int:
     """0 — прогон без реальных ошибок; 1 — каталог не выбран/не найден/не каталог
     (или режим недоступен без `Unidecode`); 2 — часть os.rename упала с OSError.
     """
-    parser = make_parser(_DESCRIPTION)
-    args = parser.parse_args(argv)
-    # Аргумент-каталог минует диалог (режим таймера); иначе — интерактивный выбор.
-    targ = args.path if args.path else pick_directory(_HEADER, _PROMPT)
-    root = resolve_root(targ)
-    if root is None:
-        return 1
-    return run(root)
+    return run_mode_main(
+        argv=argv,
+        spec=_MAIN_SPEC,
+        run=run,
+    )

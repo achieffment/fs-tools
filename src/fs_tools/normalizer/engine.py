@@ -46,7 +46,7 @@ class FsNormalizer:
         # При наличии override-правил (`!`) нельзя обрезать исключённые каталоги:
         # внутри могут быть возвращённые потомки, до которых надо дойти. Тогда
         # заходим во все нескрытые каталоги, а skip/normalize решаем по объекту.
-        probe = self.ignorer is not None and self.ignorer._incl
+        probe = self.ignorer is not None and self.ignorer.has_overrides()
         items: list[Path] = []
         for dirpath, foldnames, filenames in os.walk(root, topdown=True, followlinks=False):
             base = Path(dirpath)
@@ -72,6 +72,7 @@ class FsNormalizer:
         return items
 
     def apply(self, root: Path) -> tuple[int, int]:
+        """Применить нормализацию ко всему содержимому root и вернуть (renamed, skipped)."""
         items = self._collect(root)
         # Самые вложенные — первыми: дети переименовываются раньше родителей.
         items.sort(key=lambda p: len(p.parts), reverse=True)

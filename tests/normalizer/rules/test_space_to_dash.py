@@ -19,4 +19,5 @@ from fs_tools.normalizer import SpaceToDashRule
     ],
 )
 def test_space_to_dash(bare, expected):
+    """Проверяет сценарий: space to dash."""
     assert SpaceToDashRule().apply(bare, is_dir=False) == expected

@@ -49,4 +49,8 @@ class BracketsRule(Rule):
             elif ch in cls._CL and stack and stack[-1][0] == cls._CL[ch]:
                 pairs.add(i)
                 pairs.add(stack.pop()[1])
-        return "".join(ch for i, ch in enumerate(stem) if i in pairs or (ch not in cls._OP and ch not in cls._CL))
+        return "".join(
+            ch
+            for i, ch in enumerate(stem)
+            if i in pairs or (ch not in cls._OP and ch not in cls._CL)
+        )

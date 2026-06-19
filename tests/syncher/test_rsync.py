@@ -22,12 +22,14 @@ requires_rsync = pytest.mark.skipif(shutil.which("rsync") is None, reason="rsync
 
 
 def _profile(tmp_path: Path, **kw: Any) -> Profile:
-    base = dict(name="p", kind="sync", source_path=tmp_path, target_path="/srv/dst")
+    """Вспомогательная функция для теста."""
+    base = {"name": "p", "kind": "sync", "source_path": tmp_path, "target_path": "/srv/dst"}
     base.update(kw)
     return Profile(**base)
 
 
 def test_build_command_basics(tmp_path: Path) -> None:
+    """Проверяет сценарий: build command basics."""
     cmd = build_command(_profile(tmp_path), dry_run=False, delete=True)
     assert cmd[0] == "rsync"
     assert "-a" in cmd and "--itemize-changes" in cmd and "--stats" in cmd
@@ -37,6 +39,7 @@ def test_build_command_basics(tmp_path: Path) -> None:
 
 
 def test_build_command_dry_run_and_options(tmp_path: Path) -> None:
+    """Проверяет сценарий: build command dry run and options."""
     profile = _profile(tmp_path, checksum=True, compress=True, partial_progress=True, bwlimit="500")
     cmd = build_command(profile, dry_run=True, delete=False)
     assert "--dry-run" in cmd
@@ -48,6 +51,7 @@ def test_build_command_dry_run_and_options(tmp_path: Path) -> None:
 
 
 def test_build_command_ssh_opts_only_for_ssh(tmp_path: Path) -> None:
+    """Проверяет сценарий: build command ssh opts only for ssh."""
     ssh = _profile(tmp_path, target_path="host:/p", ssh_opts=["-p", "2222"])
     cmd1 = build_command(ssh, dry_run=False, delete=False)
     assert "-e" in cmd1
@@ -60,6 +64,7 @@ def test_build_command_ssh_opts_only_for_ssh(tmp_path: Path) -> None:
 
 
 def test_build_command_windows_source_with_ssh_dest() -> None:
+    """Проверяет сценарий: build command windows source with ssh dest."""
     profile = Profile(
         name="p",
         kind="sync",
@@ -72,6 +77,7 @@ def test_build_command_windows_source_with_ssh_dest() -> None:
 
 
 def test_build_command_windows_local_dest_is_not_remote() -> None:
+    """Проверяет сценарий: build command windows local dest is not remote."""
     profile = Profile(
         name="p",
         kind="sync",
@@ -84,6 +90,7 @@ def test_build_command_windows_local_dest_is_not_remote() -> None:
 
 
 def test_parse_itemized_sent_and_deleted() -> None:
+    """Проверяет сценарий: parse itemized sent and deleted."""
     out = (
         ">f+++++++++ a.txt\n"
         "<f.st...... b.txt\n"
@@ -98,16 +105,19 @@ def test_parse_itemized_sent_and_deleted() -> None:
 
 
 def test_parse_itemized_empty_idempotent() -> None:
+    """Проверяет сценарий: parse itemized empty idempotent."""
     sent, deleted = parse_itemized("\nNumber of files: 5\n")
-    assert sent == [] and deleted == []
+    assert not sent and not deleted
 
 
 def test_build_listing_single_endpoint() -> None:
+    """Проверяет сценарий: build listing single endpoint."""
     cmd = build_listing("/srv/dst/", ["--filter=- *.tmp"])
     assert cmd == ["rsync", "-a", "--list-only", "--filter=- *.tmp", "/srv/dst/"]
 
 
 def test_parse_listing_files_and_dirs() -> None:
+    """Проверяет сценарий: parse listing files and dirs."""
     out = (
         "drwxr-xr-x          4,096 2026/06/16 12:00:00 .\n"
         "-rw-r--r--              2 2026/06/16 12:00:00 a.txt\n"
@@ -123,6 +133,7 @@ def test_parse_listing_files_and_dirs() -> None:
 
 
 def test_delete_plan_thresholds() -> None:
+    """Проверяет сценарий: delete plan thresholds."""
     plan = DeletePlan(to_delete=["a", "b", "c"], remote_total=4)
     assert plan.count == 3
     assert plan.pct() == pytest.approx(75.0)
@@ -132,21 +143,25 @@ def test_delete_plan_thresholds() -> None:
 
 
 def test_delete_plan_zero_remote_no_pct() -> None:
+    """Проверяет сценарий: delete plan zero remote no pct."""
     plan = DeletePlan(to_delete=[], remote_total=0)
     assert plan.pct() == 0.0
     assert plan.blocked(threshold=100, threshold_pct=25) is False
 
 
 def test_delete_preflight_uses_mock(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Проверяет сценарий: delete preflight uses mock."""
     calls: list[list[str]] = []
 
     class _Proc:
         def __init__(self, stdout: str) -> None:
+            """Вспомогательная функция для теста."""
             self.stdout = stdout
             self.stderr = ""
             self.returncode = 0
 
-    def fake_run(cmd: list[str], **kw: Any) -> _Proc:
+    def fake_run(cmd: list[str], **_kw: Any) -> _Proc:
+        """Выполняет шаг: fake run."""
         calls.append(cmd)
         if "--list-only" in cmd:
             return _Proc(
@@ -169,6 +184,7 @@ def test_delete_preflight_uses_mock(monkeypatch: pytest.MonkeyPatch, tmp_path: P
 
 @requires_rsync
 def test_real_sync_transfers_and_idempotent(tmp_path: Path) -> None:
+    """Проверяет сценарий: real sync transfers and idempotent."""
     src = tmp_path / "src"
     dst = tmp_path / "dst"
     (src / "sub").mkdir(parents=True)
@@ -183,11 +199,12 @@ def test_real_sync_transfers_and_idempotent(tmp_path: Path) -> None:
     assert (dst / "a.txt").is_file()
 
     again = rsync_mod.run_rsync(build_command(profile, dry_run=False, delete=True))
-    assert again.sent == [] and again.deleted == []    # идемпотентность
+    assert not again.sent and not again.deleted    # идемпотентность
 
 
 @requires_rsync
 def test_real_delete_mirrors(tmp_path: Path) -> None:
+    """Проверяет сценарий: real delete mirrors."""
     src = tmp_path / "src"
     dst = tmp_path / "dst"
     src.mkdir()
@@ -203,6 +220,7 @@ def test_real_delete_mirrors(tmp_path: Path) -> None:
 
 @requires_rsync
 def test_real_artifacts_excluded(tmp_path: Path) -> None:
+    """Проверяет сценарий: real artifacts excluded."""
     src = tmp_path / "src"
     dst = tmp_path / "dst"
     src.mkdir()
@@ -221,6 +239,7 @@ def test_real_artifacts_excluded(tmp_path: Path) -> None:
 
 @requires_rsync
 def test_real_source_files_respects_filters(tmp_path: Path) -> None:
+    """Проверяет сценарий: real source files respects filters."""
     src = tmp_path / "src"
     (src / "sub").mkdir(parents=True)
     (src / "a.txt").write_text("a", encoding="utf-8")
@@ -233,6 +252,7 @@ def test_real_source_files_respects_filters(tmp_path: Path) -> None:
 
 @requires_rsync
 def test_real_remote_object_count(tmp_path: Path) -> None:
+    """Проверяет сценарий: real remote object count."""
     src = tmp_path / "src"
     dst = tmp_path / "dst"
     src.mkdir()

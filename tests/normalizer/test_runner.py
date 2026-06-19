@@ -6,53 +6,61 @@ from fs_tools.normalizer import main
 
 
 def test_main_clean_run_returns_zero(tmp_path, monkeypatch):
+    """Проверяет сценарий: main clean run returns zero."""
     (tmp_path / "Отчёт.txt").write_text("x")
-    monkeypatch.setattr("fs_tools.normalizer.runner.pick_directory", lambda *a, **k: str(tmp_path))
+    monkeypatch.setattr("fs_tools.shared.cli.pick_directory", lambda *a, **k: str(tmp_path))
     assert main([]) == 0
     assert (tmp_path / "otchiot.txt").exists()
 
 
 def test_main_conflict_only_returns_zero(tmp_path, monkeypatch):
     # Конфликт — безопасный пропуск: код возврата остаётся 0.
+    """Проверяет сценарий: main conflict only returns zero."""
     (tmp_path / "a b.md").write_text("a")  # -> "a-b.md"
     (tmp_path / "a-b.md").write_text("b")  # уже занято
-    monkeypatch.setattr("fs_tools.normalizer.runner.pick_directory", lambda *a, **k: str(tmp_path))
+    monkeypatch.setattr("fs_tools.shared.cli.pick_directory", lambda *a, **k: str(tmp_path))
     assert main([]) == 0
 
 
 def test_main_rename_error_returns_two(tmp_path, monkeypatch):
+    """Проверяет сценарий: main rename error returns two."""
     (tmp_path / "Отчёт.txt").write_text("ДАННЫЕ")  # -> "otchiot.txt"
-    real_rename = os.rename
+    class _RenameProxy:
+        """Прокси `os.rename` с управляемым сбоем для целевого имени."""
 
-    def failing_rename(src, dst, *args, **kwargs):
-        if Path(dst).name == "otchiot.txt":
-            raise OSError("симулированный сбой переименования")
-        return real_rename(src, dst, *args, **kwargs)
+        def __call__(self, src, dst, *args, **kwargs):
+            if Path(dst).name == "otchiot.txt":
+                raise OSError("симулированный сбой переименования")
+            return os.rename(src, dst, *args, **kwargs)
 
-    monkeypatch.setattr("fs_tools.normalizer.engine.os.rename", failing_rename)
-    monkeypatch.setattr("fs_tools.normalizer.runner.pick_directory", lambda *a, **k: str(tmp_path))
+    monkeypatch.setattr("fs_tools.normalizer.engine.os.rename", _RenameProxy())
+    monkeypatch.setattr("fs_tools.shared.cli.pick_directory", lambda *a, **k: str(tmp_path))
     assert main([]) == 2
     assert (tmp_path / "Отчёт.txt").read_text() == "ДАННЫЕ"  # данные уцелели
 
 
 def test_main_no_directory_returns_one(monkeypatch):
-    monkeypatch.setattr("fs_tools.normalizer.runner.pick_directory", lambda *a, **k: "")
+    """Проверяет сценарий: main no directory returns one."""
+    monkeypatch.setattr("fs_tools.shared.cli.pick_directory", lambda *a, **k: "")
     assert main([]) == 1
 
 
 def test_main_missing_directory_returns_one(tmp_path, monkeypatch):
+    """Проверяет сценарий: main missing directory returns one."""
     missing = tmp_path / "нет-такого"
-    monkeypatch.setattr("fs_tools.normalizer.runner.pick_directory", lambda *a, **k: str(missing))
+    monkeypatch.setattr("fs_tools.shared.cli.pick_directory", lambda *a, **k: str(missing))
     assert main([]) == 1
 
 
 def test_argument_bypasses_picker(tmp_path, monkeypatch):
-    # Аргумент-каталог (режим таймера) минует диалог: pick_directory не вызывается.
+    # Аргумент-каталог минует диалог: pick_directory не вызывается.
+    """Проверяет сценарий: argument bypasses picker."""
     (tmp_path / "Отчёт.txt").write_text("x")
 
     def _boom(*a, **k):
+        """Вспомогательная функция для теста."""
         raise AssertionError("pick_directory не должен вызываться при аргументе-каталоге")
 
-    monkeypatch.setattr("fs_tools.normalizer.runner.pick_directory", _boom)
+    monkeypatch.setattr("fs_tools.shared.cli.pick_directory", _boom)
     assert main([str(tmp_path)]) == 0
     assert (tmp_path / "otchiot.txt").exists()

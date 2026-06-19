@@ -20,6 +20,7 @@ def make_tree() -> Callable[[Path, Iterable[str]], Path]:
     """
 
     def _make(base: Path, paths: Iterable[str]) -> Path:
+        """Вспомогательная функция для теста."""
         for rel in paths:
             target = base / rel
             if rel.endswith("/"):
@@ -37,6 +38,7 @@ def write_config() -> Callable[[Path, str], Path]:
     """Записать текст в base/.fs-sync.toml и вернуть base."""
 
     def _write(base: Path, text: str) -> Path:
+        """Вспомогательная функция для теста."""
         (base / ".fs-sync.toml").write_text(text, encoding="utf-8")
         return base
 

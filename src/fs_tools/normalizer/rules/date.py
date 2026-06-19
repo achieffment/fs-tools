@@ -79,7 +79,7 @@ class DateRule(Rule):
             if 1900 <= year <= 2099:
                 return f"{year:04d}-00-00"
             return m.group(0)
-        return m.group(0)  # pragma: no cover
+        return m.group(0)
 
     @staticmethod
     def _sep(m: "re.Match[str]") -> str:

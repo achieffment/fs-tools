@@ -3,7 +3,7 @@ from __future__ import annotations
 
 try:
     from unidecode import unidecode
-except ImportError as exc:  # pragma: no cover - дружелюбное сообщение вместо трейсбека
+except ImportError as exc:
     raise ImportError(
         "Не найден пакет 'Unidecode' (требуется режиму нормализации). "
         'Установите зависимость: pip install "fs-tools[normalizer]"'

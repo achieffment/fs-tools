@@ -14,14 +14,13 @@
 """
 from __future__ import annotations
 
+import importlib
 import logging
 import os
 from pathlib import Path
 
 _log = logging.getLogger(__name__)
-
-_loaded = False
-
+_STATE = {"loaded": False}
 
 def env_path() -> Path:
     """Путь к единому `.env`: `FS_TOOLS_HOME/.env` либо `.env` в текущем каталоге."""
@@ -41,6 +40,20 @@ def harden_permissions(path: Path) -> None:
         _log.debug("не удалось выставить права .env: %s", exc)
 
 
+def _load_env_impl() -> None:
+    """Выполнить однократную подгрузку `.env` в окружение процесса."""
+    path = env_path()
+    if not path.is_file():
+        return
+    harden_permissions(path)
+    try:
+        load_dotenv = importlib.import_module("dotenv").load_dotenv
+    except ImportError:                             # без extra checker/syncher .env игнорируется
+        _log.debug("python-dotenv не установлен — .env не читается")
+        return
+    load_dotenv(path, override=False)
+
+
 def load_env() -> None:
     """Однократно подгрузить `.env` в окружение процесса (`override=False`: процесс важнее).
 
@@ -48,17 +61,7 @@ def load_env() -> None:
     или файла тихо выходит. Привязка к разовому запуску CLI: при смене `FS_TOOLS_HOME`
     в рамках одного процесса повторно не перечитывает.
     """
-    global _loaded
-    if _loaded:
+    if _STATE["loaded"]:
         return
-    _loaded = True
-    path = env_path()
-    if not path.is_file():
-        return
-    harden_permissions(path)
-    try:
-        from dotenv import load_dotenv
-    except ImportError:                             # без extra checker/syncher .env игнорируется
-        _log.debug("python-dotenv не установлен — .env не читается")
-        return
-    load_dotenv(path, override=False)
+    _STATE["loaded"] = True
+    _load_env_impl()

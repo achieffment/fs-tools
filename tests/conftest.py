@@ -19,6 +19,7 @@ def make_tree(tmp_path: Path) -> Callable[[Iterable[str]], Path]:
     """
 
     def _make(paths: Iterable[str]) -> Path:
+        """Вспомогательная функция для теста."""
         for rel in paths:
             target = tmp_path / rel
             if rel.endswith("/"):

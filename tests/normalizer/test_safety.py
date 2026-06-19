@@ -20,10 +20,12 @@ from fs_tools.normalizer.safety import enforce_safe_component
     ],
 )
 def test_enforce_safe_component(bare, expected):
+    """Проверяет сценарий: enforce safe component."""
     assert enforce_safe_component(bare) == expected
 
 
 @pytest.mark.parametrize("bare", ["a/b", "a\\b", 'x<y>:"|?*', "a\x00b", "<>:|?*"])
 def test_enforce_safe_component_idempotent(bare):
+    """Проверяет сценарий: enforce safe component idempotent."""
     once = enforce_safe_component(bare)
     assert enforce_safe_component(once) == once

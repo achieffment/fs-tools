@@ -91,7 +91,10 @@ class FsChecker:
             rel = adir.relative_to(root)
             if rel.parts and _is_hidden(rel):
                 continue
-            if any(self._negation.is_pruned(name) for name in _selected_names(rule.prefix, rel.parts)):
+            if any(
+                self._negation.is_pruned(name)
+                for name in _selected_names(rule.prefix, rel.parts)
+            ):
                 continue
             anccnt += 1
             target = adir / rule.mandate

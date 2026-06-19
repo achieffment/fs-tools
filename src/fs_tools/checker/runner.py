@@ -4,8 +4,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from ..shared.cli import make_parser, resolve_root
-from ..shared.picker import pick_directory
+from ..shared.cli import ModeMainSpec, run_mode_main
 from .engine import FsChecker
 from .log import write_fs_log
 from .notify import send_webhook
@@ -16,10 +15,17 @@ _DESCRIPTION = (
     "Проверка наличия папок и файлов по правилам .fs-check (рекурсивно). Без аргумента "
     "каталог выбирается интерактивно (диалог проводника на Windows и в WSL, диалог "
     "macOS, либо ввод пути в терминале на обычном Linux). Каталог можно задать "
-    "аргументом — для запуска по таймеру (cron/планировщик) без диалога."
+    "аргументом — без диалога."
 )
 _HEADER = "Выберите каталог для проверки"
 _PROMPT = "Укажите каталог для проверки."
+_MAIN_SPEC = ModeMainSpec(
+    description=_DESCRIPTION,
+    prog="fs-checker",
+    path_help="Каталог для проверки. Если не задан — выбирается интерактивно.",
+    header=_HEADER,
+    prompt=_PROMPT,
+)
 
 
 def run(root: Path) -> int:
@@ -54,11 +60,8 @@ def run(root: Path) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     """0 — нарушений нет; 1 — ошибка запуска (каталог/файл правил); 2 — отсутствующие пути."""
-    parser = make_parser(_DESCRIPTION)
-    args = parser.parse_args(argv)
-    # Аргумент-каталог минует диалог (режим таймера); иначе — интерактивный выбор.
-    targ = args.path if args.path else pick_directory(_HEADER, _PROMPT)
-    root = resolve_root(targ)
-    if root is None:
-        return 1
-    return run(root)
+    return run_mode_main(
+        argv=argv,
+        spec=_MAIN_SPEC,
+        run=run,
+    )

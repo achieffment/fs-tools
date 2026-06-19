@@ -10,6 +10,7 @@ from fs_tools.shared.log import FS_LOG, append_log
 
 
 def test_append_log_creates_file_with_timestamp_and_indent(tmp_path: Path) -> None:
+    """Проверяет сценарий: append log creates file with timestamp and indent."""
     when = datetime(2026, 6, 14, 9, 0, 0)
     lpath = append_log(tmp_path, ["первая", "вторая"], "(пусто)", when=when)
     assert lpath == tmp_path / FS_LOG
@@ -20,6 +21,7 @@ def test_append_log_creates_file_with_timestamp_and_indent(tmp_path: Path) -> No
 
 
 def test_append_log_empty_uses_marker(tmp_path: Path) -> None:
+    """Проверяет сценарий: append log empty uses marker."""
     when = datetime(2026, 6, 14, 9, 5, 0)
     lpath = append_log(tmp_path, [], "(пусто)", when=when)
     text = lpath.read_text(encoding="utf-8")
@@ -28,6 +30,7 @@ def test_append_log_empty_uses_marker(tmp_path: Path) -> None:
 
 
 def test_append_log_appends_blocks(tmp_path: Path) -> None:
+    """Проверяет сценарий: append log appends blocks."""
     append_log(tmp_path, ["a"], "(пусто)", when=datetime(2026, 6, 14, 9, 0, 0))
     lpath = append_log(tmp_path, ["b"], "(пусто)", when=datetime(2026, 6, 14, 10, 0, 0))
     text = lpath.read_text(encoding="utf-8")
@@ -41,6 +44,7 @@ def test_append_log_appends_blocks(tmp_path: Path) -> None:
 
 
 def test_append_log_utf8(tmp_path: Path) -> None:
+    """Проверяет сценарий: append log utf8."""
     lpath = append_log(tmp_path, ["Отчёт «ёлочки» → café"], "(пусто)")
     # Файл читается как utf-8 без ошибок и сохраняет не-ASCII.
     assert "Отчёт «ёлочки» → café" in lpath.read_text(encoding="utf-8")

@@ -31,6 +31,7 @@ class RsyncOutcome:
 
     @property
     def ok(self) -> bool:
+        """True, когда rsync вернул код 0."""
         return self.rc == 0
 
 
@@ -43,9 +44,11 @@ class DeletePlan:
 
     @property
     def count(self) -> int:
+        """Количество объектов, которые dry-run пометил на удаление."""
         return len(self.to_delete)
 
     def pct(self) -> float:
+        """Доля удаляемых объектов от общего количества на приёмнике."""
         if self.remote_total <= 0:
             return 0.0
         return self.count / self.remote_total * 100.0
@@ -195,7 +198,7 @@ def parse_itemized(stdout: str) -> tuple[list[str], list[str]]:
 
 def run_rsync(cmd: list[str]) -> RsyncOutcome:
     """Запустить rsync и разобрать итог. Сетевые/прочие ошибки → ненулевой код."""
-    proc = subprocess.run(cmd, capture_output=True, text=True)
+    proc = subprocess.run(cmd, capture_output=True, text=True, check=False)
     sent, deleted = parse_itemized(proc.stdout)
     return RsyncOutcome(
         rc=proc.returncode,
@@ -209,7 +212,9 @@ def run_rsync(cmd: list[str]) -> RsyncOutcome:
 def _run_listing(endpoint: str, filters: list[str]) -> list[tuple[str, bool]] | None:
     """Запустить `--list-only` и разобрать вывод; None при ошибке запуска/листинга."""
     try:
-        proc = subprocess.run(build_listing(endpoint, filters), capture_output=True, text=True)
+        proc = subprocess.run(
+            build_listing(endpoint, filters), capture_output=True, text=True, check=False
+        )
     except OSError:
         return None
     if proc.returncode != 0:
@@ -235,7 +240,10 @@ def source_files(profile: Profile) -> list[str]:
     (а не отдельный матчер). Используется offload для определения области удаления.
     Каталоги не включаются. Ошибка листинга → пустой список.
     """
-    items = _run_listing(_source(profile.source_path), filter_args(profile.exclude, profile.include))
+    items = _run_listing(
+        _source(profile.source_path),
+        filter_args(profile.exclude, profile.include),
+    )
     if items is None:
         return []
     return sorted(path for path, is_dir in items if not is_dir)

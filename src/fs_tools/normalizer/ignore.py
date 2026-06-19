@@ -71,6 +71,10 @@ class FsIgnore:
         self._spec = _case_insensitive(spec)
         self._incl = incl
 
+    def has_overrides(self) -> bool:
+        """Есть ли в правилах строки-override (`!...`) для возврата путей."""
+        return self._incl
+
     def matches(self, rel: Path, is_dir: bool) -> bool:
         """Сопоставляет путь, заданный ОТНОСИТЕЛЬНО корня нормализации.
 

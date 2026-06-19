@@ -37,9 +37,11 @@ from fs_tools.normalizer import TrimEdgeRule
     ],
 )
 def test_trim_edge(bare, expected):
+    """Проверяет сценарий: trim edge."""
     assert TrimEdgeRule().apply(bare, is_dir=False) == expected
 
 
 def test_trim_edge_dir_keeps_leading_underscore():
     # Ведущий '_' сохраняется и у папок (как у файлов); хвостовой мусор обрезается.
+    """Проверяет сценарий: trim edge dir keeps leading underscore."""
     assert TrimEdgeRule().apply("__name__", is_dir=True) == "__name"

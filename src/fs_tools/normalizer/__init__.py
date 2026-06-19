@@ -16,16 +16,6 @@ from .runner import main
 if TYPE_CHECKING:
     from .engine import FsNormalizer
     from .name import NameNormalizer, build_normalizer
-    from .rules import (
-        BracketsRule,
-        CaseRule,
-        DateRule,
-        LeadingZeroRule,
-        Rule,
-        SpaceToDashRule,
-        TransliterationRule,
-        TrimEdgeRule,
-    )
 
 # Имя -> относительный модуль для ленивой загрузки (тянут `Unidecode`).
 _LAZY = {
@@ -41,6 +31,7 @@ _LAZY = {
     "SpaceToDashRule": ".rules",
     "TrimEdgeRule": ".rules",
 }
+_RULE_EXPORTS = tuple(name for name, mod in _LAZY.items() if mod == ".rules")
 
 
 def __getattr__(name: str) -> Any:
@@ -61,12 +52,5 @@ __all__ = [
     "write_fs_log",
     "NameNormalizer",
     "build_normalizer",
-    "Rule",
-    "TransliterationRule",
-    "BracketsRule",
-    "DateRule",
-    "LeadingZeroRule",
-    "CaseRule",
-    "SpaceToDashRule",
-    "TrimEdgeRule",
+    *_RULE_EXPORTS,
 ]

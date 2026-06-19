@@ -7,25 +7,45 @@ from __future__ import annotations
 
 import argparse
 import sys
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Callable
+
+from .picker import pick_directory
 
 _PATH_HELP = "Каталог для обработки. Если не задан — выбирается интерактивно."
 
 
-def make_parser(description: str) -> argparse.ArgumentParser:
-    """Парсер с единственным опциональным позиционным `path` (`nargs="?"`)."""
-    parser = argparse.ArgumentParser(description=description)
-    add_path_argument(parser)
-    return parser
+@dataclass(frozen=True)
+class ModeMainSpec:
+    """Параметры шаблона `run_mode_main` для конкретного CLI-режима."""
+
+    description: str
+    prog: str
+    path_help: str
+    header: str
+    prompt: str
 
 
-def add_path_argument(parser: argparse.ArgumentParser, help_text: str = _PATH_HELP) -> None:
+def make_parser(
+    description: str,
+    *,
+    prog: str | None = None,
+    path_help: str = _PATH_HELP,
+) -> argparse.ArgumentParser:
+    """Парсер с опциональным `path` и настраиваемыми `prog`/подсказкой пути."""
+    pars = argparse.ArgumentParser(prog=prog, description=description)
+    add_path_argument(pars, path_help)
+    return pars
+
+
+def add_path_argument(pars: argparse.ArgumentParser, help_text: str = _PATH_HELP) -> None:
     """Добавляет опциональный позиционный `path` (общий и для подпарсеров диспетчера).
 
-    `help_text` переопределяется неинтерактивными режимами (синхронизация диалог не
-    открывает — без аргумента берётся текущий каталог).
+    `help_text` переопределяется режимами с отличающейся подсказкой для пользователя
+    (например, чтобы явно указать интерактивный выбор каталога).
     """
-    parser.add_argument("path", nargs="?", help=help_text)
+    pars.add_argument("path", nargs="?", help=help_text)
 
 
 def resolve_root(targ: str | None) -> Path | None:
@@ -48,3 +68,29 @@ def resolve_root(targ: str | None) -> Path | None:
         sys.stderr.write(f"Ошибка: каталог не является каталогом: {root}\n")
         return None
     return root
+
+
+def choose_root(
+    path: str | None,
+    *,
+    header: str,
+    prompt: str,
+) -> Path | None:
+    """Вернуть валидный корень: аргумент-каталог или интерактивный выбор."""
+    targ = path if path else pick_directory(header, prompt)
+    return resolve_root(targ)
+
+
+def run_mode_main(
+    *,
+    argv: list[str] | None,
+    spec: ModeMainSpec,
+    run: Callable[[Path], int],
+) -> int:
+    """Общий шаблон main(): парсинг path, выбор корня и запуск режима."""
+    pars = make_parser(spec.description, prog=spec.prog, path_help=spec.path_help)
+    args = pars.parse_args(argv)
+    root = choose_root(args.path, header=spec.header, prompt=spec.prompt)
+    if root is None:
+        return 1
+    return run(root)

@@ -1,7 +1,7 @@
 """Доступ к единому `.env` (shared.env): путь, загрузка в окружение, приоритет, права.
 
 `load_env` идемпотентна и мутирует `os.environ`, поэтому autouse-фикстура сбрасывает
-флаг `_loaded` и восстанавливает окружение после каждого теста (переменные, добавленные
+флаг `_STATE["loaded"]` и восстанавливает окружение после каждого теста (переменные, добавленные
 `load_dotenv`, monkeypatch сам не откатывает). Отсутствие `python-dotenv` имитируется
 подменой `sys.modules["dotenv"]` на None — ленивый импорт тогда падает ImportError.
 """
@@ -17,7 +17,8 @@ from fs_tools.shared import env
 
 @pytest.fixture(autouse=True)
 def _reset_env(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
-    monkeypatch.setattr(env, "_loaded", False)
+    """Вспомогательная функция для теста."""
+    monkeypatch.setitem(getattr(env, "_STATE"), "loaded", False)
     saved = dict(os.environ)
     yield
     os.environ.clear()
@@ -25,17 +26,20 @@ def _reset_env(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
 
 
 def test_env_path_uses_home(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Проверяет сценарий: env path uses home."""
     monkeypatch.setenv("FS_TOOLS_HOME", str(tmp_path))
     assert env.env_path() == tmp_path / ".env"
 
 
 def test_env_path_falls_back_to_cwd(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Проверяет сценарий: env path falls back to cwd."""
     monkeypatch.delenv("FS_TOOLS_HOME", raising=False)
     monkeypatch.chdir(tmp_path)
     assert env.env_path() == tmp_path / ".env"
 
 
 def test_load_env_populates_environ(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Проверяет сценарий: load env populates environ."""
     (tmp_path / ".env").write_text("FSCHK_TEST_KEY=from-file\n", encoding="utf-8")
     monkeypatch.setenv("FS_TOOLS_HOME", str(tmp_path))
     monkeypatch.delenv("FSCHK_TEST_KEY", raising=False)
@@ -45,6 +49,7 @@ def test_load_env_populates_environ(monkeypatch: pytest.MonkeyPatch, tmp_path: P
 
 def test_load_env_process_overrides_file(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     # override=False: значение из окружения процесса важнее значения из .env.
+    """Проверяет сценарий: load env process overrides file."""
     (tmp_path / ".env").write_text("FSCHK_TEST_KEY=from-file\n", encoding="utf-8")
     monkeypatch.setenv("FS_TOOLS_HOME", str(tmp_path))
     monkeypatch.setenv("FSCHK_TEST_KEY", "from-process")
@@ -54,6 +59,7 @@ def test_load_env_process_overrides_file(monkeypatch: pytest.MonkeyPatch, tmp_pa
 
 def test_load_env_is_idempotent(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     # Повторный вызов — no-op: ручную правку окружения load_env не перетирает.
+    """Проверяет сценарий: load env is idempotent."""
     (tmp_path / ".env").write_text("FSCHK_TEST_KEY=from-file\n", encoding="utf-8")
     monkeypatch.setenv("FS_TOOLS_HOME", str(tmp_path))
     monkeypatch.delenv("FSCHK_TEST_KEY", raising=False)
@@ -64,11 +70,13 @@ def test_load_env_is_idempotent(monkeypatch: pytest.MonkeyPatch, tmp_path: Path)
 
 
 def test_load_env_without_file(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Проверяет сценарий: load env without file."""
     monkeypatch.setenv("FS_TOOLS_HOME", str(tmp_path))
     env.load_env()  # нет файла — тихий no-op без падения
 
 
 def test_load_env_without_dotenv(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Проверяет сценарий: load env without dotenv."""
     (tmp_path / ".env").write_text("FSCHK_TEST_KEY=from-file\n", encoding="utf-8")
     monkeypatch.setenv("FS_TOOLS_HOME", str(tmp_path))
     monkeypatch.delenv("FSCHK_TEST_KEY", raising=False)
@@ -79,6 +87,7 @@ def test_load_env_without_dotenv(monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 
 @pytest.mark.skipif(os.name != "posix", reason="права .env упрочняются только на POSIX")
 def test_harden_permissions_sets_600(tmp_path: Path) -> None:
+    """Проверяет сценарий: harden permissions sets 600."""
     path = tmp_path / ".env"
     path.write_text("FOO=bar\n", encoding="utf-8")
     path.chmod(0o644)

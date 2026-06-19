@@ -51,4 +51,5 @@ from fs_tools.normalizer import DateRule
     ],
 )
 def test_date_rule(bare, expected):
+    """Проверяет сценарий: date rule."""
     assert DateRule().apply(bare, is_dir=False) == expected

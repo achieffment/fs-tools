@@ -60,6 +60,7 @@ import pytest
     ],
 )
 def test_file_pipeline(nn, name, expected):
+    """Проверяет сценарий: file pipeline."""
     assert nn.normalize(name, is_dir=False) == expected
 
 
@@ -87,6 +88,7 @@ def test_file_pipeline(nn, name, expected):
     ],
 )
 def test_dir_pipeline(nn, name, expected):
+    """Проверяет сценарий: dir pipeline."""
     assert nn.normalize(name, is_dir=True) == expected
 
 
@@ -143,6 +145,7 @@ def test_dir_pipeline(nn, name, expected):
     ],
 )
 def test_idempotent(nn, name, is_dir):
+    """Проверяет сценарий: idempotent."""
     once = nn.normalize(name, is_dir)
     twice = nn.normalize(once, is_dir)
     assert once == twice
@@ -150,4 +153,5 @@ def test_idempotent(nn, name, is_dir):
 
 def test_empty_stem_guard(nn):
     # Имя из символов, которые после транслитерации/чистки исчезают -> без изменений.
+    """Проверяет сценарий: empty stem guard."""
     assert nn.normalize("@@@.png", is_dir=False) == "@@@.png"

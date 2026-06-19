@@ -18,6 +18,7 @@ from fs_tools.normalizer import LeadingZeroRule
     ],
 )
 def test_leading_zero(bare, expected):
+    """Проверяет сценарий: leading zero."""
     assert LeadingZeroRule().apply(bare, is_dir=False) == expected
 
 
@@ -35,6 +36,7 @@ def test_leading_zero_after_trim_edge(nn, bare, expected):
     # LeadingZeroRule идёт ПОСЛЕ TrimEdgeRule: кромочный «мусор» рядом с одиночной
     # цифрой ('5!', '5.') не мешает поставить ведущий ноль за один проход. Иначе
     # на втором прогоне (мусор уже срезан) '5' -> '05' — нарушение идемпотентности.
+    """Проверяет сценарий: leading zero after trim edge."""
     once = nn.normalize(bare, is_dir=False)
     assert once == expected
     assert nn.normalize(once, is_dir=False) == once

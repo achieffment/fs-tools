@@ -8,25 +8,40 @@ from fs_tools.checker import FS_LOG, runner
 
 
 def _run(monkeypatch: pytest.MonkeyPatch, target: str) -> int:
-    monkeypatch.setattr(runner, "pick_directory", lambda *a, **k: target)
+    """Вспомогательная функция для теста."""
+    monkeypatch.setattr("fs_tools.shared.cli.pick_directory", lambda *a, **k: target)
     # По умолчанию глушим веб-хук, чтобы тесты не уходили в сеть.
     monkeypatch.setattr(runner, "send_webhook", lambda text: True)
     return runner.main([])
 
 
-def test_no_directory_selected(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+def test_no_directory_selected(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Проверяет сценарий: no directory selected."""
     code = _run(monkeypatch, "")
     assert code == 1
     assert "Каталог не выбран" in capsys.readouterr().err
 
 
-def test_directory_not_found(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_directory_not_found(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Проверяет сценарий: directory not found."""
     code = _run(monkeypatch, str(tmp_path / "missing"))
     assert code == 1
     assert "каталог не найден" in capsys.readouterr().err
 
 
-def test_not_a_directory(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_not_a_directory(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Проверяет сценарий: not a directory."""
     file_path = tmp_path / "file.txt"
     file_path.write_text("x", encoding="utf-8")
     code = _run(monkeypatch, str(file_path))
@@ -34,7 +49,12 @@ def test_not_a_directory(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys
     assert "не является каталогом" in capsys.readouterr().err
 
 
-def test_missing_fs_rule(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_missing_fs_rule(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Проверяет сценарий: missing fs rule."""
     code = _run(monkeypatch, str(tmp_path))
     assert code == 1
     assert ".fs-check" in capsys.readouterr().err
@@ -45,6 +65,7 @@ def test_no_violations_returns_zero(
     make_tree: Callable[[Iterable[str]], Path],
     capsys: pytest.CaptureFixture[str],
 ) -> None:
+    """Проверяет сценарий: no violations returns zero."""
     root = make_tree(["Activities/Web/Projects/"])
     (root / ".fs-check").write_text("/Activities/Web/Projects\n", encoding="utf-8")
     code = _run(monkeypatch, str(root))
@@ -58,6 +79,7 @@ def test_violations_return_two(
     make_tree: Callable[[Iterable[str]], Path],
     capsys: pytest.CaptureFixture[str],
 ) -> None:
+    """Проверяет сценарий: violations return two."""
     root = make_tree(["Activities/Web/"])
     (root / ".fs-check").write_text("/Activities/Web/Projects\n", encoding="utf-8")
     code = _run(monkeypatch, str(root))
@@ -73,13 +95,15 @@ def test_argument_bypasses_picker(
     make_tree: Callable[[Iterable[str]], Path],
     capsys: pytest.CaptureFixture[str],
 ) -> None:
+    """Проверяет сценарий: argument bypasses picker."""
     root = make_tree(["Activities/Web/Projects/"])
     (root / ".fs-check").write_text("/Activities/Web/Projects\n", encoding="utf-8")
 
     def _boom(*a: object, **k: object) -> str:
+        """Вспомогательная функция для теста."""
         raise AssertionError("pick_directory не должен вызываться при аргументе-каталоге")
 
-    monkeypatch.setattr(runner, "pick_directory", _boom)
+    monkeypatch.setattr("fs_tools.shared.cli.pick_directory", _boom)
     monkeypatch.setattr(runner, "send_webhook", lambda text: True)
     code = runner.main([str(root)])
     assert code == 0
@@ -90,10 +114,11 @@ def test_missing_writes_log_and_sends_webhook(
     monkeypatch: pytest.MonkeyPatch,
     make_tree: Callable[[Iterable[str]], Path],
 ) -> None:
+    """Проверяет сценарий: missing writes log and sends webhook."""
     root = make_tree(["Activities/Web/"])
     (root / ".fs-check").write_text("/Activities/Web/Projects\n", encoding="utf-8")
     sent: list[str] = []
-    monkeypatch.setattr(runner, "pick_directory", lambda *a, **k: str(root))
+    monkeypatch.setattr("fs_tools.shared.cli.pick_directory", lambda *a, **k: str(root))
     monkeypatch.setattr(runner, "send_webhook", lambda text: bool(sent.append(text)) or True)
     code = runner.main([])
     assert code == 2
@@ -107,12 +132,13 @@ def test_no_violations_no_log_no_webhook(
     monkeypatch: pytest.MonkeyPatch,
     make_tree: Callable[[Iterable[str]], Path],
 ) -> None:
+    """Проверяет сценарий: no violations no log no webhook."""
     root = make_tree(["Activities/Web/Projects/"])
     (root / ".fs-check").write_text("/Activities/Web/Projects\n", encoding="utf-8")
     sent: list[str] = []
-    monkeypatch.setattr(runner, "pick_directory", lambda *a, **k: str(root))
+    monkeypatch.setattr("fs_tools.shared.cli.pick_directory", lambda *a, **k: str(root))
     monkeypatch.setattr(runner, "send_webhook", lambda text: bool(sent.append(text)) or True)
     code = runner.main([])
     assert code == 0
     assert not (root / FS_LOG).exists()
-    assert sent == []
+    assert not sent

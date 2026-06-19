@@ -65,7 +65,9 @@ def _is_wsl() -> bool:
         return bool(os.environ.get("WSL_DISTRO_NAME"))
 
 
-def _run(cmd: list[str], env: dict[str, str] | None = None) -> "subprocess.CompletedProcess[str] | None":
+def _run(
+    cmd: list[str], env: dict[str, str] | None = None
+) -> "subprocess.CompletedProcess[str] | None":
     """subprocess.run с общими параметрами (текстовый UTF-8, без исключений по коду).
 
     Возвращает результат либо None, если процесс не удалось запустить (OSError/
@@ -206,3 +208,11 @@ def pick_directory(header: str = _DEFAULT_HEADER, prompt: str = _DEFAULT_PROMPT)
         return conv
     # Обычный Linux: ввод пути в терминале с дефолтом = каталог вызова.
     return _prompt_directory(prompt, default=cwd)
+
+
+# Публичные алиасы для тестов и внешних интеграций.
+prompt_directory = _prompt_directory
+win_folder_dialog = _win_folder_dialog
+mac_folder_dialog = _mac_folder_dialog
+to_win_path = _to_win_path
+to_wsl_path = _to_wsl_path

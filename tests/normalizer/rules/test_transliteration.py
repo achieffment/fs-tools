@@ -17,6 +17,7 @@ from fs_tools.normalizer import TransliterationRule
     ],
 )
 def test_no_path_separators_introduced(nn, bare):
+    """Проверяет сценарий: no path separators introduced."""
     for is_dir in (False, True):
         out = nn.normalize(bare if is_dir else bare + ".txt", is_dir=is_dir)
         assert "/" not in out
@@ -33,11 +34,13 @@ def test_no_path_separators_introduced(nn, bare):
     ],
 )
 def test_fraction_pipeline(nn, name, expected):
+    """Проверяет сценарий: fraction pipeline."""
     assert nn.normalize(name, is_dir=False) == expected
 
 
 def test_transliteration_rule_strips_separators():
     # Прямой контракт правила: '/' и '\' из unidecode заменяются на '-'.
+    """Проверяет сценарий: transliteration rule strips separators."""
     assert "/" not in TransliterationRule().apply("½", is_dir=False)
     assert "\\" not in TransliterationRule().apply("∖", is_dir=False)
 
@@ -56,6 +59,7 @@ def test_transliteration_rule_strips_separators():
     ],
 )
 def test_soft_hard_sign_removed(nn, name, expected):
+    """Проверяет сценарий: soft hard sign removed."""
     assert nn.normalize(name, is_dir=False) == expected
     # Апостроф не должен появляться в имени:
     assert "'" not in nn.normalize(name, is_dir=False)
@@ -63,6 +67,7 @@ def test_soft_hard_sign_removed(nn, name, expected):
 
 def test_ascii_apostrophe_preserved(nn):
     # ASCII-апостроф во ВХОДНОМ имени не трогаем — убираем только 'ь'/'ъ'.
+    """Проверяет сценарий: ascii apostrophe preserved."""
     assert nn.normalize("O'Brien.txt", is_dir=False) == "o'brien.txt"
 
 
@@ -79,6 +84,7 @@ def test_ascii_apostrophe_preserved(nn):
     ],
 )
 def test_no_windows_forbidden_introduced(nn, bare):
+    """Проверяет сценарий: no windows forbidden introduced."""
     for is_dir in (False, True):
         out = nn.normalize(bare if is_dir else bare + ".txt", is_dir=is_dir)
         assert not any(ch in out for ch in '<>:"|?*')
@@ -92,16 +98,19 @@ def test_no_windows_forbidden_introduced(nn, bare):
     ],
 )
 def test_guillemets_pipeline(nn, name, expected):
+    """Проверяет сценарий: guillemets pipeline."""
     assert nn.normalize(name, is_dir=False) == expected
 
 
 def test_transliteration_rule_removes_windows_forbidden():
     # Прямой контракт правила: '<<'/'>>' из unidecode('«»') вырезаются.
+    """Проверяет сценарий: transliteration rule removes windows forbidden."""
     out = TransliterationRule().apply("«тест»", is_dir=False)
     assert "<" not in out and ">" not in out
 
 
 @pytest.mark.parametrize("bare", ["½", "10½", "½ доля", "naïve½"])
 def test_fraction_idempotent(nn, bare):
+    """Проверяет сценарий: fraction idempotent."""
     once = nn.normalize(bare, is_dir=False)
     assert nn.normalize(once, is_dir=False) == once

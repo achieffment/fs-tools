@@ -9,6 +9,7 @@ EXAMPLES = Path(__file__).resolve().parents[2] / "examples" / "checker"
 
 
 def test_examples_matches_readme(capsys: pytest.CaptureFixture[str]) -> None:
+    """Проверяет сценарий: examples matches readme."""
     code = run(EXAMPLES)
     out = capsys.readouterr().out
     assert code == 2

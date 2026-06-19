@@ -8,5 +8,6 @@ class Rule(ABC):
     """Базовое правило: преобразует stem имени."""
 
     @abstractmethod
-    def apply(self, stem: str, is_dir: bool) -> str:  # pragma: no cover - интерфейс
-        ...
+    def apply(self, stem: str, is_dir: bool) -> str:
+        """Преобразовать stem имени и вернуть результат."""
+        raise NotImplementedError

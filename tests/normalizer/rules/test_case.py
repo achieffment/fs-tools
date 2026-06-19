@@ -5,6 +5,7 @@ from fs_tools.normalizer import CaseRule
 
 
 def test_case_rule():
+    """Проверяет сценарий: case rule."""
     assert CaseRule().apply("report", is_dir=True) == "Report"
     assert CaseRule().apply("Report", is_dir=False) == "report"
     # README в верхнем регистре сохраняется как есть:
@@ -25,4 +26,5 @@ def test_case_rule():
     ],
 )
 def test_readme_preserved(nn, name, expected):
+    """Проверяет сценарий: readme preserved."""
     assert nn.normalize(name, is_dir=False) == expected

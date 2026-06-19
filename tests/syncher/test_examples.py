@@ -18,6 +18,7 @@ EXAMPLES = Path(__file__).resolve().parents[2] / "examples" / "syncher"
 
 @requires_rsync
 def test_examples_dry_run_matches_readme(capsys: pytest.CaptureFixture[str]) -> None:
+    """Проверяет сценарий: examples dry run matches readme."""
     code = main([str(EXAMPLES), "--dry-run"])
     out = capsys.readouterr().out
     assert code == 0
