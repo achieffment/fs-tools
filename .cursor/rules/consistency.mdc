@@ -17,7 +17,8 @@ alwaysApply: true
  важнее файла; плюс путь и `chmod 600`, ленивый `dotenv`), единый журнал
  `.fs-log` (`log.py`, `append_log` — содержимое строк и текст пустого блока
  задаются параметром), общая отправка веб-хуков (`notify.py`: URL/tok по ключам,
- https-only, lazy `requests`), общий разбор аргументов и `resolve_root` (`cli.py`).
+ https-only, lazy `requests`), общий разбор аргументов, `resolve_root` и шаблон
+ `run_mode_main` (`cli.py`).
  Барьер
  «имя — один компонент пути»
   (`safety.py`) живёт в `normalizer/`, а не в `shared/`: checker ничего не
@@ -31,30 +32,34 @@ alwaysApply: true
   (`engine.py`, класс `FsChecker`), отчёт (`report.py`), веб-хук (`notify.py`,
   обёртка над `shared.notify` с ключами `FSCHK_*`),
   обёртка журнала (`log.py`), точка входа (`runner.py`).
-- `syncher/` — чтение/валидация `.fs-sync.toml` (`config.py`, `tomllib`), трансляция
-  include/exclude в фильтры rsync (`ignore.py`), сборка/запуск rsync и delete-guard
-  (`rsync.py`), offload (`offload.py`), отчёт (`report.py`), веб-хук (`notify.py`,
-  обёртка над `shared.notify` с ключами `FSSYN_*`), обёртка журнала (`log.py`),
-  точка входа (`runner.py`).
+- `syncher/` — единое объявление CLI-флагов sync (`cli_args.py`), чтение/валидация
+  `.fs-sync.toml` (`config.py`, `tomllib`), трансляция include/exclude в фильтры rsync
+  (`ignore.py`), сборка/запуск rsync и delete-guard (`rsync.py`), offload
+  (`offload.py`), отчёт (`report.py`), веб-хук (`notify.py`, обёртка над
+  `shared.notify` с ключами `FSSYN_*`), обёртка журнала (`log.py`), точка входа
+  (`runner.py`).
 
 Симметрия двух первых режимов намеренная: ядро каждого — `engine.py` с классом `Fs*`
 (`FsNormalizer` / `FsChecker`); локальная переменная инстанса в `runner.run` — `fsnm`
 / `fsch`. Сохраняй это соответствие при правках. Режим `syncher` **несимметричен**: у
 него нет `engine.py`/`Fs*`-класса и нет `safety.py` (структура — функциональная:
-`config`/`ignore`/`rsync`/`offload`/`report`, конвейер собирается в `runner.run`).
+`cli_args`/`config`/`ignore`/`rsync`/`offload`/`report`, конвейер собирается в
+`runner.run`).
 Симметрию сохраняют только врапнеры `log.py`/`runner.py` и раскладка тестов/примеров.
 
 Точки входа и коды возврата:
 
 - normalizer/checker: `runner.main(argv) -> int` (тонкая обёртка над `shared.cli`) +
-  `run(root) -> int`. Аргумент-каталог (`path`, `nargs="?"`) минует диалог (режим
-  cron/таймера), иначе — интерактивный `pick_directory()`. Коды `0`/`1`/`2`
+  `run(root) -> int`. Аргумент-каталог (`path`, `nargs="?"`) минует диалог, иначе —
+  интерактивный `pick_directory()`. Коды `0`/`1`/`2`
   зафиксированы контрактом и проверяются тестами.
-- syncher: `runner.main(argv) -> int` + `run(root, args) -> int`. Режим
-  **неинтерактивен** (picker не используется): без аргумента берётся CWD, диалог не
-  открывается. Коды `0/1/2/3` (наихудший среди профилей) зафиксированы контрактом.
+- syncher: `runner.main(argv) -> int` + `run(root, args) -> int`. Без аргумента
+  каталог выбирается интерактивно через `pick_directory()`, аргумент-каталог
+  минует диалог. Коды `0/1/2/3` (наихудший среди профилей)
+  зафиксированы контрактом.
 - Диспетчер `fs_tools.cli:main` (`fs-tools <normalize|check|sync>`) и `__main__.py`
-  импортируют `runner` выбранного режима **лениво** (внутри обработчика), чтобы
+  импортируют `runner` выбранного режима **лениво** (через `importlib` в обработчике),
+  чтобы
   `--help` и доступный режим работали без extra другого режима. Подкоманда `sync`
   объявляет флаги режима и пробрасывает их (а не только `path`).
 

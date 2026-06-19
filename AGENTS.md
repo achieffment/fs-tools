@@ -7,45 +7,46 @@
 
 ```text
 src/fs_tools/
-├── shared/          # общий код всех режимов
-│   ├── picker.py        # выбор каталога (Windows/WSL/macOS/терминал)
-│   ├── pick_folder.ps1  # нативный диалог Windows (IFileOpenDialog), грузится через importlib.resources
-│   ├── pathspec_compat.py  # _FACTORY: version-shim фабрики gitignore-паттернов
-│   ├── env.py           # единый .env: load_env (load_dotenv, override=False), путь, chmod 600
-│   ├── log.py           # единый журнал .fs-log (append_log)
-│   ├── notify.py        # общая отправка веб-хуков (URL/tok по ключам, https-only, lazy requests)
-│   └── cli.py           # общий разбор аргументов, resolve_root
-├── normalizer/      # режим нормализации
-│   ├── rules/           # правила (по файлу на правило) + __all__
-│   ├── name.py          # конвейер (build_normalizer, NameNormalizer)
-│   ├── engine.py        # обход и переименование (FsNormalizer, deepest-first)
-│   ├── ignore.py        # фильтр .fs-ignore
-│   ├── safety.py        # enforce_safe_component (имя — один компонент пути)
-│   ├── log.py           # write_fs_log (обёртка над shared.log)
-│   └── runner.py        # main/run
-├── checker/         # режим проверки
-│   ├── rule.py          # разбор .fs-check
-│   ├── engine.py        # разворачивание правил, сбор нарушений
-│   ├── report.py        # формат отчёта
-│   ├── notify.py        # веб-хук (ленивый requests; .env грузит shared.env, читает os.environ)
-│   ├── log.py           # write_fs_log (обёртка)
-│   └── runner.py        # main/run
-├── syncher/         # режим синхронизации (ПК → сервер через rsync)
-│   ├── config.py        # чтение/валидация .fs-sync.toml (tomllib)
-│   ├── ignore.py        # трансляция include/exclude в фильтры rsync
-│   ├── rsync.py         # сборка/запуск rsync, листинг, delete-guard
-│   ├── offload.py       # backup-профиль: verify → after_push
-│   ├── report.py        # заголовок + итоговый отчёт по профилям
-│   ├── notify.py        # веб-хук (FSSYN_*, ленивый requests, через shared.env)
-│   ├── log.py           # write_fs_log (обёртка)
-│   └── runner.py        # main(argv) + run(root, args)
-├── cli.py           # диспетчер fs-tools (ленивый импорт runner режима)
-└── __main__.py      # python -m fs_tools
+├── shared/                   # общий код всех режимов
+│   ├── picker.py             # выбор каталога (Windows/WSL/macOS/терминал)
+│   ├── pick_folder.ps1       # нативный диалог Windows (IFileOpenDialog), грузится через importlib.resources
+│   ├── pathspec_compat.py    # _FACTORY: version-shim фабрики gitignore-паттернов
+│   ├── env.py                # единый .env: load_env (load_dotenv, override=False), путь, chmod 600
+│   ├── log.py                # единый журнал .fs-log (append_log)
+│   ├── notify.py             # общая отправка веб-хуков (URL/tok по ключам, https-only, lazy requests)
+│   └── cli.py                # общий разбор аргументов, resolve_root, run_mode_main
+├── normalizer/               # режим нормализации
+│   ├── rules/                # правила (по файлу на правило) + __all__
+│   ├── name.py               # конвейер (build_normalizer, NameNormalizer)
+│   ├── engine.py             # обход и переименование (FsNormalizer, deepest-first)
+│   ├── ignore.py             # фильтр .fs-ignore
+│   ├── safety.py             # enforce_safe_component (имя — один компонент пути)
+│   ├── log.py                # write_fs_log (обёртка над shared.log)
+│   └── runner.py             # main/run
+├── checker/                  # режим проверки
+│   ├── rule.py               # разбор .fs-check
+│   ├── engine.py             # разворачивание правил, сбор нарушений
+│   ├── report.py             # формат отчёта
+│   ├── notify.py             # веб-хук (ленивый requests; .env грузит shared.env, читает os.environ)
+│   ├── log.py                # write_fs_log (обёртка)
+│   └── runner.py             # main/run
+├── syncher/                  # режим синхронизации (ПК → сервер через rsync)
+│   ├── config.py             # чтение/валидация .fs-sync.toml (tomllib)
+│   ├── cli_args.py           # единое объявление sync-флагов и проброс argv для диспетчера/runner
+│   ├── ignore.py             # трансляция include/exclude в фильтры rsync
+│   ├── rsync.py              # сборка/запуск rsync, листинг, delete-guard
+│   ├── offload.py            # backup-профиль: verify → after_push
+│   ├── report.py             # заголовок + итоговый отчёт по профилям
+│   ├── notify.py             # веб-хук (FSSYN_*, ленивый requests, через shared.env)
+│   ├── log.py                # write_fs_log (обёртка)
+│   └── runner.py             # main(argv) + run(root, args)
+├── cli.py                    # диспетчер fs-tools (ленивый импорт runner режима)
+└── __main__.py               # python -m fs_tools
 ```
 
 Несимметрия `syncher`: у режима нет `engine.py`/`Fs*`-класса и `safety.py` (структура —
-`config`/`ignore`/`rsync`/`offload`/`report`); врапнеры `log.py`/`runner.py` и раскладка
-тестов/примеров симметрию сохраняют.
+`cli_args`/`config`/`ignore`/`rsync`/`offload`/`report`); врапнеры `log.py`/`runner.py`
+и раскладка тестов/примеров симметрию сохраняют.
 
 Точки входа (`pyproject.toml [project.scripts]`): `fs-normalizer`, `fs-checker`,
 `fs-syncher`, `fs-tools` (диспетчер `<normalize|check|sync>`).
@@ -53,11 +54,12 @@ src/fs_tools/
 ## Команды
 
 ```bash
-pip install -e ".[normalizer,checker,syncher,dev]"  # editable + все extra + инструменты
-.venv/bin/python -m pytest -q                # тесты (--import-mode=importlib задан в pyproject)
-.venv/bin/python -m ruff check .             # линтер (исправление: ruff check --fix .)
+pip install -e ".[normalizer,checker,syncher,dev]"    # editable + все extra + инструменты
+.venv/bin/python -m pytest -q                         # тесты (--import-mode=importlib задан в pyproject)
+.venv/bin/python -m pylint src tests                  # Pylint (src + tests)
+.venv/bin/python -m ruff check .                      # линтер (исправление: ruff check --fix .)
 .venv/bin/python -m mypy --strict -p fs_tools
-.venv/bin/python -m build                    # sdist + wheel
+.venv/bin/python -m build                             # sdist + wheel
 ```
 
 В PowerShell `&&` не поддерживается — команды по одной.
@@ -65,8 +67,8 @@ pip install -e ".[normalizer,checker,syncher,dev]"  # editable + все extra + 
 ## Ключевые принципы
 
 - **Ленивые импорты — намеренные**: `unidecode`/`requests`/`python-dotenv` и runner
-  режимов в диспетчере импортируются внутри функций, чтобы режим работал без чужого
-  extra. Не поднимай их в шапку модуля.
+  режимов в диспетчере загружаются лениво (через `importlib` в обработчике/функции),
+  чтобы режим работал без чужого extra. Не поднимай тяжёлые зависимости в шапку модуля.
 - **Ресурсы и `.env` — не от `__file__`**: `pick_folder.ps1` грузится через
   `importlib.resources.files("fs_tools.shared")`; путь к `.env` (`shared.env`) — через
   `FS_TOOLS_HOME`/CWD. Иначе не найдётся в установленном wheel.
@@ -92,8 +94,9 @@ pip install -e ".[normalizer,checker,syncher,dev]"  # editable + все extra + 
 Раскладка зеркалит пакет — файл `test_<module>.py` на модуль (`test_name.py`,
 `test_safety.py`, `test_engine.py`, `test_ignore.py`, `test_log.py` + `rules/`,
 `test_runner.py` у нормализатора; `test_engine.py`, `test_rule.py`, ... у checker;
-`test_config.py`, `test_ignore.py`, `test_rsync.py`, `test_offload.py`, `test_report.py`,
-`test_runner.py`, `test_notify.py`, `test_log.py`, `test_examples.py` у syncher).
+`test_config.py`, `test_cli_args.py`, `test_ignore.py`, `test_rsync.py`,
+`test_offload.py`, `test_report.py`, `test_runner.py`, `test_notify.py`,
+`test_log.py`, `test_examples.py` у syncher).
 Фикстуры: `make_tree` (общая) — `tests/conftest.py`; `nn` —
 `tests/normalizer/conftest.py`; `write_rule` — `tests/checker/conftest.py`;
 `make_tree(base, paths)` + `write_config` — `tests/syncher/conftest.py` (переопределяют

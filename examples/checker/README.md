@@ -28,9 +28,9 @@ fs-checker
 fs-checker examples/checker
 
 # то же через обёртки bin/ (создают .venv и editable-установку при первом запуске):
-bin/check.sh        # Linux/macOS (терминал)
-bin/check.command   # macOS (двойной клик в Finder)
-bin/check.bat       # Windows
+bin/check.sh         # Linux/macOS (терминал)
+bin/check.command    # macOS (двойной клик в Finder)
+bin/check.bat        # Windows
 ```
 
 ## Файл правил

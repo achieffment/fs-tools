@@ -32,9 +32,9 @@
 
 ```bash
 # из корня проекта; канонический прогон — dry-run (без изменений)
-bin/sync.sh examples/syncher --dry-run          # Linux/macOS (терминал)
-bin/sync.command examples/syncher --dry-run     # macOS (двойной клик в Finder)
-bin/sync.bat examples/syncher --dry-run         # Windows (через WSL/cwrsync)
+bin/sync.sh examples/syncher --dry-run         # Linux/macOS (терминал)
+bin/sync.command examples/syncher --dry-run    # macOS (двойной клик в Finder)
+bin/sync.bat examples/syncher --dry-run        # Windows (через WSL/cwrsync)
 ```
 
 Эквивалент напрямую: `fs-syncher examples/syncher --dry-run` (или

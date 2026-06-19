@@ -26,25 +26,25 @@ fs-normalizer
 fs-normalizer examples/normalizer
 
 # то же через обёртки bin/ (создают .venv и editable-установку при первом запуске):
-bin/normalize.sh        # Linux/macOS (терминал)
-bin/normalize.command   # macOS (двойной клик в Finder)
-bin/normalize.bat       # Windows
+bin/normalize.sh         # Linux/macOS (терминал)
+bin/normalize.command    # macOS (двойной клик в Finder)
+bin/normalize.bat        # Windows
 ```
 
 ### 2. Просмотр изменений
 
 ```bash
-git status                                    # переименованные/новые/удалённые объекты
+git status                                 # переименованные/новые/удалённые объекты
 git add -A examples
-git diff --cached --stat -M -- examples       # переезды показаны как renamed
+git diff --cached --stat -M -- examples    # переезды показаны как renamed
 ```
 
 ### 3. Откат к исходному дереву
 
 ```bash
-examples/normalizer/reset.sh        # Linux/macOS (терминал)
-examples/normalizer/reset.command   # macOS (двойной клик в Finder)
-examples/normalizer/reset.bat       # Windows
+examples/normalizer/reset.sh         # Linux/macOS (терминал)
+examples/normalizer/reset.command    # macOS (двойной клик в Finder)
+examples/normalizer/reset.bat        # Windows
 ```
 
 Скрипт без запроса откатывает дерево к версии из git в три шага (`git reset` → `git clean -fdx` → `git checkout`), все — с `core.ignorecase=false`. Такой порядок и флаги нужны, чтобы корректно вернуть и обычные переименования, и те, что отличаются **только регистром**. Зачем именно так — см. ниже. Флаг `-x` (удаление в т.ч. игнорируемых файлов) заодно убирает журнал `.fs-log`; явный `rm`/`del` между `clean` и `checkout` оставлен как страховка.
