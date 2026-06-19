@@ -136,7 +136,7 @@ python -m fs_tools normalize    # эквивалент fs-tools normalize
 | Код | Условие |
 |-----|---------|
 | 0 | прогон без реальных ошибок (безопасно пропущенные конфликты входят сюда) |
-| 1 | ошибка запуска: каталог не выбран / не найден / не каталог |
+| 1 | ошибка запуска: каталог не выбран / не найден / не каталог, либо не установлен extra `normalizer` (`Unidecode`) |
 | 2 | часть переименований не удалась (`OSError`: напр. зарезервированные имена Windows, длина пути) |
 
 Конфликт (занятое целевое имя) — безопасный пропуск, на код возврата не влияет.
@@ -196,11 +196,15 @@ write_fs_log(target, fsnm.renames)                        # дописать .fs
 
 ```text
 Каталог: /mnt/disk/Home
-Отсутствуют пути (3):
+Отсутствуют пути (7):
   Activities/3D/Resources
+  Activities/Web/Projects/Addl/_Archive/aero.example/Data
+  Activities/Web/Projects/Addl/safegrid.example/Data
   Activities/Web/Projects/Self/personal.example/Back
+  Activities/Web/Projects/Work/Fabrikam/_Archive/acoustic.example/Back
+  Activities/Web/Projects/Work/Fabrikam/_Archive/acoustic.example/Data
   Activities/Web/Projects/Work/Fabrikam/widgets.example/Data/project.md
-Проверено правил: 17. Найдено каталогов-кандидатов: 57. Отсутствует: 3.
+Проверено правил: 17. Найдено каталогов-кандидатов: 26. Отсутствует: 7.
 ```
 
 | Код | Условие |

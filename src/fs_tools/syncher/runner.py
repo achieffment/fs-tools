@@ -120,8 +120,11 @@ def _run_backup(profile: Profile, *, dry_run: bool) -> ProfileReport:
 def _run_profile(profile: Profile, *, dry_run: bool, force: bool, verbose: bool) -> ProfileReport:
     effective_dry = dry_run or profile.dry_run
     if profile.kind == "backup":
-        return _run_backup(profile, dry_run=effective_dry)
-    return _run_sync(profile, dry_run=effective_dry, force=force, verbose=verbose)
+        report = _run_backup(profile, dry_run=effective_dry)
+    else:
+        report = _run_sync(profile, dry_run=effective_dry, force=force, verbose=verbose)
+    report.dry_run = effective_dry
+    return report
 
 
 def run(root: Path, args: argparse.Namespace) -> int:
@@ -142,7 +145,8 @@ def run(root: Path, args: argparse.Namespace) -> int:
         sys.stderr.write("Ошибка: для SSH-цели нужен ssh, но он не найден.\n")
         return 1
 
-    print(format_header(root, [p.name for p in selected], args.dry_run))
+    any_dry = args.dry_run or any(p.dry_run for p in selected)
+    print(format_header(root, [p.name for p in selected], any_dry))
 
     result: list[ProfileReport] = []
     for profile in selected:
@@ -161,8 +165,9 @@ def run(root: Path, args: argparse.Namespace) -> int:
 
     worst = max((r.code for r in result), default=0)
 
-    if not args.dry_run:
-        actions = [op for report in result for op in report.actions()]
+    has_live = any(not report.dry_run for report in result)
+    if has_live:
+        actions = [op for report in result if not report.dry_run for op in report.actions()]
         try:
             write_fs_log(root, actions)
         except OSError as exc:

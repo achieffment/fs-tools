@@ -6,7 +6,8 @@ alwaysApply: false
 
 # Примеры — по режимам и кейсам
 
-Примеры разнесены по режимам: `examples/normalizer/` и `examples/checker/`. Каждая
+Примеры разнесены по режимам: `examples/normalizer/`, `examples/checker/` и
+`examples/syncher/`. Каждая
 секция самодостаточна (свой `README.md`); корневой `examples/README.md` — индекс.
 
 ## normalizer

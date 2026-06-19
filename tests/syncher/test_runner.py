@@ -118,6 +118,8 @@ def test_delete_guard_blocks_returns_3(tmp_path: Path, make_tree: Callable[..., 
         (src / f"f{i}.txt").unlink()
     assert main([str(src)]) == 3                 # массовое удаление заблокировано
     assert len(list(dst.iterdir())) == 6         # на сервере всё на месте
+    blocked_log = (src / ".fs-log").read_text(encoding="utf-8")
+    assert "- f0.txt" not in blocked_log         # preflight-план не логируется как факт
     assert main([str(src), "--force-delete"]) == 0
     assert list(dst.iterdir()) == []             # после подтверждения — удалено
 
@@ -144,3 +146,23 @@ def test_profile_selection(tmp_path: Path, make_tree: Callable[..., Path]) -> No
     assert main([str(src), "--profile", "one"]) == 0
     assert (d1 / "a.txt").exists()
     assert not (d2 / "a.txt").exists()           # второй профиль не запускался
+
+
+@requires_rsync
+def test_profile_dry_run_no_log(
+    tmp_path: Path,
+    make_tree: Callable[..., Path],
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    src = tmp_path / "src"
+    dst = tmp_path / "dst"
+    make_tree(src, ["a.txt"])
+    dst.mkdir()
+    (src / ".fs-sync.toml").write_text(
+        _sync_config(src, dst, dry_run="true"), encoding="utf-8"
+    )
+    assert main([str(src)]) == 0
+    out = capsys.readouterr().out
+    assert "Режим: dry-run (без изменений)" in out
+    assert not (dst / "a.txt").exists()
+    assert not (src / ".fs-log").exists()

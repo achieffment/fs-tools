@@ -17,9 +17,12 @@ class ProfileReport:
     offload: list[str] = field(default_factory=list)
     errlist: list[str] = field(default_factory=list)
     blocked: bool = False
+    dry_run: bool = False
 
     def actions(self) -> list[str]:
         """Маркированные строки операций для журнала .fs-log (только выполненное)."""
+        if self.blocked:
+            return []
         ops = [f"+ {path}" for path in self.sent]
         ops += [f"- {path}" for path in self.deleted]
         ops += [f">> {path}" for path in self.offload]
