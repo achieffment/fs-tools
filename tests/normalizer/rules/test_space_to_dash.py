@@ -5,7 +5,7 @@ from fs_tools.normalizer import SpaceToDashRule
 
 
 @pytest.mark.parametrize(
-    "raw, expected",
+    "bare, expected",
     [
         # Прогон с пробелом -> одно тире:
         ("a b", "a-b"),
@@ -18,5 +18,5 @@ from fs_tools.normalizer import SpaceToDashRule
         ("2020-05-20", "2020-05-20"),
     ],
 )
-def test_space_to_dash(raw, expected):
-    assert SpaceToDashRule().apply(raw, is_dir=False) == expected
+def test_space_to_dash(bare, expected):
+    assert SpaceToDashRule().apply(bare, is_dir=False) == expected

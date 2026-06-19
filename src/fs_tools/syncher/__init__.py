@@ -12,10 +12,10 @@ from .config import (
     Config,
     ConfigError,
     Profile,
-    is_ssh_remote,
+    is_ssh_target,
     load_config,
     parse_config,
-    split_remote,
+    split_target,
 )
 from .ignore import ARTIFACTS, build_filters, filter_args
 from .log import FS_LOG, write_fs_log
@@ -46,8 +46,8 @@ __all__ = [
     "CONFIG_NAME",
     "load_config",
     "parse_config",
-    "split_remote",
-    "is_ssh_remote",
+    "split_target",
+    "is_ssh_target",
     "ARTIFACTS",
     "build_filters",
     "filter_args",

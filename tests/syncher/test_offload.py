@@ -13,8 +13,8 @@ from fs_tools.syncher.offload import apply_after_push
 requires_rsync = pytest.mark.skipif(shutil.which("rsync") is None, reason="rsync не установлен")
 
 
-def _backup(local_root: Path, **kw: Any) -> Profile:
-    base = dict(name="bak", kind="backup", local_root=local_root, remote_root="/srv/bak", delete=False)
+def _backup(source_path: Path, **kw: Any) -> Profile:
+    base = dict(name="bak", kind="backup", source_path=source_path, target_path="/srv/bak", delete=False)
     base.update(kw)
     return Profile(**base)
 
@@ -22,8 +22,8 @@ def _backup(local_root: Path, **kw: Any) -> Profile:
 def test_apply_after_push_nothing(tmp_path: Path) -> None:
     (tmp_path / "a.txt").write_text("a", encoding="utf-8")
     profile = _backup(tmp_path, after_push="nothing")
-    offloaded, errors = apply_after_push(profile, ["a.txt"])
-    assert offloaded == [] and errors == []
+    offload, errlist = apply_after_push(profile, ["a.txt"])
+    assert offload == [] and errlist == []
     assert (tmp_path / "a.txt").exists()
 
 
@@ -31,21 +31,21 @@ def test_apply_after_push_delete(tmp_path: Path) -> None:
     (tmp_path / "sub").mkdir()
     (tmp_path / "sub" / "a.txt").write_text("a", encoding="utf-8")
     profile = _backup(tmp_path, after_push="delete")
-    offloaded, errors = apply_after_push(profile, ["sub/a.txt"])
-    assert offloaded == ["sub/a.txt"] and errors == []
+    offload, errlist = apply_after_push(profile, ["sub/a.txt"])
+    assert offload == ["sub/a.txt"] and errlist == []
     assert not (tmp_path / "sub" / "a.txt").exists()
     assert not (tmp_path / "sub").exists()       # опустевший каталог удалён
     assert tmp_path.exists()                     # сам корень не трогаем
 
 
-def test_apply_after_push_archive(tmp_path: Path) -> None:
+def test_apply_after_push_backup(tmp_path: Path) -> None:
     (tmp_path / "a.txt").write_text("a", encoding="utf-8")
-    archive = tmp_path / "_arch"
-    profile = _backup(tmp_path, after_push="archive", archive_dir=archive)
-    offloaded, errors = apply_after_push(profile, ["a.txt"])
-    assert offloaded == ["a.txt"] and errors == []
+    backup = tmp_path / "_arch"
+    profile = _backup(tmp_path, after_push="backup", backup_path=backup)
+    offload, errlist = apply_after_push(profile, ["a.txt"])
+    assert offload == ["a.txt"] and errlist == []
     assert not (tmp_path / "a.txt").exists()
-    assert (archive / "a.txt").read_text(encoding="utf-8") == "a"
+    assert (backup / "a.txt").read_text(encoding="utf-8") == "a"
 
 
 def test_run_offload_dry_run_keeps_files(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -61,7 +61,7 @@ def test_run_offload_dry_run_keeps_files(monkeypatch: pytest.MonkeyPatch, tmp_pa
     profile = _backup(tmp_path, after_push="delete")
     result = run_offload(profile, dry_run=True)
     assert result.sent == ["a.txt"]
-    assert result.offloaded == []
+    assert result.offload == []
     assert (tmp_path / "a.txt").exists()         # dry-run ничего не удаляет
 
 
@@ -70,7 +70,7 @@ def test_run_offload_failed_push_no_delete(monkeypatch: pytest.MonkeyPatch, tmp_
 
     class _Out:
         ok = False
-        returncode = 23
+        rc = 23
         sent: list[str] = []
         deleted: list[str] = []
         stderr = "rsync error"
@@ -78,7 +78,7 @@ def test_run_offload_failed_push_no_delete(monkeypatch: pytest.MonkeyPatch, tmp_
     monkeypatch.setattr(offload_mod, "run_rsync", lambda cmd: _Out())
     profile = _backup(tmp_path, after_push="delete")
     result = run_offload(profile, dry_run=False)
-    assert result.returncode == 2
+    assert result.rc == 2
     assert (tmp_path / "a.txt").exists()         # сбой передачи — не удаляем
 
 
@@ -99,7 +99,7 @@ def test_run_offload_verify_partial(monkeypatch: pytest.MonkeyPatch, tmp_path: P
     monkeypatch.setattr(offload_mod, "verify_pending", lambda profile: {"bad.txt"})
     profile = _backup(tmp_path, after_push="delete", verify=True)
     result = run_offload(profile, dry_run=False)
-    assert result.offloaded == ["ok.txt"]
+    assert result.offload == ["ok.txt"]
     assert not (tmp_path / "ok.txt").exists()
     assert (tmp_path / "bad.txt").exists()       # непереданное остаётся
 
@@ -115,10 +115,10 @@ def test_real_offload_delete_after_verified(tmp_path: Path) -> None:
     dst.mkdir()
     for i in range(3):
         (src / f"f{i}.txt").write_text(str(i), encoding="utf-8")
-    profile = _backup(src, remote_root=str(dst), after_push="delete", verify=True)
+    profile = _backup(src, target_path=str(dst), after_push="delete", verify=True)
     result = run_offload(profile, dry_run=False)
     assert result.ok
-    assert sorted(result.offloaded) == ["f0.txt", "f1.txt", "f2.txt"]
+    assert sorted(result.offload) == ["f0.txt", "f1.txt", "f2.txt"]
     for i in range(3):
         assert (dst / f"f{i}.txt").exists()      # на сервере есть
         assert not (src / f"f{i}.txt").exists()  # локально удалены
@@ -134,10 +134,10 @@ def test_real_offload_excluded_file_not_deleted(tmp_path: Path) -> None:
     dst.mkdir()
     (src / "keep.txt").write_text("k", encoding="utf-8")
     (src / "scratch.tmp").write_text("t", encoding="utf-8")
-    profile = _backup(src, remote_root=str(dst), exclude=["*.tmp"], after_push="delete", verify=True)
+    profile = _backup(src, target_path=str(dst), exclude=["*.tmp"], after_push="delete", verify=True)
     result = run_offload(profile, dry_run=False)
     assert result.ok
-    assert result.offloaded == ["keep.txt"]
+    assert result.offload == ["keep.txt"]
     assert not (src / "keep.txt").exists()       # переданное удалено
     assert (src / "scratch.tmp").exists()        # исключённое осталось локально
     assert not (dst / "scratch.tmp").exists()    # и на сервер не ушло

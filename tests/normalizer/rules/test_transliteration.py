@@ -9,16 +9,16 @@ from fs_tools.normalizer import TransliterationRule
 # символы. Иначе os.rename истолковал бы их как путь и переместил/потерял объект.
 # --------------------------------------------------------------------------- #
 @pytest.mark.parametrize(
-    "raw",
+    "bare",
     [
         "½", "¼", "¾", "10½", "½ доля", "naïve½", "файл ½",
         "∖обратная", "↘стрелка", "＼fullwidth",  # дают '\' через unidecode
         "пример\u2028строка", "две\u2029строки",  # дают '\n' через unidecode
     ],
 )
-def test_no_path_separators_introduced(nn, raw):
+def test_no_path_separators_introduced(nn, bare):
     for is_dir in (False, True):
-        out = nn.normalize(raw if is_dir else raw + ".txt", is_dir=is_dir)
+        out = nn.normalize(bare if is_dir else bare + ".txt", is_dir=is_dir)
         assert "/" not in out
         assert "\\" not in out
         assert not any(ord(c) < 0x20 for c in out)
@@ -72,15 +72,15 @@ def test_ascii_apostrophe_preserved(nn):
 # одиночный '<' в середине имени ломает os.rename на Windows (WinError 123).
 # --------------------------------------------------------------------------- #
 @pytest.mark.parametrize(
-    "raw",
+    "bare",
     [
         "«ёлочки»", "ООО «Печоралифтсервис»", "“кавычки”", "„нижние“",
         "файл «с» кавычками", "‹одинарные›",
     ],
 )
-def test_no_windows_forbidden_introduced(nn, raw):
+def test_no_windows_forbidden_introduced(nn, bare):
     for is_dir in (False, True):
-        out = nn.normalize(raw if is_dir else raw + ".txt", is_dir=is_dir)
+        out = nn.normalize(bare if is_dir else bare + ".txt", is_dir=is_dir)
         assert not any(ch in out for ch in '<>:"|?*')
 
 
@@ -101,7 +101,7 @@ def test_transliteration_rule_removes_windows_forbidden():
     assert "<" not in out and ">" not in out
 
 
-@pytest.mark.parametrize("raw", ["½", "10½", "½ доля", "naïve½"])
-def test_fraction_idempotent(nn, raw):
-    once = nn.normalize(raw, is_dir=False)
+@pytest.mark.parametrize("bare", ["½", "10½", "½ доля", "naïve½"])
+def test_fraction_idempotent(nn, bare):
+    once = nn.normalize(bare, is_dir=False)
     assert nn.normalize(once, is_dir=False) == once

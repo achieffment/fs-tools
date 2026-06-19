@@ -41,7 +41,7 @@ def run(root: Path) -> int:
     renamed, skipped = fsnm.apply(root)
     print(
         f"Готово. Переименовано: {renamed}, пропущено: {skipped} "
-        f"(конфликты: {fsnm.conflicts}, ошибки: {len(fsnm.errors)})."
+        f"(конфликты: {fsnm.conflicts}, ошибки: {len(fsnm.errlist)})."
     )
     # Журнал — вторичный артефакт: переименования уже выполнены, поэтому сбой записи
     # не роняем трейсбеком, а лишь предупреждаем. На код возврата это не влияет.
@@ -50,7 +50,7 @@ def run(root: Path) -> int:
         print(f"Журнал: {lpath}")
     except OSError as exc:
         sys.stderr.write(f"Не удалось записать журнал .fs-log: {exc}\n")
-    return 2 if fsnm.errors else 0
+    return 2 if fsnm.errlist else 0
 
 
 def main(argv: list[str] | None = None) -> int:

@@ -5,7 +5,7 @@ from fs_tools.normalizer import TrimEdgeRule
 
 
 @pytest.mark.parametrize(
-    "raw, expected",
+    "bare, expected",
     [
         ("-file-", "file"),
         ("__name__", "__name"),  # ведущие '_' у файлов сохраняются
@@ -36,8 +36,8 @@ from fs_tools.normalizer import TrimEdgeRule
         ("file!", "file"),
     ],
 )
-def test_trim_edge(raw, expected):
-    assert TrimEdgeRule().apply(raw, is_dir=False) == expected
+def test_trim_edge(bare, expected):
+    assert TrimEdgeRule().apply(bare, is_dir=False) == expected
 
 
 def test_trim_edge_dir_keeps_leading_underscore():

@@ -56,7 +56,7 @@ class Rule:
     prefix: tuple[str, ...]
     mandate: str
     dir_only: bool
-    raw: str
+    bare: str
 
     @classmethod
     def from_pattern(cls, pattern: str) -> Rule:
@@ -70,7 +70,7 @@ class Rule:
         core = pattern.strip("/").replace("\\ ", " ")
         segments = core.split("/")
         *prefix, mandate = segments
-        return cls(prefix=tuple(prefix), mandate=mandate, dir_only=dir_only, raw=pattern)
+        return cls(prefix=tuple(prefix), mandate=mandate, dir_only=dir_only, bare=pattern)
 
 
 class Negation:
@@ -109,20 +109,20 @@ def load_fs_rule(root: Path) -> FsRule:
     if not path.is_file():
         raise FsRuleError(f"в выбранном каталоге нет файла .fs-check: {path}")
     try:
-        raw = path.read_text(encoding="utf-8-sig")
+        bare = path.read_text(encoding="utf-8-sig")
     except OSError as exc:
         raise FsRuleError(f"не удалось прочитать .fs-check: {exc}") from exc
 
     rules: list[Rule] = []
     negatives: list[str] = []
-    for line in raw.splitlines():
-        content = _rstrip_rule(line)
-        if not content or content.startswith("#"):
+    for line in bare.splitlines():
+        cont = _rstrip_rule(line)
+        if not cont or cont.startswith("#"):
             continue  # пустая строка или комментарий (только ведущий `#`)
-        if content.startswith("!"):
-            negatives.append(content[1:])  # `!`-шаблон отдаём pathspec без ведущего `!`
+        if cont.startswith("!"):
+            negatives.append(cont[1:])  # `!`-шаблон отдаём pathspec без ведущего `!`
             continue
-        rule = Rule.from_pattern(content)
+        rule = Rule.from_pattern(cont)
         if rule.mandate:  # отбрасываем вырожденные строки вроде "/" без сегментов
             rules.append(rule)
 

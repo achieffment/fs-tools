@@ -5,7 +5,7 @@ from fs_tools.normalizer import BracketsRule
 
 
 @pytest.mark.parametrize(
-    "raw, expected",
+    "bare, expected",
     [
         # Число/дата (без букв) -> скобки убираются (круглые и квадратные):
         ("file (1)", "file 1"),
@@ -32,8 +32,8 @@ from fs_tools.normalizer import BracketsRule
         ("((1))", "1"),  # вложенные пары схлопываются
     ],
 )
-def test_brackets_rule(raw, expected):
-    assert BracketsRule().apply(raw, is_dir=False) == expected
+def test_brackets_rule(bare, expected):
+    assert BracketsRule().apply(bare, is_dir=False) == expected
 
 
 def test_brackets_rule_exported():

@@ -13,6 +13,7 @@ src/fs_tools/
 │   ├── pathspec_compat.py  # _FACTORY: version-shim фабрики gitignore-паттернов
 │   ├── env.py           # единый .env: load_env (load_dotenv, override=False), путь, chmod 600
 │   ├── log.py           # единый журнал .fs-log (append_log)
+│   ├── notify.py        # общая отправка веб-хуков (URL/tok по ключам, https-only, lazy requests)
 │   └── cli.py           # общий разбор аргументов, resolve_root
 ├── normalizer/      # режим нормализации
 │   ├── rules/           # правила (по файлу на правило) + __all__
@@ -82,6 +83,9 @@ pip install -e ".[normalizer,checker,syncher,dev]"  # editable + все extra + 
   Журнал пишется только в боевом прогоне (не в `--dry-run`).
 - **Консистентность**: изменение поведения синхронизирует код, тесты, примеры и
   документацию. Детали и осознанные допущения — в `.cursor/rules/`.
+- **Симметрия именования**: словарь замен и правило подбора симметричных локальных
+  имён зафиксированы в `.cursor/rules/naming-symmetry.mdc` (включая исключения по
+  stdlib-контрактам и публичным API).
 
 ## Тесты
 

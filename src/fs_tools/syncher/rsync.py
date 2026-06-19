@@ -13,7 +13,7 @@ import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from .config import Profile, split_remote
+from .config import Profile, split_target
 from .ignore import filter_args
 
 RSYNC = "rsync"
@@ -23,7 +23,7 @@ RSYNC = "rsync"
 class RsyncOutcome:
     """Итог одного запуска rsync: переданные/удалённые объекты и код возврата."""
 
-    returncode: int
+    rc: int
     sent: list[str] = field(default_factory=list)
     deleted: list[str] = field(default_factory=list)
     stdout: str = ""
@@ -31,7 +31,7 @@ class RsyncOutcome:
 
     @property
     def ok(self) -> bool:
-        return self.returncode == 0
+        return self.rc == 0
 
 
 @dataclass
@@ -65,14 +65,14 @@ def ssh_available() -> bool:
     return shutil.which("ssh") is not None
 
 
-def _source(local_root: Path) -> str:
+def _source(source_path: Path) -> str:
     """Путь-источник для rsync: posix + завершающий `/` (содержимое каталога)."""
-    return local_root.as_posix().rstrip("/") + "/"
+    return source_path.as_posix().rstrip("/") + "/"
 
 
-def _dest(remote_root: str) -> str:
+def _dest(target_path: str) -> str:
     """Путь-приёмник: завершающий `/`, чтобы синхронизировать содержимое в каталог."""
-    is_ssh, host, path = split_remote(remote_root)
+    is_ssh, host, path = split_target(target_path)
     norm = path.rstrip("/") + "/"
     if is_ssh and host is not None:
         return f"{host}:{norm}"
@@ -90,7 +90,7 @@ def transfer_args(profile: Profile) -> list[str]:
         args += ["--partial", "--progress"]
     if profile.bwlimit:
         args.append(f"--bwlimit={profile.bwlimit}")
-    if profile.ssh_opts and split_remote(profile.remote_root)[0]:
+    if profile.ssh_opts and split_target(profile.target_path)[0]:
         args += ["-e", "ssh " + " ".join(profile.ssh_opts)]
     return args
 
@@ -109,8 +109,8 @@ def build_command(
         cmd.append("--dry-run")
     cmd += transfer_args(profile)
     cmd += filter_args(profile.exclude, profile.include)
-    cmd.append(_source(profile.local_root))
-    cmd.append(_dest(profile.remote_root))
+    cmd.append(_source(profile.source_path))
+    cmd.append(_dest(profile.target_path))
     return cmd
 
 
@@ -180,7 +180,7 @@ def run_rsync(cmd: list[str]) -> RsyncOutcome:
     proc = subprocess.run(cmd, capture_output=True, text=True)
     sent, deleted = parse_itemized(proc.stdout)
     return RsyncOutcome(
-        returncode=proc.returncode,
+        rc=proc.returncode,
         sent=sent,
         deleted=deleted,
         stdout=proc.stdout,
@@ -206,7 +206,7 @@ def remote_object_count(profile: Profile) -> int:
     сервере). Недоступность/ошибка листинга → 0: тогда срабатывает только порог по
     количеству (безопасный откат, доля не учитывается).
     """
-    items = _run_listing(_dest(profile.remote_root), [])
+    items = _run_listing(_dest(profile.target_path), [])
     return 0 if items is None else len(items)
 
 
@@ -217,7 +217,7 @@ def source_files(profile: Profile) -> list[str]:
     (а не отдельный матчер). Используется offload для определения области удаления.
     Каталоги не включаются. Ошибка листинга → пустой список.
     """
-    items = _run_listing(_source(profile.local_root), filter_args(profile.exclude, profile.include))
+    items = _run_listing(_source(profile.source_path), filter_args(profile.exclude, profile.include))
     if items is None:
         return []
     return sorted(path for path, is_dir in items if not is_dir)

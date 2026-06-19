@@ -95,7 +95,7 @@ class FsChecker:
                 continue
             anccnt += 1
             target = adir / rule.mandate
-            ok = target.is_dir() if rule.dir_only else target.exists()
-            if not ok:
+            result = target.is_dir() if rule.dir_only else target.exists()
+            if not result:
                 missing.add((rel / rule.mandate).as_posix())
         return anccnt

@@ -9,7 +9,7 @@ from pathlib import Path
 from fs_tools.syncher import FS_LOG, write_fs_log
 
 
-def test_write_fs_log_marks_operations(tmp_path: Path) -> None:
+def test_write_fs_log_marks_actions(tmp_path: Path) -> None:
     when = datetime(2026, 6, 16, 9, 0, 0)
     lpath = write_fs_log(tmp_path, ["+ a.txt", "- old.txt", ">> x.bin"], when=when)
     assert lpath == tmp_path / FS_LOG

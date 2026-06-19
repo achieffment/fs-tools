@@ -14,15 +14,15 @@ class ProfileReport:
     code: int
     sent: list[str] = field(default_factory=list)
     deleted: list[str] = field(default_factory=list)
-    offloaded: list[str] = field(default_factory=list)
-    errors: list[str] = field(default_factory=list)
+    offload: list[str] = field(default_factory=list)
+    errlist: list[str] = field(default_factory=list)
     blocked: bool = False
 
-    def operations(self) -> list[str]:
+    def actions(self) -> list[str]:
         """Маркированные строки операций для журнала .fs-log (только выполненное)."""
         ops = [f"+ {path}" for path in self.sent]
         ops += [f"- {path}" for path in self.deleted]
-        ops += [f">> {path}" for path in self.offloaded]
+        ops += [f">> {path}" for path in self.offload]
         return ops
 
 
@@ -44,15 +44,15 @@ def format_profile(report: ProfileReport) -> str:
     parts = [
         f"передано {len(report.sent)}",
         f"удалено {len(report.deleted)}",
-        f"выгружено {len(report.offloaded)}",
-        f"ошибок {len(report.errors)}",
+        f"выгружено {len(report.offload)}",
+        f"ошибок {len(report.errlist)}",
     ]
     return head + ", ".join(parts)
 
 
-def format_report(root: Path, reports: list[ProfileReport]) -> str:
+def format_report(root: Path, result: list[ProfileReport]) -> str:
     """Полный итоговый отчёт по всем профилям."""
     lines = [f"Итог ({root}):"]
-    for report in reports:
+    for report in result:
         lines.append("  " + format_profile(report))
     return "\n".join(lines)

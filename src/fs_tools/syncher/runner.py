@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 
 from ..shared.cli import add_path_argument, resolve_root
-from .config import Config, ConfigError, Profile, is_ssh_remote, load_config
+from .config import Config, ConfigError, Profile, is_ssh_target, load_config
 from .log import write_fs_log
 from .notify import send_webhook
 from .offload import run_offload
@@ -66,10 +66,10 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _select_profiles(config: Config, names: list[str] | None) -> list[Profile]:
+def _select_roll(config: Config, names: list[str] | None) -> list[Profile]:
     """Профили к запуску: по --profile или все. Неизвестное имя → ConfigError."""
     if not names:
-        return list(config.profiles)
+        return list(config.roll)
     selected: list[Profile] = []
     for name in names:
         profile = config.by_name(name)
@@ -94,14 +94,14 @@ def _run_sync(profile: Profile, *, dry_run: bool, force: bool, verbose: bool) ->
     outcome = run_rsync(build_command(profile, dry_run=dry_run, delete=do_delete))
     if verbose and outcome.stdout:
         print(outcome.stdout)
-    errors = [outcome.stderr.strip()] if (not outcome.ok and outcome.stderr.strip()) else []
+    errlist = [outcome.stderr.strip()] if (not outcome.ok and outcome.stderr.strip()) else []
     return ProfileReport(
         name=profile.name,
         kind=profile.kind,
         code=0 if outcome.ok else 2,
         sent=outcome.sent,
         deleted=outcome.deleted,
-        errors=errors,
+        errlist=errlist,
     )
 
 
@@ -110,10 +110,10 @@ def _run_backup(profile: Profile, *, dry_run: bool) -> ProfileReport:
     return ProfileReport(
         name=profile.name,
         kind=profile.kind,
-        code=result.returncode,
+        code=result.rc,
         sent=result.sent,
-        offloaded=result.offloaded,
-        errors=result.errors,
+        offload=result.offload,
+        errlist=result.errlist,
     )
 
 
@@ -133,18 +133,18 @@ def run(root: Path, args: argparse.Namespace) -> int:
     """
     try:
         config = load_config(root)
-        selected = _select_profiles(config, args.profile)
+        selected = _select_roll(config, args.profile)
     except ConfigError as exc:
         sys.stderr.write(f"Ошибка: {exc}\n")
         return 1
 
-    if any(is_ssh_remote(p.remote_root) for p in selected) and not ssh_available():
+    if any(is_ssh_target(p.target_path) for p in selected) and not ssh_available():
         sys.stderr.write("Ошибка: для SSH-цели нужен ssh, но он не найден.\n")
         return 1
 
     print(format_header(root, [p.name for p in selected], args.dry_run))
 
-    reports: list[ProfileReport] = []
+    result: list[ProfileReport] = []
     for profile in selected:
         report = _run_profile(
             profile,
@@ -153,18 +153,18 @@ def run(root: Path, args: argparse.Namespace) -> int:
             verbose=args.verbose,
         )
         print(format_profile(report))
-        for err in report.errors:
+        for err in report.errlist:
             sys.stderr.write(f"[{report.name}] {err}\n")
-        reports.append(report)
+        result.append(report)
 
-    print(format_report(root, reports))
+    print(format_report(root, result))
 
-    worst = max((r.code for r in reports), default=0)
+    worst = max((r.code for r in result), default=0)
 
     if not args.dry_run:
-        operations = [op for report in reports for op in report.operations()]
+        actions = [op for report in result for op in report.actions()]
         try:
-            write_fs_log(root, operations)
+            write_fs_log(root, actions)
         except OSError as exc:
             sys.stderr.write(f"Не удалось записать журнал .fs-log: {exc}\n")
         if worst in (2, 3):

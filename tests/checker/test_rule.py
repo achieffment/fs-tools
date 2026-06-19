@@ -21,7 +21,7 @@ def test_comments_and_blank_lines_ignored(write_rule: Callable[[str], Path]) -> 
         "/Activities/Web/Projects\n"
     )
     fs_rule = load_fs_rule(root)
-    assert [r.raw for r in fs_rule.rules] == ["/Activities", "/Activities/Web/Projects"]
+    assert [r.bare for r in fs_rule.rules] == ["/Activities", "/Activities/Web/Projects"]
 
 
 def test_inline_hash_is_literal(write_rule: Callable[[str], Path]) -> None:
@@ -64,7 +64,7 @@ def test_negatives_go_to_pathspec_not_rules(write_rule: Callable[[str], Path]) -
     root = write_rule("/Activities/*/Projects\n!_Archive\n")
     fs_rule = load_fs_rule(root)
     # Положительное правило — одно; негатив в правила не попал.
-    assert [r.raw for r in fs_rule.rules] == ["/Activities/*/Projects"]
+    assert [r.bare for r in fs_rule.rules] == ["/Activities/*/Projects"]
     # Негатив прунит имя _Archive, но не обычный проект.
     assert fs_rule.negation.is_pruned("_Archive") is True
     assert fs_rule.negation.is_pruned("crm.example.com") is False

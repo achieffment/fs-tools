@@ -94,9 +94,9 @@ def load_fs_ignore(root: Path) -> FsIgnore | None:
     if not path.is_file():
         return None
     try:
-        raw = path.read_text(encoding="utf-8-sig")
+        bare = path.read_text(encoding="utf-8-sig")
     except OSError:
         return None
-    spec = pathspec.PathSpec.from_lines(_FACTORY, raw.splitlines())
+    spec = pathspec.PathSpec.from_lines(_FACTORY, bare.splitlines())
     incl = any(p.include is False for p in spec.patterns)
     return FsIgnore(spec, incl)

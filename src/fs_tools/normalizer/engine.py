@@ -22,10 +22,10 @@ class FsNormalizer:
         self.ignorer = ignorer
         # Заполняются в apply() (сбрасываются на каждом вызове):
         # renames   — успешно выполненные переименования (относительно root);
-        # errors    — пары, для которых os.rename упал с OSError (реальный сбой);
+        # errlist   — пары, для которых os.rename упал с OSError (реальный сбой);
         # conflicts — число пропусков из-за занятого целевого имени (безопасно).
         self.renames: list[tuple[Path, Path]] = []
-        self.errors: list[tuple[Path, Path]] = []
+        self.errlist: list[tuple[Path, Path]] = []
         self.conflicts = 0
 
     @staticmethod
@@ -77,9 +77,9 @@ class FsNormalizer:
         items.sort(key=lambda p: len(p.parts), reverse=True)
         # Списки/счётчики сбрасываются на каждом вызове. В renames — только успешные
         # os.rename (для журнала .fs-log); ошибки и конфликты туда не попадают, они
-        # учитываются отдельно (errors/conflicts) и тоже входят в общий skipped.
+        # учитываются отдельно (errlist/conflicts) и тоже входят в общий skipped.
         self.renames = []
-        self.errors = []
+        self.errlist = []
         self.conflicts = 0
         renamed = 0
         skipped = 0
@@ -112,6 +112,6 @@ class FsNormalizer:
                 renamed += 1
             except OSError as exc:
                 sys.stderr.write(f"Ошибка переименования {srcp} -> {dest}: {exc}\n")
-                self.errors.append((srcp.relative_to(root), dest.relative_to(root)))
+                self.errlist.append((srcp.relative_to(root), dest.relative_to(root)))
                 skipped += 1
         return renamed, skipped

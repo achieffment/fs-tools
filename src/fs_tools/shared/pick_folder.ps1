@@ -58,13 +58,13 @@ namespace FsTools {
     // WSL "\\wsl.localhost" (узел "Linux") сообщает SFGAO_FILESYSTEM=False, и этот флаг
     // спрятал бы его из дерева — из-под Windows было бы не добраться до папок WSL.
     // SIGDN_FILESYSPATH (0x80058000) — путь файловой системы выбранного элемента.
-    public static string Pick(string initial, string title, IntPtr owner) {
+    public static string Pick(string initial, string header, IntPtr owner) {
       IFileOpenDialog dlg = (IFileOpenDialog)(new FileOpenDialog());
       try {
         uint opts;
         dlg.GetOptions(out opts);
         dlg.SetOptions(opts | 0x20u);
-        if (!string.IsNullOrEmpty(title)) { dlg.SetTitle(title); }
+        if (!string.IsNullOrEmpty(header)) { dlg.SetTitle(header); }
         Guid cg = Guid.NewGuid();
         dlg.SetClientGuid(ref cg);
         if (!string.IsNullOrEmpty(initial)) {

@@ -5,7 +5,7 @@ from fs_tools.normalizer import DateRule
 
 
 @pytest.mark.parametrize(
-    "raw, expected",
+    "bare, expected",
     [
         ("20.05.2020", "2020-05-20"),
         ("2020.05.20", "2020-05-20"),
@@ -50,5 +50,5 @@ from fs_tools.normalizer import DateRule
         ("2020-00-00", "2020-00-00"),
     ],
 )
-def test_date_rule(raw, expected):
-    assert DateRule().apply(raw, is_dir=False) == expected
+def test_date_rule(bare, expected):
+    assert DateRule().apply(bare, is_dir=False) == expected

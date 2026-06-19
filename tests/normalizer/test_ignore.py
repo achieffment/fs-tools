@@ -177,13 +177,13 @@ def test_load_fs_ignore_patterns_comments_negation(tmp_path):
 
 def test_load_fs_ignore_does_not_modify_file(tmp_path):
     # Файл при сопоставлении не изменяется: содержимое читается как есть.
-    content = "Archive\n*.bak\n"
+    cont = "Archive\n*.bak\n"
     f = tmp_path / ".fs-ignore"
-    f.write_text(content)
+    f.write_text(cont)
     ign = load_fs_ignore(tmp_path)
     assert ign is not None
     ign.matches(PurePosixPath("x/Archive"), True)
-    assert f.read_text() == content
+    assert f.read_text() == cont
 
 
 def test_load_fs_ignore_utf8_bom(tmp_path):
@@ -200,12 +200,12 @@ def test_load_fs_ignore_utf8_bom(tmp_path):
 def test_fs_ignored_dir_not_renamed_or_descended(tmp_path):
     # Исключённый каталог не переименовывается, внутрь не заходим (содержимое
     # тоже не трогаем), при этом видимый сосед нормализуется.
-    archive = tmp_path / "Archive"
-    archive.mkdir()
-    (archive / "Отчёт 2020").write_text("x")  # имя осталось бы ненормализованным
+    backup = tmp_path / "Archive"
+    backup.mkdir()
+    (backup / "Отчёт 2020").write_text("x")  # имя осталось бы ненормализованным
     (tmp_path / "Отчёт 2020").write_text("y")
-    fs = FsNormalizer(build_normalizer(), _ign("Archive"))
-    fs.apply(tmp_path)
+    fsnm = FsNormalizer(build_normalizer(), _ign("Archive"))
+    fsnm.apply(tmp_path)
     # Исключённый каталог и его содержимое не тронуты:
     assert (tmp_path / "Archive").is_dir()
     assert (tmp_path / "Archive" / "Отчёт 2020").exists()
@@ -215,12 +215,12 @@ def test_fs_ignored_dir_not_renamed_or_descended(tmp_path):
 
 def test_fs_ignored_not_counted(tmp_path):
     # Исключённые объекты не попадают в счётчики renamed/skipped.
-    archive = tmp_path / "Archive"
-    archive.mkdir()
-    (archive / "Файл (1).txt").write_text("x")  # был бы переименован
+    backup = tmp_path / "Archive"
+    backup.mkdir()
+    (backup / "Файл (1).txt").write_text("x")  # был бы переименован
     (tmp_path / "Файл (1).txt").write_text("y")  # сосед -> переименование
-    fs = FsNormalizer(build_normalizer(), _ign("Archive"))
-    renamed, skipped = fs.apply(tmp_path)
+    fsnm = FsNormalizer(build_normalizer(), _ign("Archive"))
+    renamed, skipped = fsnm.apply(tmp_path)
     assert renamed == 1  # только сосед
     assert skipped == 0
     assert (tmp_path / "fail-01.txt").exists()
@@ -230,8 +230,8 @@ def test_fs_ignore_file_by_name(tmp_path):
     # Паттерн может совпасть с именем самого файла.
     (tmp_path / "Keep").write_text("x")  # имя нормализуемо, но исключено
     (tmp_path / "Drop me").write_text("y")
-    fs = FsNormalizer(build_normalizer(), _ign("Keep"))
-    renamed, skipped = fs.apply(tmp_path)
+    fsnm = FsNormalizer(build_normalizer(), _ign("Keep"))
+    renamed, skipped = fsnm.apply(tmp_path)
     assert (tmp_path / "Keep").exists()  # не тронут
     assert (tmp_path / "drop-me").exists()  # сосед нормализован
     assert renamed == 1
@@ -242,8 +242,8 @@ def test_fs_without_ignorer_behaves_as_before(tmp_path):
     # ignorer=None (по умолчанию) -> прежнее поведение.
     (tmp_path / "Archive").mkdir()
     (tmp_path / "Archive" / "Отчёт.txt").write_text("x")
-    fs = FsNormalizer(build_normalizer())
-    fs.apply(tmp_path)
+    fsnm = FsNormalizer(build_normalizer())
+    fsnm.apply(tmp_path)
     assert (tmp_path / "Archive" / "otchiot.txt").exists()
 
 
@@ -255,8 +255,8 @@ def test_fs_ignore_basename_anywhere(tmp_path):
     (tmp_path / "Docs" / "notes.txt").write_text("1")
     (tmp_path / "Deep" / "Inner" / "notes.txt").write_text("2")
     (tmp_path / "Docs" / "Заметки.txt").write_text("3")
-    fs = FsNormalizer(build_normalizer(), _ign("notes.txt"))
-    renamed, skipped = fs.apply(tmp_path)
+    fsnm = FsNormalizer(build_normalizer(), _ign("notes.txt"))
+    renamed, skipped = fsnm.apply(tmp_path)
     # notes.txt не тронуты и не посчитаны:
     assert (tmp_path / "Docs" / "notes.txt").exists()
     assert (tmp_path / "Deep" / "Inner" / "notes.txt").exists()
@@ -273,8 +273,8 @@ def test_fs_ignore_anchored_path(tmp_path):
     (tmp_path / "Other").mkdir()
     (tmp_path / "Sub" / "notes.txt").write_text("1")
     (tmp_path / "Other" / "notes.txt").write_text("2")
-    fs = FsNormalizer(build_normalizer(), _ign("Sub/notes.txt"))
-    fs.apply(tmp_path)
+    fsnm = FsNormalizer(build_normalizer(), _ign("Sub/notes.txt"))
+    fsnm.apply(tmp_path)
     assert (tmp_path / "Sub" / "notes.txt").exists()    # исключён
     # 'Other/notes.txt' не исключён; имя уже нормализовано -> остаётся
     assert (tmp_path / "Other" / "notes.txt").exists()
@@ -289,8 +289,8 @@ def test_fs_ignore_case_insensitive(tmp_path):
     lower.mkdir()
     (upper / "Файл.txt").write_text("x")
     (lower / "Файл.txt").write_text("y")
-    fs = FsNormalizer(build_normalizer(), _ign("Archive"))
-    fs.apply(tmp_path)
+    fsnm = FsNormalizer(build_normalizer(), _ign("Archive"))
+    fsnm.apply(tmp_path)
     assert (upper / "Файл.txt").exists()              # исключён
     assert (lower / "Файл.txt").exists()              # тоже исключён (регистр не важен)
 
@@ -305,9 +305,9 @@ def test_fs_ignore_idempotent_across_runs_with_capitalized_parent(tmp_path):
     (inner / "Секрет.bak").write_text("x")           # был бы нормализован -> sekret.bak
     (tmp_path / ".fs-ignore").write_text("/box/inner/*.bak\n")
 
-    ign = load_fs_ignore(tmp_path)
-    assert ign is not None
-    FsNormalizer(build_normalizer(), ign).apply(tmp_path)
+    ign1 = load_fs_ignore(tmp_path)
+    assert ign1 is not None
+    FsNormalizer(build_normalizer(), ign1).apply(tmp_path)
     # После первого прогона родители капитализированы, файл исключён и не тронут:
     assert (tmp_path / "Box" / "Inner" / "Секрет.bak").exists()
 
@@ -326,8 +326,8 @@ def test_fs_negation_reincludes_file(tmp_path):
     (tmp_path / "Docs" / "Черновик.tmp").write_text("x")  # остаётся исключён
     (tmp_path / "Docs" / "Важное.keep").write_text("y")    # возвращён
     ign = _ign("Docs/*", "!Docs/*.keep")
-    fs = FsNormalizer(build_normalizer(), ign)
-    fs.apply(tmp_path)
+    fsnm = FsNormalizer(build_normalizer(), ign)
+    fsnm.apply(tmp_path)
     assert (tmp_path / "Docs" / "Черновик.tmp").exists()   # исключён -> не тронут
     assert (tmp_path / "Docs" / "vazhnoe.keep").exists()   # включён -> нормализован
 
@@ -341,8 +341,8 @@ def test_fs_hidden_not_reincluded_by_negation(tmp_path):
     (hidden / "Отчёт 2020").write_text("y")          # внутрь скрытой папки не заходим
     ign = _ign("Archive", "!*.keep", "!.cfg/**")    # '!' -> _incl=True (probe)
     assert ign._incl is True
-    fs = FsNormalizer(build_normalizer(), ign)
-    renamed, skipped = fs.apply(tmp_path)
+    fsnm = FsNormalizer(build_normalizer(), ign)
+    renamed, skipped = fsnm.apply(tmp_path)
     assert (tmp_path / ".keep").exists()             # скрытый файл не тронут
     assert (hidden / "Отчёт 2020").exists()          # содержимое скрытой папки не тронуто
     assert renamed == 0
@@ -356,8 +356,8 @@ def test_fs_negation_probe_descends_ignored_dir(tmp_path):
     (data / "Папка").mkdir(parents=True)
     ign = _ign("Archive", "!**/Data/**")
     assert ign._incl is True
-    fs = FsNormalizer(build_normalizer(), ign)
-    fs.apply(tmp_path)
+    fsnm = FsNormalizer(build_normalizer(), ign)
+    fsnm.apply(tmp_path)
     assert (data / "Papka").is_dir()       # возвращённый потомок нормализован
     assert (tmp_path / "Archive").is_dir()  # промежуточный Archive не тронут
 
@@ -427,8 +427,8 @@ def test_fs_ignore_bracket_class_active(tmp_path):
     b.mkdir()
     (a / "вложение").write_text("x")
     (b / "вложение").write_text("y")
-    fs = FsNormalizer(build_normalizer(), _ign("отчёт[12]"))
-    fs.apply(tmp_path)
+    fsnm = FsNormalizer(build_normalizer(), _ign("отчёт[12]"))
+    fsnm.apply(tmp_path)
     assert (a / "вложение").exists()  # исключён классом -> не тронут
     survivors = [p for p in tmp_path.rglob("*") if p.is_file() and p.read_text() == "y"]
     assert len(survivors) == 1
@@ -444,8 +444,8 @@ def test_fs_ignore_literal_bracket_escaped(tmp_path):
     b.mkdir()
     (a / "вложение").write_text("x")
     (b / "вложение").write_text("y")
-    fs = FsNormalizer(build_normalizer(), _ign(r"Файл \[1\]"))
-    fs.apply(tmp_path)
+    fsnm = FsNormalizer(build_normalizer(), _ign(r"Файл \[1\]"))
+    fsnm.apply(tmp_path)
     assert (a / "вложение").exists()  # исключён литерально -> не тронут
     survivors = [p for p in tmp_path.rglob("*") if p.is_file() and p.read_text() == "y"]
     assert len(survivors) == 1
@@ -463,8 +463,8 @@ def test_fs_ignore_read_from_normalized_dir(tmp_path):
     (tmp_path / "Other" / "Отчёт 2020").write_text("y")  # сосед нормализуется
     ign = load_fs_ignore(tmp_path)
     assert ign is not None
-    fs = FsNormalizer(build_normalizer(), ign)
-    renamed, skipped = fs.apply(tmp_path)
+    fsnm = FsNormalizer(build_normalizer(), ign)
+    renamed, skipped = fsnm.apply(tmp_path)
     assert (tmp_path / "Sub" / "Отчёт 2020").exists()            # исключён
     assert (tmp_path / "Other" / "otchiot_2020-00-00").exists()  # нормализован
     assert (tmp_path / ".fs-ignore").is_file()                   # сам файл уцелел

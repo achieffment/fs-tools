@@ -22,7 +22,7 @@ requires_rsync = pytest.mark.skipif(shutil.which("rsync") is None, reason="rsync
 
 
 def _profile(tmp_path: Path, **kw: Any) -> Profile:
-    base = dict(name="p", kind="sync", local_root=tmp_path, remote_root="/srv/dst")
+    base = dict(name="p", kind="sync", source_path=tmp_path, target_path="/srv/dst")
     base.update(kw)
     return Profile(**base)
 
@@ -48,14 +48,14 @@ def test_build_command_dry_run_and_options(tmp_path: Path) -> None:
 
 
 def test_build_command_ssh_opts_only_for_ssh(tmp_path: Path) -> None:
-    ssh = _profile(tmp_path, remote_root="host:/p", ssh_opts=["-p", "2222"])
-    cmd = build_command(ssh, dry_run=False, delete=False)
-    assert "-e" in cmd
-    assert "ssh -p 2222" in cmd
-    assert cmd[-1] == "host:/p/"
+    ssh = _profile(tmp_path, target_path="host:/p", ssh_opts=["-p", "2222"])
+    cmd1 = build_command(ssh, dry_run=False, delete=False)
+    assert "-e" in cmd1
+    assert "ssh -p 2222" in cmd1
+    assert cmd1[-1] == "host:/p/"
 
-    local = _profile(tmp_path, ssh_opts=["-p", "2222"])
-    cmd2 = build_command(local, dry_run=False, delete=False)
+    source = _profile(tmp_path, ssh_opts=["-p", "2222"])
+    cmd2 = build_command(source, dry_run=False, delete=False)
     assert "-e" not in cmd2                     # локальная цель — ssh не нужен
 
 
@@ -151,7 +151,7 @@ def test_real_sync_transfers_and_idempotent(tmp_path: Path) -> None:
     dst.mkdir()
     (src / "a.txt").write_text("a", encoding="utf-8")
     (src / "sub" / "b.txt").write_text("b", encoding="utf-8")
-    profile = _profile(src, remote_root=str(dst), delete=True)
+    profile = _profile(src, target_path=str(dst), delete=True)
 
     first = rsync_mod.run_rsync(build_command(profile, dry_run=False, delete=True))
     assert first.ok
@@ -169,7 +169,7 @@ def test_real_delete_mirrors(tmp_path: Path) -> None:
     src.mkdir()
     dst.mkdir()
     (src / "a.txt").write_text("a", encoding="utf-8")
-    profile = _profile(src, remote_root=str(dst), delete=True)
+    profile = _profile(src, target_path=str(dst), delete=True)
     rsync_mod.run_rsync(build_command(profile, dry_run=False, delete=True))
     (src / "a.txt").unlink()
     out = rsync_mod.run_rsync(build_command(profile, dry_run=False, delete=True))
@@ -187,7 +187,7 @@ def test_real_artifacts_excluded(tmp_path: Path) -> None:
     (src / ".fs-sync.toml").write_text("x", encoding="utf-8")
     (src / ".fs-log").write_text("x", encoding="utf-8")
     (src / ".env").write_text("secret", encoding="utf-8")
-    profile = _profile(src, remote_root=str(dst), delete=True)
+    profile = _profile(src, target_path=str(dst), delete=True)
     rsync_mod.run_rsync(build_command(profile, dry_run=False, delete=True))
     assert (dst / "a.txt").exists()
     assert not (dst / ".fs-sync.toml").exists()
@@ -203,7 +203,7 @@ def test_real_source_files_respects_filters(tmp_path: Path) -> None:
     (src / "sub" / "b.bin").write_text("b", encoding="utf-8")
     (src / "skip.tmp").write_text("t", encoding="utf-8")
     (src / ".fs-sync.toml").write_text("x", encoding="utf-8")   # артефакт исключается
-    profile = _profile(src, remote_root=str(tmp_path / "dst"), exclude=["*.tmp"])
+    profile = _profile(src, target_path=str(tmp_path / "dst"), exclude=["*.tmp"])
     assert source_files(profile) == ["a.txt", "sub/b.bin"]
 
 
@@ -216,6 +216,6 @@ def test_real_remote_object_count(tmp_path: Path) -> None:
     (dst / "x.txt").write_text("x", encoding="utf-8")
     (dst / "sub").mkdir()
     (dst / "sub" / "y.txt").write_text("y", encoding="utf-8")
-    profile = _profile(src, remote_root=str(dst))
+    profile = _profile(src, target_path=str(dst))
     # считаются объекты приёмника (файлы и каталоги), не источника
     assert rsync_mod.remote_object_count(profile) == 3

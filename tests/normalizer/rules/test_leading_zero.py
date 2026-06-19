@@ -5,7 +5,7 @@ from fs_tools.normalizer import LeadingZeroRule
 
 
 @pytest.mark.parametrize(
-    "raw, expected",
+    "bare, expected",
     [
         ("1_file", "01_file"),
         ("file_5", "file_05"),
@@ -17,12 +17,12 @@ from fs_tools.normalizer import LeadingZeroRule
         ("12", "12"),          # уже двузначное
     ],
 )
-def test_leading_zero(raw, expected):
-    assert LeadingZeroRule().apply(raw, is_dir=False) == expected
+def test_leading_zero(bare, expected):
+    assert LeadingZeroRule().apply(bare, is_dir=False) == expected
 
 
 @pytest.mark.parametrize(
-    "raw, expected",
+    "bare, expected",
     [
         ("том 5!", "tom-05"),
         ("report 5!", "report-05"),
@@ -31,10 +31,10 @@ def test_leading_zero(raw, expected):
         ("3,", "03"),
     ],
 )
-def test_leading_zero_after_trim_edge(nn, raw, expected):
+def test_leading_zero_after_trim_edge(nn, bare, expected):
     # LeadingZeroRule идёт ПОСЛЕ TrimEdgeRule: кромочный «мусор» рядом с одиночной
     # цифрой ('5!', '5.') не мешает поставить ведущий ноль за один проход. Иначе
     # на втором прогоне (мусор уже срезан) '5' -> '05' — нарушение идемпотентности.
-    once = nn.normalize(raw, is_dir=False)
+    once = nn.normalize(bare, is_dir=False)
     assert once == expected
     assert nn.normalize(once, is_dir=False) == once

@@ -4,16 +4,16 @@ from pathlib import Path
 from fs_tools.syncher import ProfileReport, format_header, format_profile, format_report
 
 
-def test_operations_markers() -> None:
+def test_actions_markers() -> None:
     report = ProfileReport(
         name="m",
         kind="sync",
         code=0,
         sent=["a.txt"],
         deleted=["old.txt"],
-        offloaded=["x.bin"],
+        offload=["x.bin"],
     )
-    assert report.operations() == ["+ a.txt", "- old.txt", ">> x.bin"]
+    assert report.actions() == ["+ a.txt", "- old.txt", ">> x.bin"]
 
 
 def test_format_header_modes(tmp_path: Path) -> None:
@@ -36,9 +36,9 @@ def test_format_profile_blocked() -> None:
 
 
 def test_format_report_lists_all(tmp_path: Path) -> None:
-    reports = [
+    result = [
         ProfileReport(name="a", kind="sync", code=0),
-        ProfileReport(name="b", kind="backup", code=2, errors=["boom"]),
+        ProfileReport(name="b", kind="backup", code=2, errlist=["boom"]),
     ]
-    text = format_report(tmp_path, reports)
+    text = format_report(tmp_path, result)
     assert "Профиль «a»" in text and "Профиль «b»" in text

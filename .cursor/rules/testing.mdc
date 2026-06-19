@@ -32,6 +32,9 @@ alwaysApply: true
   utf-8). Мод-специфичные строки журнала проверяются в мод-тестах: пары `old -> new`
   и «(изменений нет)» — у normalizer; пути и «(нарушений нет)» — у checker; маркеры
   `+`/`-`/`>>` и «(изменений нет)» — у syncher.
+- `tests/shared/test_notify.py` — общая логика веб-хука (`shared.notify`): чтение
+  конфигурации из env, https-only, lazy `requests`, Bearer-заголовок, гашение
+  сетевых ошибок.
 
 Обязательные виды проверки:
 
@@ -49,10 +52,10 @@ alwaysApply: true
   `@requires_rsync` (skip без бинаря).
 - **Аргумент-каталог минует диалог** — для normalizer/checker; для syncher «нет
   аргумента → CWD» (диалога нет вовсе).
-- **Веб-хук**: окружение процесса важнее `.env` (проверяется в `test_env.py`); ленивые
- импорты — на уровне модуля `notify` нет атрибута `requests`. В notify-тестах загрузка
- `.env` изолируется подменой `shared.env.load_env` на no-op + `monkeypatch.setenv`, а
- сеть — через `requests.post` реального модуля.
+- **Веб-хук**: окружение процесса важнее `.env` (проверяется в `test_env.py`);
+  checker/syncher-тесты проверяют ключи окружения и делегирование в `shared.notify`,
+  а поведение отправки (https-only, lazy `requests`, заголовки, гашение ошибок)
+  проверяется в `tests/shared/test_notify.py`.
 
 Проверка (инструменты в `.venv`; в PowerShell `&&` не поддерживается):
 

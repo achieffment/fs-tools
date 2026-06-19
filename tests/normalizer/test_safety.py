@@ -8,7 +8,7 @@ from fs_tools.normalizer.safety import enforce_safe_component
 
 
 @pytest.mark.parametrize(
-    "raw, expected",
+    "bare, expected",
     [
         ("a/b", "a-b"),                          # '/' -> '-' (один компонент пути)
         ("a\\b", "a-b"),                         # '\' -> '-'
@@ -19,11 +19,11 @@ from fs_tools.normalizer.safety import enforce_safe_component
         ("clean_name-01", "clean_name-01"),      # безопасное имя не меняется (идемпотентность)
     ],
 )
-def test_enforce_safe_component(raw, expected):
-    assert enforce_safe_component(raw) == expected
+def test_enforce_safe_component(bare, expected):
+    assert enforce_safe_component(bare) == expected
 
 
-@pytest.mark.parametrize("raw", ["a/b", "a\\b", 'x<y>:"|?*', "a\x00b", "<>:|?*"])
-def test_enforce_safe_component_idempotent(raw):
-    once = enforce_safe_component(raw)
+@pytest.mark.parametrize("bare", ["a/b", "a\\b", 'x<y>:"|?*', "a\x00b", "<>:|?*"])
+def test_enforce_safe_component_idempotent(bare):
+    once = enforce_safe_component(bare)
     assert enforce_safe_component(once) == once

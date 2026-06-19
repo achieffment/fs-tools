@@ -1,7 +1,7 @@
 """Журнал синхронизации .fs-log: дата + список выполненных операций.
 
 Формат — общий `shared.log`; различие лишь в содержимом строк (маркеры `+`/`-`/`>>`
-из `report.ProfileReport.operations()`) и тексте пустого блока (`(изменений нет)`).
+из `report.ProfileReport.actions()`) и тексте пустого блока (`(изменений нет)`).
 """
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ __all__ = ["FS_LOG", "write_fs_log"]
 
 def write_fs_log(
     root: Path,
-    operations: list[str],
+    actions: list[str],
     when: datetime | None = None,
 ) -> Path:
     """Дописать в root/.fs-log запись прогона: заголовок-дата + список операций.
@@ -26,4 +26,4 @@ def write_fs_log(
     Пустой список фиксируется пометкой «(изменений нет)». Параметр `when` нужен для
     тестов; по умолчанию берётся текущее локальное время.
     """
-    return append_log(root, operations, "(изменений нет)", when=when)
+    return append_log(root, actions, "(изменений нет)", when=when)
