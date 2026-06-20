@@ -495,11 +495,11 @@ print(outcome.sent, outcome.deleted)
 ## Разработка
 
 ```bash
-pytest                       # тесты
-pylint src tests             # Pylint (src + tests)
-ruff check .                 # линтер (в т.ч. порядок импортов, isort)
-mypy --strict -p fs_tools    # проверка типов
-python -m build              # сборка sdist + wheel
+pytest                              # тесты
+pylint --recursive=y src tests/*    # Pylint (полный охват src + tests/*)
+ruff check .                        # линтер (в т.ч. порядок импортов, isort)
+mypy --strict -p fs_tools           # проверка типов
+python -m build                     # сборка sdist + wheel
 ```
 
 Раскладка тестов зеркалит пакет: `tests/shared/`, `tests/normalizer/`, `tests/checker/`,

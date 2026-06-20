@@ -54,12 +54,12 @@ src/fs_tools/
 ## Команды
 
 ```bash
-pip install -e ".[normalizer,checker,syncher,dev]"    # editable + все extra + инструменты
-.venv/bin/python -m pytest -q                         # тесты (--import-mode=importlib задан в pyproject)
-.venv/bin/python -m pylint src tests                  # Pylint (src + tests)
-.venv/bin/python -m ruff check .                      # линтер (исправление: ruff check --fix .)
+pip install -e ".[normalizer,checker,syncher,dev]"                     # editable + все extra + инструменты
+.venv/bin/python -m pytest -q                                          # тесты (--import-mode=importlib задан в pyproject)
+.venv/bin/python -m pylint --persistent=n --recursive=y src tests/*    # Pylint: полный рекурсивный охват src + всех tests/*
+.venv/bin/python -m ruff check .                                       # линтер (исправление: ruff check --fix .)
 .venv/bin/python -m mypy --strict -p fs_tools
-.venv/bin/python -m build                             # sdist + wheel
+.venv/bin/python -m build                                              # sdist + wheel
 ```
 
 В PowerShell `&&` не поддерживается — команды по одной.
@@ -91,6 +91,14 @@ pip install -e ".[normalizer,checker,syncher,dev]"    # editable + все extra 
 - **Запрет `AugAssign/Add`**: инкрементальное сложение не используем; вместо него
   пишем явную форму `name = name + value`. Контроль закреплён тестом
   `tests/shared/test_no_augassign.py`.
+- **Pylint-проверка без кэша**: основной прогон всегда через
+  `.venv/bin/python -m pylint --persistent=n --recursive=y src tests/*`.
+  Этот запуск обязателен: он покрывает `tests/*` полностью при условии, что
+  тестовые подпапки оформлены как пакеты с `__init__.py`. Если IDE показывает
+  ошибку, а общий прогон чистый, обязателен
+  точечный запуск по файлу
+  `.venv/bin/python -m pylint --persistent=n tests/path/to/file.py`; только после
+  этого фиксируем статус «ошибок нет».
 
 ## Тесты
 
@@ -100,6 +108,9 @@ pip install -e ".[normalizer,checker,syncher,dev]"    # editable + все extra 
 `test_config.py`, `test_cli_args.py`, `test_ignore.py`, `test_rsync.py`,
 `test_offload.py`, `test_report.py`, `test_runner.py`, `test_notify.py`,
 `test_log.py`, `test_examples.py` у syncher).
+Каталоги тестов обязательны как пакеты: `tests/`, `tests/shared/`,
+`tests/normalizer/`, `tests/normalizer/rules/`, `tests/checker/`, `tests/syncher/`
+должны содержать `__init__.py`; новые тестовые подпапки создаются только с ним.
 Фикстуры: `make_tree` (общая) — `tests/conftest.py`; `nn` —
 `tests/normalizer/conftest.py`; `write_rule` — `tests/checker/conftest.py`;
 `make_tree(base, paths)` + `write_config` — `tests/syncher/conftest.py` (переопределяют

@@ -16,6 +16,11 @@ alwaysApply: true
 `test_ignore.py` / `test_log.py` / `test_runner.py` / `test_notify.py` сосуществуют
 (importlib). Хак вставки корня в `sys.path` не нужен (src-layout + editable).
 
+Каталоги тестов обязаны быть пакетами Python: в `tests/`, `tests/shared/`,
+`tests/normalizer/`, `tests/normalizer/rules/`, `tests/checker/`, `tests/syncher/`
+должен быть `__init__.py`. Новые тестовые подпапки создавай сразу с `__init__.py`.
+Без этого `pylint` может обходить дерево неполно даже при `--recursive=y`.
+
 - Корневой `tests/conftest.py` — только по-настоящему общие фикстуры: дерево
   `make_tree` (фабрика из списка путей в `tmp_path`). Мод-специфичные держатся в
   `conftest.py` подпапок: фабрика нормализатора `nn` (`build_normalizer`) —
@@ -61,9 +66,20 @@ alwaysApply: true
 Проверка (инструменты в `.venv`; в PowerShell `&&` не поддерживается):
 
     .venv/bin/python -m pytest -q
-    .venv/bin/python -m pylint src tests
+    .venv/bin/python -m pylint --persistent=n --recursive=y src tests/*
     .venv/bin/python -m ruff check .
     .venv/bin/python -m mypy --strict -p fs_tools
+
+`pylint` запускаем без кэша (`--persistent=n`) и с рекурсивным discovery
+(`--recursive=y`) всегда. Общий прогон выполняем по шаблону `src tests/*`, чтобы
+проверялись все режимы тестов; все тестовые каталоги при этом должны быть пакетами
+с `__init__.py`.
+При любом расхождении между диагностикой IDE и общим прогоном обязателен
+точечный запуск по проблемному файлу:
+
+    .venv/bin/python -m pylint --persistent=n tests/path/to/file.py
+
+Только после общего + точечного прогона разрешено фиксировать статус «ошибок нет».
 
 Всё должно быть зелёным. Идемпотентность дополнительно проверяй на копии
 `examples/normalizer/` (исходник под git не трогаем):
