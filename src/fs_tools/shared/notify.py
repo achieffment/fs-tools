@@ -34,10 +34,10 @@ def send_webhook(
     timeout: float = _DEFAULT_TIMEOUT,
 ) -> bool:
     """Отправить `{\"text\": text}` по ключам конфигурации; ошибки не роняют прогон."""
-    config = load_webhook_config(url_key, tok_key)
-    if config is None:
+    cfg = load_webhook_config(url_key, tok_key)
+    if cfg is None:
         return False
-    url, tok = config
+    url, tok = cfg
     if not url.startswith("https://"):              # без TLS токен не отправляем
         logger.debug("веб-хук пропущен: URL не https")
         return False
@@ -46,27 +46,36 @@ def send_webhook(
     except ImportError:                             # requests — опциональная зависимость
         logger.debug("requests не установлен — веб-хук пропущен")
         return False
-    request_exc = requests.RequestException
+    rexcept = requests.RequestException
     headers = {"Authorization": f"Bearer {tok}"} if tok else {}
     try:
         requests.post(url, json={"text": text}, headers=headers, timeout=timeout)
-    except request_exc as exc:                      # fire-and-forget: не влияет на прогон
+    except rexcept as exc:                      # fire-and-forget: не влияет на прогон
         logger.debug("веб-хук не доставлен: %s", exc)
         return False
     return True
 
 
-def make_mode_notifier(
+def make_load_webhook_config(
+    url_key: str,
+    tok_key: str,
+) -> Callable[[], tuple[str, str] | None]:
+    """Собрать `load_webhook_config` для конкретных env-ключей режима."""
+
+    def _load_webhook_config() -> tuple[str, str] | None:
+        return load_webhook_config(url_key, tok_key)
+
+    return _load_webhook_config
+
+
+def make_send_webhook(
     *,
     url_key: str,
     tok_key: str,
     logger: logging.Logger,
     timeout: float = _DEFAULT_TIMEOUT,
-) -> tuple[Callable[[], tuple[str, str] | None], Callable[[str], bool]]:
-    """Собрать функции `load_webhook_config`/`send_webhook` для конкретного режима."""
-
-    def _load_webhook_config() -> tuple[str, str] | None:
-        return load_webhook_config(url_key, tok_key)
+) -> Callable[[str], bool]:
+    """Собрать `send_webhook` для конкретных env-ключей и логгера режима."""
 
     def _send_webhook(text: str) -> bool:
         return send_webhook(
@@ -77,22 +86,40 @@ def make_mode_notifier(
             timeout=timeout,
         )
 
-    return _load_webhook_config, _send_webhook
+    return _send_webhook
 
 
-def make_mode_exports(
+def make_mode_webhook(
     *,
-    url_key: str,
-    tok_key: str,
-    logger_name: str,
+    prefix: str,
+    logger: logging.Logger,
     timeout: float = _DEFAULT_TIMEOUT,
-) -> tuple[str, str, float, Callable[[], tuple[str, str] | None], Callable[[str], bool]]:
-    """Собрать публичные константы и функции webhook-режима."""
-    logger = logging.getLogger(logger_name)
-    load_cfg, send = make_mode_notifier(
+) -> tuple[Callable[[], tuple[str, str] | None], Callable[[str], bool]]:
+    """Собрать загрузчик конфигурации и отправку веб-хука для префикса режима."""
+    url_key = f"{prefix}_WEBHOOK_URL"
+    tok_key = f"{prefix}_WEBHOOK_TOK"
+    load_cfg = make_load_webhook_config(url_key, tok_key)
+    send_hook = make_send_webhook(
         url_key=url_key,
         tok_key=tok_key,
         logger=logger,
         timeout=timeout,
     )
-    return url_key, tok_key, timeout, load_cfg, send
+    return load_cfg, send_hook
+
+
+def make_mode_exports(
+    *,
+    prefix: str,
+    logger: logging.Logger,
+    timeout: float = _DEFAULT_TIMEOUT,
+) -> tuple[str, str, float, Callable[[], tuple[str, str] | None], Callable[[str], bool]]:
+    """Собрать полный набор mode-экспортов (`URL_KEY`, `TOK_KEY`, `TIMEOUT`, callables)."""
+    url_key = f"{prefix}_WEBHOOK_URL"
+    tok_key = f"{prefix}_WEBHOOK_TOK"
+    load_cfg, send_hook = make_mode_webhook(
+        prefix=prefix,
+        logger=logger,
+        timeout=timeout,
+    )
+    return url_key, tok_key, timeout, load_cfg, send_hook
