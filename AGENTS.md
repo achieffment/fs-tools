@@ -123,3 +123,20 @@ pip install -e ".[normalizer,checker,syncher,dev]"                     # editabl
 
 - Не коммить в ветку `master`.
 - `.env`, `.venv`, `.fs-log`, `dist/`, `build/` — в `.gitignore`, не коммить.
+
+## Аудит изменений и проекта
+
+- Для аудитов использовать project skill `audit-governor` с режимами `audit changed` и
+  `audit full`.
+- Единый контракт аудита закреплён в `.cursor/rules/audit-governor.mdc`; его требования
+  обязательны при любом запросе аудита.
+- В режиме `audit changed` проверять весь набор правок: staged/unstaged/untracked, все
+  коммиты ветки от base (`main`/`master`) и итоговый diff; не ограничиваться последним
+  коммитом.
+- После правок по результатам аудита повторять полный цикл проверок до green:
+  `.venv/bin/python -m pytest -q`,
+  `.venv/bin/python -m pylint --persistent=n --recursive=y src tests/*`,
+  `.venv/bin/python -m ruff check .`,
+  `.venv/bin/python -m mypy --strict -p fs_tools`.
+- Аудит обязателен по всем пластам: код, тесты, examples, docs, комментарии, rules и
+  `AGENTS.md`.

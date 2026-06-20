@@ -492,6 +492,30 @@ print(outcome.sent, outcome.deleted)
 отсутствующими путями) и `examples/syncher/` (источник + локальные приёмники, прогон без
 сети, канонический `--dry-run`). Подробности — в README соответствующих секций.
 
+## Аудит по правилам
+
+Для стабильного аудита используй project skill `audit-governor` с фиксированными
+режимами:
+
+- `audit changed` — аудит внесенных правок;
+- `audit full` — полный аудит проекта.
+
+Рекомендуемые короткие запросы:
+
+- `Запусти audit changed и доведи до полного green.`
+- `Запусти audit full и доведи до полного green.`
+
+Обязательный цикл проверок после каждой серии правок:
+
+```bash
+.venv/bin/python -m pytest -q
+.venv/bin/python -m pylint --persistent=n --recursive=y src tests/*
+.venv/bin/python -m ruff check .
+.venv/bin/python -m mypy --strict -p fs_tools
+```
+
+Цикл повторяется до полного green по всем четырем командам.
+
 ## Разработка
 
 ```bash
