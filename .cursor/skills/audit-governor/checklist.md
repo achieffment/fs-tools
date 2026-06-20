@@ -47,6 +47,10 @@
 - Консистентность кода, тестов, examples, docs, rules.
 - Кроссплатформенность и безопасность.
 - Комментарии: минимум, актуальность, выравнивание по `comments-style.mdc`.
+- Проверить автоконтроль Markdown-выравнивания: `tests/shared/test_markdown_comments.py`
+  проходит в составе `pytest`; для командных fenced-блоков выравнивание считается
+  по локальным подблокам (между пустыми строками), опорная колонка — по самой длинной
+  строке подблока.
 - Проверить локальные naming-пары:
   - `src_rel/dst_rel` в `normalizer/engine.py`;
   - `map_norm_argument/add_norm_argument/norm_argv_from_namespace` в `fs_tools/cli.py`.

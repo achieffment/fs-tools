@@ -98,21 +98,22 @@ bin/sync.bat [каталог] [флаги]    # Windows (через WSL/cwrsync)
 каталог). Каталог можно передать **аргументом** — тогда диалог не открывается:
 
 ```bash
-fs-normalizer                      # нормализация: выбрать каталог в диалоге
-fs-normalizer /path/to/dir         # без диалога
+fs-normalizer                           # нормализация: выбрать каталог в диалоге
+fs-normalizer /path/to/dir              # без диалога
 fs-normalizer /path/to/dir --dry-run
 
-fs-checker                         # проверка: выбрать каталог в диалоге
-fs-checker /path/to/dir            # без диалога
+fs-checker                 # проверка: выбрать каталог в диалоге
+fs-checker /path/to/dir    # без диалога
 
-fs-syncher                         # синхронизация: выбрать каталог в диалоге
-fs-syncher /path/to/dir            # без диалога
+fs-syncher                 # синхронизация: выбрать каталог в диалоге
+fs-syncher /path/to/dir    # без диалога
 
-fs-tools normalize /path/to/dir    # то же через диспетчер
+fs-tools normalize /path/to/dir              # то же через диспетчер
 fs-tools normalize /path/to/dir --dry-run
 fs-tools check /path/to/dir
 fs-tools sync /path/to/dir
-python -m fs_tools normalize       # эквивалент fs-tools normalize
+
+python -m fs_tools normalize                 # эквивалент fs-tools normalize
 ```
 
 Запуск по таймеру — с фиксированным путём в команде, поэтому стартовый рабочий каталог
@@ -188,7 +189,7 @@ renamed, skipped = fsnm.apply(target)
 write_fs_log(target, fsnm.renames)                         # дописать .fs-log
 
 renamed, skipped = fsnm.apply(target, dry_run=True)        # только план, без rename
-fsnm.planned                                                # пары src -> dst для dry-run
+fsnm.planned                                               # пары src -> dst для dry-run
 ```
 
 ---
