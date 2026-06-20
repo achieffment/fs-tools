@@ -83,7 +83,7 @@ class FsIgnore:
         """
         text = rel.as_posix()
         if is_dir:
-            text += "/"
+            text = text + "/"
         return self._spec.match_file(text)
 
 

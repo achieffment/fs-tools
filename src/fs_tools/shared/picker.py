@@ -134,7 +134,7 @@ def _mac_folder_dialog(initial: str | None = None, header: str = _DEFAULT_HEADER
         return None
     script = (
         f'set p to (system attribute "{_ENV_FOLDER}")\n'
-        'if p is not "" then\n'
+        "if p is not \"\" then\n"
         f'  POSIX path of (choose folder with prompt "{header}" default location (POSIX file p))\n'
         "else\n"
         f'  POSIX path of (choose folder with prompt "{header}")\n'

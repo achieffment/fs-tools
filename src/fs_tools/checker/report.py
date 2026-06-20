@@ -15,7 +15,7 @@ def format_report(root: Path, result: CheckResult) -> str:
     lines = [f"Каталог: {root}"]
     if result.missing:
         lines.append(f"Отсутствуют пути ({len(result.missing)}):")
-        lines += [f"  {path}" for path in result.missing]
+        lines = lines + [f"  {path}" for path in result.missing]
     else:
         lines.append("Все требуемые пути на месте.")
     lines.append(

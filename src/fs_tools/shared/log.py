@@ -29,7 +29,7 @@ def append_log(
     date = (when or datetime.now()).strftime("%Y-%m-%d %H:%M:%S")
     body = [date]
     if lines:
-        body += [f"  {line}" for line in lines]
+        body = body + [f"  {line}" for line in lines]
     else:
         body.append(f"  {empty_marker}")
     block = "\n".join(body) + "\n\n"           # пустая строка отделяет блоки прогонов

@@ -1,1 +1,1 @@
-print('alpha')
+print("alpha")

@@ -14,7 +14,7 @@ from pathlib import Path
 
 from ..shared.cli import make_parser, resolve_root
 from ..shared.picker import pick_directory
-from .cli_args import add_sync_flags
+from .cli_args import add_sync_argument
 from .config import Config, ConfigError, Profile, is_ssh_target, load_config
 from .log import write_fs_log
 from .notify import send_webhook
@@ -44,7 +44,7 @@ def _build_parser() -> argparse.ArgumentParser:
         prog="fs-syncher",
         path_help="Каталог для синхронизации. Если не задан — выбирается интерактивно.",
     )
-    add_sync_flags(pars)
+    add_sync_argument(pars)
     return pars
 
 
@@ -117,8 +117,8 @@ def run(root: Path, args: argparse.Namespace) -> int:
     прогоне дописывает .fs-log и шлёт веб-хук при наихудшем коде 2/3.
     """
     try:
-        config = load_config(root)
-        selected = _select_roll(config, args.profile)
+        cfg = load_config(root)
+        selected = _select_roll(cfg, args.profile)
     except ConfigError as exc:
         sys.stderr.write(f"Ошибка: {exc}\n")
         return 1

@@ -86,7 +86,7 @@ class FsNormalizer:
         skipped = 0
         for srcp in items:
             if not srcp.exists():
-                skipped += 1
+                skipped = skipped + 1
                 continue
             name = self.normalizer.normalize(srcp.name, srcp.is_dir())
             if name == srcp.name:
@@ -99,8 +99,8 @@ class FsNormalizer:
                 # но указывает на сам srcp (samefile), и конфликтом не является.
                 if dest.exists() and not srcp.samefile(dest):
                     sys.stderr.write(f"Пропуск (конфликт): {srcp} -> {dest}\n")
-                    self.conflicts += 1
-                    skipped += 1
+                    self.conflicts = self.conflicts + 1
+                    skipped = skipped + 1
                     continue
                 if case:
                     # На регистронезависимых ФС (Windows) — через временное имя.
@@ -110,9 +110,9 @@ class FsNormalizer:
                 else:
                     os.rename(srcp, dest)
                 self.renames.append((srcp.relative_to(root), dest.relative_to(root)))
-                renamed += 1
+                renamed = renamed + 1
             except OSError as exc:
                 sys.stderr.write(f"Ошибка переименования {srcp} -> {dest}: {exc}\n")
                 self.errlist.append((srcp.relative_to(root), dest.relative_to(root)))
-                skipped += 1
+                skipped = skipped + 1
         return renamed, skipped

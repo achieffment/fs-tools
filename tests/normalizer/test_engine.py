@@ -111,7 +111,7 @@ def test_fs_guillemets_renamed_no_data_loss(tmp_path):
     survivors = [p for p in tmp_path.iterdir() if p.is_file() and p.read_text() == "ДАННЫЕ"]
     assert len(survivors) == 1
     name = survivors[0].name
-    assert not any(ch in name for ch in '<>:"|?*')
+    assert not any(ch in name for ch in "<>:\"|?*")
     assert name == "zaiavlenie-ooo-pechoraliftservis.docx"
     assert doc.exists() is False  # переименован
 

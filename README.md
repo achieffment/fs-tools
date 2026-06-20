@@ -462,8 +462,8 @@ from pathlib import Path
 
 from fs_tools.syncher import load_config, build_command, run_rsync
 
-config = load_config(Path("/path/to/dir"))
-profile = config.roll[0]
+cfg = load_config(Path("/path/to/dir"))
+profile = cfg.roll[0]
 outcome = run_rsync(build_command(profile, dry_run=True, delete=profile.delete))
 print(outcome.sent, outcome.deleted)
 ```

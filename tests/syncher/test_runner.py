@@ -20,8 +20,8 @@ def _sync_config(source: Path, dst: Path, **fields: str) -> str:
     """Вспомогательная функция для теста."""
     extra = "".join(f"{k} = {v}\n" for k, v in fields.items())
     return (
-        '[[sync]]\n'
-        'name = "main"\n'
+        "[[sync]]\n"
+        "name = \"main\"\n"
         f'local_root = "{source.as_posix()}"\n'
         f'remote_root = "{dst.as_posix()}"\n'
         f"{extra}"
@@ -82,7 +82,7 @@ def test_missing_ssh_for_ssh_target(tmp_path: Path, monkeypatch: pytest.MonkeyPa
                                     capsys: pytest.CaptureFixture[str]) -> None:
     """Проверяет сценарий: missing ssh for ssh target."""
     (tmp_path / ".fs-sync.toml").write_text(
-        '[[sync]]\nname = "m"\nlocal_root = "."\nremote_root = "host:/srv"\n',
+        "[[sync]]\nname = \"m\"\nlocal_root = \".\"\nremote_root = \"host:/srv\"\n",
         encoding="utf-8",
     )
     monkeypatch.setattr(runner, "rsync_available", lambda: True)
@@ -160,12 +160,12 @@ def test_profile_selection(tmp_path: Path, make_tree: Callable[..., Path]) -> No
     d1.mkdir()
     d2.mkdir()
     text = (
-        '[[sync]]\n'
-        'name = "one"\n'
+        "[[sync]]\n"
+        "name = \"one\"\n"
         f'local_root = "{src.as_posix()}"\n'
         f'remote_root = "{d1.as_posix()}"\n'
-        '[[sync]]\n'
-        'name = "two"\n'
+        "[[sync]]\n"
+        "name = \"two\"\n"
         f'local_root = "{src.as_posix()}"\n'
         f'remote_root = "{d2.as_posix()}"\n'
     )

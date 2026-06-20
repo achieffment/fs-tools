@@ -3,14 +3,14 @@ from __future__ import annotations
 
 import argparse
 
-from fs_tools.syncher.cli_args import add_sync_flags, sync_argv_from_namespace
+from fs_tools.syncher.cli_args import add_sync_argument, sync_argv_from_namespace
 
 
 def _parser() -> argparse.ArgumentParser:
     """Вспомогательная функция для теста."""
     pars = argparse.ArgumentParser()
     pars.add_argument("path", nargs="?")
-    add_sync_flags(pars)
+    add_sync_argument(pars)
     return pars
 
 

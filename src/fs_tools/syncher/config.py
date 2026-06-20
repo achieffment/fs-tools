@@ -207,9 +207,10 @@ def _build_profile(
         if (val := pick("after_push")) is not None:
             after = _as_str(val, name, "after_push")
             if after not in _AFTER_PUSH:
+                allowed = ", ".join(_AFTER_PUSH)
                 raise ConfigError(
                     f"профиль «{name}»: «after_push» = «{after}», допустимо: "
-                    f"{', '.join(_AFTER_PUSH)}"
+                    f"{allowed}"
                 )
             profile.after_push = "backup" if after == "archive" else after
         if (val := pick("verify")) is not None:

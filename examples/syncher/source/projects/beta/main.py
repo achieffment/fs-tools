@@ -1,1 +1,1 @@
-print('beta')
+print("beta")

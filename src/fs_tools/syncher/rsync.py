@@ -108,11 +108,11 @@ def transfer_args(profile: Profile) -> list[str]:
     if profile.compress:
         args.append("-z")
     if profile.partial_progress:
-        args += ["--partial", "--progress"]
+        args = args + ["--partial", "--progress"]
     if profile.bwlimit:
         args.append(f"--bwlimit={profile.bwlimit}")
     if profile.ssh_opts and split_target(profile.target_path)[0]:
-        args += ["-e", "ssh " + " ".join(profile.ssh_opts)]
+        args = args + ["-e", "ssh " + " ".join(profile.ssh_opts)]
     return args
 
 
@@ -128,8 +128,8 @@ def build_command(
         cmd.append("--delete")
     if dry_run:
         cmd.append("--dry-run")
-    cmd += transfer_args(profile)
-    cmd += filter_args(profile.exclude, profile.include)
+    cmd = cmd + transfer_args(profile)
+    cmd = cmd + filter_args(profile.exclude, profile.include)
     cmd.append(_source(profile.source_path))
     cmd.append(_dest(profile.target_path))
     return cmd
@@ -188,7 +188,7 @@ def parse_itemized(stdout: str) -> tuple[list[str], list[str]]:
         if not sep or len(code) < 2:
             continue
         if code[0] in "<>ch":
-            if code[1] == "d":                  # создание/изменение каталога — структурное
+            if code[1] == "d":  # создание/изменение каталога — структурное
                 continue
             cleaned = path.strip()
             if cleaned:

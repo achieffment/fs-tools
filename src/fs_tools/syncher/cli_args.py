@@ -8,7 +8,7 @@ from __future__ import annotations
 import argparse
 
 
-def add_sync_flags(pars: argparse.ArgumentParser) -> None:
+def add_sync_argument(pars: argparse.ArgumentParser) -> None:
     """Добавить флаги режима синхронизации в переданный pars."""
     pars.add_argument(
         "--profile",
@@ -42,7 +42,7 @@ def sync_argv_from_namespace(args: argparse.Namespace) -> list[str]:
     """Восстановить argv режима синхронизации из разобранных диспетчером флагов."""
     argv: list[str] = [args.path] if args.path else []
     for name in args.profile or []:
-        argv += ["--profile", name]
+        argv = argv + ["--profile", name]
     if args.all:
         argv.append("--all")
     if args.dry_run:

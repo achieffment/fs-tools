@@ -24,8 +24,8 @@ class ProfileReport:
         if self.blocked:
             return []
         ops = [f"+ {path}" for path in self.sent]
-        ops += [f"- {path}" for path in self.deleted]
-        ops += [f">> {path}" for path in self.offload]
+        ops = ops + [f"- {path}" for path in self.deleted]
+        ops = ops + [f">> {path}" for path in self.offload]
         return ops
 
 

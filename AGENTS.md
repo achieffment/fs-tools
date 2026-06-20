@@ -88,6 +88,9 @@ pip install -e ".[normalizer,checker,syncher,dev]"    # editable + все extra 
 - **Симметрия именования**: словарь замен и правило подбора симметричных локальных
   имён зафиксированы в `.cursor/rules/naming-symmetry.mdc` (включая исключения по
   stdlib-контрактам и публичным API).
+- **Запрет `AugAssign/Add`**: инкрементальное сложение не используем; вместо него
+  пишем явную форму `name = name + value`. Контроль закреплён тестом
+  `tests/shared/test_no_augassign.py`.
 
 ## Тесты
 

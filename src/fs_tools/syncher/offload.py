@@ -113,7 +113,7 @@ def run_offload(profile: Profile, *, dry_run: bool) -> OffloadResult:
     confirm = [rel for rel in scope if rel not in pending]
     offload, errlist = apply_after_push(profile, confirm)
     result.offload = offload
-    result.errlist += errlist
+    result.errlist = result.errlist + errlist
     if errlist:
         result.rc = 2
     return result

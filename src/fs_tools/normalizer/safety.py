@@ -19,7 +19,7 @@ _DIR_UNSAFE_RE = re.compile(r"[\\/\x00-\x1f]+")
 # пути их нельзя оставить даже в виде '-': пользователь хочет, чтобы такой «мусор»
 # просто вырезался. Удаляем ВЕЗДЕ (не только по краям), иначе одиночный '<' в
 # середине имени ломает os.rename на Windows (WinError 123).
-_WIN_FORBIDDEN_RE = re.compile(r'[<>:"|?*]+')
+_WIN_FORBIDDEN_RE = re.compile("[<>:\"|?*]+")
 
 
 def enforce_safe_component(stem: str) -> str:

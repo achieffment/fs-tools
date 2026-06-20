@@ -6,7 +6,7 @@ try:
 except ImportError as exc:
     raise ImportError(
         "Не найден пакет 'Unidecode' (требуется режиму нормализации). "
-        'Установите зависимость: pip install "fs-tools[normalizer]"'
+        "Установите зависимость: pip install \"fs-tools[normalizer]\""
     ) from exc
 
 from ..safety import enforce_safe_component

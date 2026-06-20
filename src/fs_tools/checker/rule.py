@@ -47,16 +47,16 @@ def _rstrip_rule(line: str) -> str:
 class Rule:
     """Положительное правило: префикс (якори) + последний сегмент (мандат).
 
-    `prefix` — сегменты, разворачиваемые `Path.glob` в существующие каталоги-якори;
-    `mandate` — обязательный последний сегмент (проверяется литерально);
-    `dir_only` — завершающий `/` в исходной строке: мандат проверяется как `is_dir()`,
+    `anchors` — сегменты, разворачиваемые `Path.glob` в существующие каталоги-якори;
+    `require` — обязательный последний сегмент (проверяется литерально);
+    `dirflag` — завершающий `/` в исходной строке: мандат проверяется как `is_dir()`,
     иначе как `exists()` (файл ИЛИ папка).
     """
 
-    prefix: tuple[str, ...]
-    mandate: str
-    dir_only: bool
-    bare: str
+    anchors: tuple[str, ...]
+    require: str
+    dirflag: bool
+    pattern: str
 
     @classmethod
     def from_pattern(cls, pattern: str) -> Rule:
@@ -66,11 +66,16 @@ class Rule:
         значимый пробел (нужно для литерального сравнения мандата без поддержки
         gitignore-экранирования у `Path.glob`).
         """
-        dir_only = pattern.endswith("/")
-        core = pattern.strip("/").replace("\\ ", " ")
-        segments = core.split("/")
-        *prefix, mandate = segments
-        return cls(prefix=tuple(prefix), mandate=mandate, dir_only=dir_only, bare=pattern)
+        dirflag = pattern.endswith("/")
+        cleaned = pattern.strip("/").replace("\\ ", " ")
+        seglist = cleaned.split("/")
+        *anchors, require = seglist
+        return cls(
+            anchors=tuple(anchors),
+            require=require,
+            dirflag=dirflag,
+            pattern=pattern,
+        )
 
 
 class Negation:
@@ -123,7 +128,7 @@ def load_fs_rule(root: Path) -> FsRule:
             negatives.append(cont[1:])  # `!`-шаблон отдаём pathspec без ведущего `!`
             continue
         rule = Rule.from_pattern(cont)
-        if rule.mandate:  # отбрасываем вырожденные строки вроде "/" без сегментов
+        if rule.require:  # отбрасываем вырожденные строки вроде "/" без сегментов
             rules.append(rule)
 
     spec: pathspec.PathSpec[Any] = pathspec.PathSpec.from_lines(_FACTORY, negatives)

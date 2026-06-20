@@ -87,7 +87,7 @@ def test_no_windows_forbidden_introduced(nn, bare):
     """Проверяет сценарий: no windows forbidden introduced."""
     for is_dir in (False, True):
         out = nn.normalize(bare if is_dir else bare + ".txt", is_dir=is_dir)
-        assert not any(ch in out for ch in '<>:"|?*')
+        assert not any(ch in out for ch in "<>:\"|?*")
 
 
 @pytest.mark.parametrize(

@@ -44,9 +44,9 @@ def build_filters(exclude: list[str], include: list[str]) -> list[str]:
     пользовательский include перекрывает exclude.
     """
     rules: list[str] = []
-    rules += auto_exclude_filters()
-    rules += [f"+ {pat}" for pat in include]
-    rules += [f"- {pat}" for pat in exclude]
+    rules = rules + auto_exclude_filters()
+    rules = rules + [f"+ {pat}" for pat in include]
+    rules = rules + [f"- {pat}" for pat in exclude]
     return rules
 
 

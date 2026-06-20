@@ -16,9 +16,9 @@ from fs_tools.syncher import (
 def _toml(target: str = "/srv/dst", extra: str = "") -> str:
     """Вспомогательная функция для теста."""
     return (
-        '[[sync]]\n'
-        'name = "main"\n'
-        'local_root = "."\n'
+        "[[sync]]\n"
+        "name = \"main\"\n"
+        "local_root = \".\"\n"
         f'remote_root = "{target}"\n'
         f"{extra}"
     )
@@ -43,10 +43,10 @@ def test_parse_minimal_sync(tmp_path: Path) -> None:
 def test_backup_delete_default_false(tmp_path: Path) -> None:
     """Проверяет сценарий: backup delete default false."""
     text = (
-        '[[backup]]\n'
-        'name = "bak"\n'
-        'local_root = "."\n'
-        'remote_root = "/srv/bak"\n'
+        "[[backup]]\n"
+        "name = \"bak\"\n"
+        "local_root = \".\"\n"
+        "remote_root = \"/srv/bak\"\n"
     )
     config = parse_config(text, tmp_path)
     profile = config.roll[0]
@@ -58,18 +58,18 @@ def test_backup_delete_default_false(tmp_path: Path) -> None:
 def test_defaults_section_applied_and_overridden(tmp_path: Path) -> None:
     """Проверяет сценарий: defaults section applied and overridden."""
     text = (
-        '[defaults]\n'
-        'compress = true\n'
-        'delete_threshold = 50\n'
-        '[[sync]]\n'
-        'name = "a"\n'
-        'local_root = "."\n'
-        'remote_root = "/srv/a"\n'
-        '[[sync]]\n'
-        'name = "b"\n'
-        'local_root = "."\n'
-        'remote_root = "/srv/b"\n'
-        'delete_threshold = 5\n'
+        "[defaults]\n"
+        "compress = true\n"
+        "delete_threshold = 50\n"
+        "[[sync]]\n"
+        "name = \"a\"\n"
+        "local_root = \".\"\n"
+        "remote_root = \"/srv/a\"\n"
+        "[[sync]]\n"
+        "name = \"b\"\n"
+        "local_root = \".\"\n"
+        "remote_root = \"/srv/b\"\n"
+        "delete_threshold = 5\n"
     )
     config = parse_config(text, tmp_path)
     a, b = config.roll
@@ -80,7 +80,7 @@ def test_defaults_section_applied_and_overridden(tmp_path: Path) -> None:
 def test_local_root_relative_to_config(tmp_path: Path) -> None:
     """Проверяет сценарий: local root relative to config."""
     (tmp_path / "data").mkdir()
-    text = _toml().replace('local_root = "."', 'local_root = "data"')
+    text = _toml().replace("local_root = \".\"", "local_root = \"data\"")
     config = parse_config(text, tmp_path)
     assert config.roll[0].source_path == (tmp_path / "data").resolve()
 
@@ -94,7 +94,7 @@ def test_duplicate_name_rejected(tmp_path: Path) -> None:
 
 def test_missing_local_root_rejected(tmp_path: Path) -> None:
     """Проверяет сценарий: missing local root rejected."""
-    text = _toml().replace('local_root = "."', 'local_root = "nope"')
+    text = _toml().replace("local_root = \".\"", "local_root = \"nope\"")
     with pytest.raises(ConfigError, match="не существует"):
         parse_config(text, tmp_path)
 
@@ -120,11 +120,11 @@ def test_ssh_root_remote_rejected(tmp_path: Path) -> None:
 def test_bad_after_push_rejected(tmp_path: Path) -> None:
     """Проверяет сценарий: bad after push rejected."""
     text = (
-        '[[backup]]\n'
-        'name = "bak"\n'
-        'local_root = "."\n'
-        'remote_root = "/srv/bak"\n'
-        'after_push = "burn"\n'
+        "[[backup]]\n"
+        "name = \"bak\"\n"
+        "local_root = \".\"\n"
+        "remote_root = \"/srv/bak\"\n"
+        "after_push = \"burn\"\n"
     )
     with pytest.raises(ConfigError, match="after_push"):
         parse_config(text, tmp_path)
@@ -133,11 +133,11 @@ def test_bad_after_push_rejected(tmp_path: Path) -> None:
 def test_after_push_archive_maps_to_internal_backup(tmp_path: Path) -> None:
     """Проверяет сценарий: after push archive maps to internal backup."""
     text = (
-        '[[backup]]\n'
-        'name = "bak"\n'
-        'local_root = "."\n'
-        'remote_root = "/srv/bak"\n'
-        'after_push = "archive"\n'
+        "[[backup]]\n"
+        "name = \"bak\"\n"
+        "local_root = \".\"\n"
+        "remote_root = \"/srv/bak\"\n"
+        "after_push = \"archive\"\n"
     )
     config = parse_config(text, tmp_path)
     assert config.roll[0].after_push == "backup"
@@ -146,11 +146,11 @@ def test_after_push_archive_maps_to_internal_backup(tmp_path: Path) -> None:
 def test_archive_dir_maps_to_internal_backup_path(tmp_path: Path) -> None:
     """Проверяет сценарий: archive dir maps to internal backup path."""
     text = (
-        '[[backup]]\n'
-        'name = "bak"\n'
-        'local_root = "."\n'
-        'remote_root = "/srv/bak"\n'
-        'archive_dir = "store"\n'
+        "[[backup]]\n"
+        "name = \"bak\"\n"
+        "local_root = \".\"\n"
+        "remote_root = \"/srv/bak\"\n"
+        "archive_dir = \"store\"\n"
     )
     config = parse_config(text, tmp_path)
     assert config.roll[0].backup_path == (tmp_path / "store")
@@ -159,13 +159,13 @@ def test_archive_dir_maps_to_internal_backup_path(tmp_path: Path) -> None:
 def test_bad_type_rejected(tmp_path: Path) -> None:
     """Проверяет сценарий: bad type rejected."""
     with pytest.raises(ConfigError, match="delete"):
-        parse_config(_toml(extra='delete = "yes"\n'), tmp_path)
+        parse_config(_toml(extra="delete = \"yes\"\n"), tmp_path)
 
 
 def test_no_profiles_rejected(tmp_path: Path) -> None:
     """Проверяет сценарий: no profiles rejected."""
     with pytest.raises(ConfigError, match="ни одного профиля"):
-        parse_config('[defaults]\ncompress = true\n', tmp_path)
+        parse_config("[defaults]\ncompress = true\n", tmp_path)
 
 
 def test_load_config_missing_file(tmp_path: Path) -> None:

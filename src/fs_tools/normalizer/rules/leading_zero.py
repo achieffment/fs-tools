@@ -18,19 +18,19 @@ class LeadingZeroRule(Rule):
 
     def apply(self, stem: str, is_dir: bool) -> str:
         score: list[str] = []
-        tok = ""
+        token = ""
         for ch in stem:
             if ch in self._SE:
-                score.append(self._pad(tok))
+                score.append(self._pad(token))
                 score.append(ch)
-                tok = ""
+                token = ""
             else:
-                tok += ch
-        score.append(self._pad(tok))
+                token = token + ch
+        score.append(self._pad(token))
         return "".join(score)
 
     @staticmethod
-    def _pad(tok: str) -> str:
-        if len(tok) == 1 and tok in "0123456789":
-            return "0" + tok
-        return tok
+    def _pad(token: str) -> str:
+        if len(token) == 1 and token in "0123456789":
+            return "0" + token
+        return token

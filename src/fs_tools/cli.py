@@ -17,9 +17,9 @@ from .shared.cli import add_path_argument
 def main(argv: list[str] | None = None) -> int:
     """Разобрать `fs-tools` CLI и вызвать runner выбранного режима."""
     # Sync-флаги объявляются через общий модуль, чтобы не дублировать контракт CLI.
-    sync_cli_args = importlib.import_module(".syncher.cli_args", __package__)
-    add_sync_flags = sync_cli_args.add_sync_flags
-    sync_argv_from_namespace = sync_cli_args.sync_argv_from_namespace
+    map_sych_argument = importlib.import_module(".syncher.cli_args", __package__)
+    add_sync_argument = map_sych_argument.add_sync_argument
+    sync_argv_from_namespace = map_sych_argument.sync_argv_from_namespace
 
     pars = argparse.ArgumentParser(
         prog="fs-tools",
@@ -41,7 +41,7 @@ def main(argv: list[str] | None = None) -> int:
 
     p_fssy = sub.add_parser("sync", help="синхронизировать каталог с сервером (rsync)")
     add_path_argument(p_fssy)
-    add_sync_flags(p_fssy)
+    add_sync_argument(p_fssy)
 
     # Ленивый импорт режима: тянем только то, что нужно выбранной подкоманде.
     args = pars.parse_args(argv)
