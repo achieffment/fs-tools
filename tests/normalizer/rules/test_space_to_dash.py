@@ -1,7 +1,7 @@
 """SpaceToDashRule: пробелы -> дефис со схлопыванием цепочек вокруг пробела."""
 import pytest
 
-from fs_tools.normalizer import SpaceToDashRule
+from fs_tools.normalizer.rules import SpaceToDashRule
 
 
 @pytest.mark.parametrize(

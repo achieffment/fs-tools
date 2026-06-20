@@ -1,7 +1,7 @@
 """DateRule: распознавание дат и приведение к ISO YYYY-MM-DD."""
 import pytest
 
-from fs_tools.normalizer import DateRule
+from fs_tools.normalizer.rules import DateRule
 
 
 @pytest.mark.parametrize(

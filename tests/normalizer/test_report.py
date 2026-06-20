@@ -5,12 +5,16 @@ from fs_tools.normalizer.report import format_report
 
 
 class _Result:
+    """Минимальный объект результата для проверки форматирования отчёта."""
+
     def __init__(self, conflicts: int, errlist_len: int) -> None:
+        """Сохраняет количество конфликтов и имитирует список ошибок."""
         self.conflicts = conflicts
         self.errlist = [("src", "dst")] * errlist_len
 
 
 def test_format_report_ok() -> None:
+    """Проверяет формат отчёта без конфликтов и ошибок."""
     root = Path("/tmp/demo")
     result = _Result(conflicts=0, errlist_len=0)
     text = format_report(root, result, renamed=3, skipped=1)
@@ -19,6 +23,7 @@ def test_format_report_ok() -> None:
 
 
 def test_format_report_with_errors() -> None:
+    """Проверяет формат отчёта с конфликтами и ошибками."""
     root = Path("/tmp/demo")
     result = _Result(conflicts=2, errlist_len=4)
     text = format_report(root, result, renamed=5, skipped=6)

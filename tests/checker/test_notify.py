@@ -1,10 +1,10 @@
 """Тесты checker.notify."""
 
-import logging
-
 import pytest
 
 from fs_tools.checker import notify
+
+from .notify_contract import assert_notify_contract
 
 
 def test_env_keys_constants() -> None:
@@ -14,43 +14,22 @@ def test_env_keys_constants() -> None:
 
 
 def test_load_webhook_config_delegates(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Проверяет делегирование загрузки конфигурации."""
-    captured: dict[str, str] = {}
-
-    def _fake_load(url_key: str, tok_key: str) -> tuple[str, str]:
-        captured["url_key"] = url_key
-        captured["tok_key"] = tok_key
-        return ("https://example.com/hook", "tok")
-
-    monkeypatch.setattr(notify.shared_notify, "load_webhook_config", _fake_load)
-    assert notify.load_webhook_config() == ("https://example.com/hook", "tok")
-    assert captured == {"url_key": notify.URL_KEY, "tok_key": notify.TOK_KEY}
+    """Проверяет делегирование загрузки/отправки через общий контракт."""
+    assert_notify_contract(
+        monkeypatch,
+        notify,
+        url_key="FSCHK_WEBHOOK_URL",
+        tok_key="FSCHK_WEBHOOK_TOK",
+        logger_name="fs_tools.checker.notify",
+    )
 
 
 def test_send_webhook_delegates(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Проверяет делегирование отправки веб-хука."""
-    captured: dict[str, object] = {}
-
-    def _fake_send(
-        text: str,
-        *,
-        url_key: str,
-        tok_key: str,
-        logger: logging.Logger,
-        timeout: float,
-    ) -> bool:
-        captured.update(
-            text=text,
-            url_key=url_key,
-            tok_key=tok_key,
-            logger_name=logger.name,
-            timeout=timeout,
-        )
-        return True
-
-    monkeypatch.setattr(notify.shared_notify, "send_webhook", _fake_send)
-    assert notify.send_webhook("есть ошибки") is True
-    assert captured["url_key"] == notify.URL_KEY
-    assert captured["tok_key"] == notify.TOK_KEY
-    assert captured["logger_name"] == "fs_tools.checker.notify"
-    assert captured["timeout"] == notify.TIMEOUT
+    """Проверяет делегирование отправки через общий контракт."""
+    assert_notify_contract(
+        monkeypatch,
+        notify,
+        url_key="FSCHK_WEBHOOK_URL",
+        tok_key="FSCHK_WEBHOOK_TOK",
+        logger_name="fs_tools.checker.notify",
+    )

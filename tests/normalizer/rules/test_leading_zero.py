@@ -1,7 +1,7 @@
 """LeadingZeroRule: ведущий ноль для однозначного числового токена."""
 import pytest
 
-from fs_tools.normalizer import LeadingZeroRule
+from fs_tools.normalizer.rules import LeadingZeroRule
 
 
 @pytest.mark.parametrize(

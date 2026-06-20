@@ -1,7 +1,7 @@
 """TransliterationRule: не-ASCII -> ASCII + барьеры безопасности имени."""
 import pytest
 
-from fs_tools.normalizer import TransliterationRule
+from fs_tools.normalizer.rules import TransliterationRule
 
 
 # --------------------------------------------------------------------------- #

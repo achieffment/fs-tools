@@ -1,7 +1,7 @@
 """CaseRule: папки — с заглавной, файлы — в нижнем регистре (README сохраняется)."""
 import pytest
 
-from fs_tools.normalizer import CaseRule
+from fs_tools.normalizer.rules import CaseRule
 
 
 def test_case_rule():

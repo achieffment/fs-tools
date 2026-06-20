@@ -2,7 +2,7 @@
 import pytest
 
 from fs_tools import normalizer
-from fs_tools.normalizer import BracketsRule
+from fs_tools.normalizer.rules import BracketsRule
 
 
 @pytest.mark.parametrize(

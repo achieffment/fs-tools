@@ -1,7 +1,7 @@
 """TrimEdgeRule: обрезка не буквенно-цифровых символов по краям имени."""
 import pytest
 
-from fs_tools.normalizer import TrimEdgeRule
+from fs_tools.normalizer.rules import TrimEdgeRule
 
 
 @pytest.mark.parametrize(
