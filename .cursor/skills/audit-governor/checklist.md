@@ -47,6 +47,12 @@
 - Консистентность кода, тестов, examples, docs, rules.
 - Кроссплатформенность и безопасность.
 - Комментарии: минимум, актуальность, выравнивание по `comments-style.mdc`.
+- Проверить локальные naming-пары:
+  - `src_rel/dst_rel` в `normalizer/engine.py`;
+  - `map_norm_argument/add_norm_argument/norm_argv_from_namespace` в `fs_tools/cli.py`.
+- Проверить runner-паттерн режимов с флагами: используется `_build_parser()`, а
+  одноразовый `path_help` не вынесен в отдельную константу.
+- Проверить dry-run контракт: `normalizer` и `syncher` не пишут `.fs-log` при `--dry-run`.
 - Отсутствие необоснованных suppression-комментариев:
   - `# pylint: disable`
   - `# noqa`

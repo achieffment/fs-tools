@@ -67,7 +67,6 @@ def test_fs_renames_reset_on_second_run(make_tree):
     # На нормализованном дереве переименований нет — список сброшен.
     assert not fsnm.renames
 
-
 def test_fs_conflict_not_logged(tmp_path):
     """Проверяет сценарий: fs conflict not logged."""
     (tmp_path / "a b.md").write_text("a")  # -> "a-b.md"

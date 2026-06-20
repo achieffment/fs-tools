@@ -50,6 +50,20 @@ alwaysApply: true
 - инстансы режимов: `fsnm` (normalizer), `fsch` (checker)
 - те же имена инстансов (`fsnm`/`fsch`) применяются и в тестах, не только в `runner.py`
 
+### Локальные пары для CLI-диспетчера (fs_tools/cli.py)
+
+- Это частный случай общего правила локальной симметрии для соседних переменных.
+- Для normalizer-блока использовать компактную тройку:
+  `map_norm_argument` / `add_norm_argument` / `norm_argv_from_namespace`.
+- Для sync-блока сохранять существующую тройку:
+  `map_sych_argument` / `add_sync_argument` / `sync_argv_from_namespace`.
+- Не смешивать в одном блоке формы `normalizer_*` и `norm_*` без причины.
+
+### Локальные пары путей в normalizer/engine.py
+
+- Для относительных путей в одном блоке использовать симметричную пару
+  `src_rel` / `dst_rel` (не `src_rel` / `dest_rel`).
+
 ## Правило подбора имени
 
 - Выравнивай только логических «соседей» в одном блоке/функции.

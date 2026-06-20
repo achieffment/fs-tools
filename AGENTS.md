@@ -17,6 +17,7 @@ src/fs_tools/
 │   └── cli.py                # общий разбор аргументов, resolve_root, run_mode_main
 ├── normalizer/               # режим нормализации
 │   ├── rules/                # правила (по файлу на правило) + __all__
+│   ├── cli_args.py           # единое объявление normalizer-флагов и проброс argv для диспетчера/runner
 │   ├── name.py               # конвейер (build_normalizer, NameNormalizer)
 │   ├── engine.py             # обход и переименование (FsNormalizer, deepest-first)
 │   ├── ignore.py             # фильтр .fs-ignore
@@ -75,6 +76,18 @@ pip install -e ".[normalizer,checker,syncher,dev]"                     # editabl
 - **Безопасность ФС**: имя — один компонент пути (`enforce_safe_component`); без
   перезаписи `dest`; deepest-first; case-only через временное имя; `.fs-log` только
   append. Скрытые (на `.`) и корень не трогаем.
+- **Нормализация (`normalizer`)**: `--dry-run` строит план без переименований;
+  журнал `.fs-log` в dry-run не пишется, в боевом прогоне пишется только по
+  выполненным `renames`.
+- **Dry-run и журналы (оба режима)**: и `normalizer`, и `syncher` в `--dry-run`
+  не должны писать `.fs-log`; это проверяется runner-тестами и не должно
+  регрессировать.
+- **Стиль runner-парсера**: если у режима есть свои флаги, используй
+  `_build_parser()` (как в `syncher` и `normalizer`) и не выноси одноразовый
+  `path_help` в отдельную константу.
+- **Нейминг диспетчера**: в `fs_tools/cli.py` для normalizer-блока держи
+  симметричную тройку `map_norm_argument` / `add_norm_argument` /
+  `norm_argv_from_namespace`.
 - **Веб-хук**: окружение процесса важнее `.env`; URL обязан быть `https://`. Ключи:
   `FSCHK_*` (проверка), `FSSYN_*` (синхронизация).
 - **Синхронизация (`syncher`)**: однонаправленность ПК → сервер; единый источник истины

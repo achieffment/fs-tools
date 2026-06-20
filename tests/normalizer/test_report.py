@@ -19,6 +19,7 @@ def test_format_report_ok() -> None:
     result = _Result(conflicts=0, errlist_len=0)
     text = format_report(root, result, renamed=3, skipped=1)
     assert "Каталог: /tmp/demo" in text
+    assert "Режим: боевой" in text
     assert "Готово. Переименовано: 3, пропущено: 1 (конфликты: 0, ошибки: 0)." in text
 
 
@@ -28,4 +29,15 @@ def test_format_report_with_errors() -> None:
     result = _Result(conflicts=2, errlist_len=4)
     text = format_report(root, result, renamed=5, skipped=6)
     assert "Каталог: /tmp/demo" in text
+    assert "Режим: боевой" in text
     assert "Готово. Переименовано: 5, пропущено: 6 (конфликты: 2, ошибки: 4)." in text
+
+
+def test_format_report_dry_run() -> None:
+    """Проверяет формат отчёта в dry-run."""
+    root = Path("/tmp/demo")
+    result = _Result(conflicts=1, errlist_len=0)
+    text = format_report(root, result, renamed=2, skipped=1, dry_run=True)
+    assert "Каталог: /tmp/demo" in text
+    assert "Режим: dry-run (без изменений)" in text
+    assert "Готово. Переименовано: 2, пропущено: 1 (конфликты: 1, ошибки: 0)." in text

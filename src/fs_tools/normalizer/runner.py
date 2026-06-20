@@ -7,11 +7,13 @@
 """
 from __future__ import annotations
 
+import argparse
 import importlib
 import sys
 from pathlib import Path
 
-from ..shared.cli import ModeMainSpec, run_mode_main
+from ..shared.cli import choose_root, make_parser
+from .cli_args import add_normalizer_argument
 
 _DESCRIPTION = (
     "Нормализатор имён файлов и папок (рекурсивно). Без аргумента каталог выбирается "
@@ -20,16 +22,19 @@ _DESCRIPTION = (
 )
 _HEADER = "Выберите каталог для нормализации"
 _PROMPT = "Укажите каталог для нормализации."
-_MAIN_SPEC = ModeMainSpec(
-    description=_DESCRIPTION,
-    prog="fs-normalizer",
-    path_help="Каталог для нормализации. Если не задан — выбирается интерактивно.",
-    header=_HEADER,
-    prompt=_PROMPT,
-)
 
 
-def run(root: Path) -> int:
+def _build_parser() -> argparse.ArgumentParser:
+    pars = make_parser(
+        _DESCRIPTION,
+        prog="fs-normalizer",
+        path_help="Каталог для нормализации. Если не задан — выбирается интерактивно.",
+    )
+    add_normalizer_argument(pars)
+    return pars
+
+
+def run(root: Path, *, dry_run: bool = False) -> int:
     """Нормализует содержимое каталога. 0 — без реальных ошибок (безопасные конфликты
     входят сюда); 2 — часть os.rename упала с OSError. 1 — если режим недоступен
     (нет `Unidecode`): печатается понятное сообщение, а не трассировка.
@@ -44,15 +49,16 @@ def run(root: Path) -> int:
         sys.stderr.write(f"{exc}\n")
         return 1
     fsnm = FsNormalizer(build_normalizer(), load_fs_ignore(root))
-    renamed, skipped = fsnm.apply(root)
-    print(format_report(root, fsnm, renamed, skipped))
-    # Журнал — вторичный артефакт: переименования уже выполнены, поэтому сбой записи
-    # не роняем трейсбеком, а лишь предупреждаем. На код возврата это не влияет.
-    try:
-        lpath = write_fs_log(root, fsnm.renames)
-        print(f"Журнал: {lpath}")
-    except OSError as exc:
-        sys.stderr.write(f"Не удалось записать журнал .fs-log: {exc}\n")
+    renamed, skipped = fsnm.apply(root, dry_run=dry_run)
+    print(format_report(root, fsnm, renamed, skipped, dry_run=dry_run))
+    if not dry_run:
+        # Журнал — вторичный артефакт: переименования уже выполнены, поэтому сбой записи
+        # не роняем трейсбеком, а лишь предупреждаем. На код возврата это не влияет.
+        try:
+            lpath = write_fs_log(root, fsnm.renames)
+            print(f"Журнал: {lpath}")
+        except OSError as exc:
+            sys.stderr.write(f"Не удалось записать журнал .fs-log: {exc}\n")
     return 2 if fsnm.errlist else 0
 
 
@@ -60,8 +66,8 @@ def main(argv: list[str] | None = None) -> int:
     """0 — прогон без реальных ошибок; 1 — каталог не выбран/не найден/не каталог
     (или режим недоступен без `Unidecode`); 2 — часть os.rename упала с OSError.
     """
-    return run_mode_main(
-        argv=argv,
-        spec=_MAIN_SPEC,
-        run=run,
-    )
+    args = _build_parser().parse_args(argv)
+    root = choose_root(args.path, header=_HEADER, prompt=_PROMPT)
+    if root is None:
+        return 1
+    return run(root, dry_run=args.dry_run)

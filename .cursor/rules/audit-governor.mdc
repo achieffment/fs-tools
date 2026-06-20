@@ -30,6 +30,17 @@ alwaysApply: true
 - кроссплатформенность и безопасность;
 - отсутствие необоснованных suppression-комментариев.
 
+## Обязательные точечные проверки (spot-checks)
+
+- dry-run контракт: `normalizer` и `syncher` при `--dry-run` не пишут `.fs-log`;
+- runner-паттерн: режимы с собственными флагами используют `_build_parser()`;
+- одноразовый `path_help` не выносится в отдельную константу без повторного
+  использования;
+- локальная симметрия имён в критичных блоках:
+  - `src_rel`/`dst_rel` в `normalizer/engine.py`;
+  - `map_norm_argument`/`add_norm_argument`/`norm_argv_from_namespace` в
+    `fs_tools/cli.py`.
+
 ## Обязательный цикл
 
 После исправлений запускать до полного green:

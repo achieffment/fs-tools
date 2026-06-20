@@ -53,6 +53,37 @@ def test_fs_conflict_skipped(tmp_path):
     assert (tmp_path / "a-b.md").exists()
 
 
+def test_fs_dry_run_does_not_rename(tmp_path):
+    """Проверяет сценарий: fs dry run does not rename."""
+    source = tmp_path / "Отчёт.txt"
+    source.write_text("ДАННЫЕ")
+    fsnm = FsNormalizer(build_normalizer())
+    renamed, skipped = fsnm.apply(tmp_path, dry_run=True)
+    assert renamed == 1
+    assert skipped == 0
+    assert source.exists()
+    assert (tmp_path / "otchiot.txt").exists() is False
+    assert not fsnm.renames
+    assert [(src.as_posix(), dest.as_posix()) for src, dest in fsnm.planned] == [
+        ("Отчёт.txt", "otchiot.txt")
+    ]
+
+
+def test_fs_dry_run_conflict_is_reported(tmp_path):
+    """Проверяет сценарий: fs dry run conflict is reported."""
+    (tmp_path / "a b.md").write_text("a")
+    (tmp_path / "a-b.md").write_text("b")
+    fsnm = FsNormalizer(build_normalizer())
+    renamed, skipped = fsnm.apply(tmp_path, dry_run=True)
+    assert renamed == 0
+    assert skipped >= 1
+    assert fsnm.conflicts >= 1
+    assert not fsnm.renames
+    assert not fsnm.planned
+    assert (tmp_path / "a b.md").exists()
+    assert (tmp_path / "a-b.md").exists()
+
+
 def test_fs_oserror_recorded_in_errlist(tmp_path, monkeypatch):
     # Реальный сбой os.rename (OSError, напр. зарезервированное имя/длина пути на
     # Windows) безопасно пропускается: данные сохраняются, но фиксируется в errlist.

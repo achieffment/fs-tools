@@ -22,9 +22,11 @@ class FsNormalizer:
         self.ignorer = ignorer
         # Заполняются в apply() (сбрасываются на каждом вызове):
         # renames   — успешно выполненные переименования (относительно root);
+        # planned   — планируемые пары для dry-run (относительно root);
         # errlist   — пары, для которых os.rename упал с OSError (реальный сбой);
         # conflicts — число пропусков из-за занятого целевого имени (безопасно).
         self.renames: list[tuple[Path, Path]] = []
+        self.planned: list[tuple[Path, Path]] = []
         self.errlist: list[tuple[Path, Path]] = []
         self.conflicts = 0
 
@@ -71,7 +73,7 @@ class FsNormalizer:
         # нормализуется и не попадает в матчинг, отдельной защиты не требует.
         return items
 
-    def apply(self, root: Path) -> tuple[int, int]:
+    def apply(self, root: Path, *, dry_run: bool = False) -> tuple[int, int]:
         """Применить нормализацию ко всему содержимому root и вернуть (renamed, skipped)."""
         items = self._collect(root)
         # Самые вложенные — первыми: дети переименовываются раньше родителей.
@@ -80,6 +82,7 @@ class FsNormalizer:
         # os.rename (для журнала .fs-log); ошибки и конфликты туда не попадают, они
         # учитываются отдельно (errlist/conflicts) и тоже входят в общий skipped.
         self.renames = []
+        self.planned = []
         self.errlist = []
         self.conflicts = 0
         renamed = 0
@@ -93,6 +96,8 @@ class FsNormalizer:
                 continue
             dest = srcp.parent / name
             case = srcp.name.casefold() == dest.name.casefold()
+            src_rel = srcp.relative_to(root)
+            dst_rel = dest.relative_to(root)
             try:
                 # Конфликт — это занятость dest ДРУГИМ объектом. При case-only
                 # переименовании на регистронезависимой ФС dest.exists() истинно,
@@ -102,6 +107,10 @@ class FsNormalizer:
                     self.conflicts = self.conflicts + 1
                     skipped = skipped + 1
                     continue
+                if dry_run:
+                    self.planned.append((src_rel, dst_rel))
+                    renamed = renamed + 1
+                    continue
                 if case:
                     # На регистронезависимых ФС (Windows) — через временное имя.
                     temp = dest.parent / f".__normtmp_{uuid.uuid4().hex}"
@@ -109,10 +118,10 @@ class FsNormalizer:
                     os.rename(temp, dest)
                 else:
                     os.rename(srcp, dest)
-                self.renames.append((srcp.relative_to(root), dest.relative_to(root)))
+                self.renames.append((src_rel, dst_rel))
                 renamed = renamed + 1
             except OSError as exc:
                 sys.stderr.write(f"Ошибка переименования {srcp} -> {dest}: {exc}\n")
-                self.errlist.append((srcp.relative_to(root), dest.relative_to(root)))
+                self.errlist.append((src_rel, dst_rel))
                 skipped = skipped + 1
         return renamed, skipped

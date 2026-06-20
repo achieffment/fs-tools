@@ -100,6 +100,7 @@ bin/sync.bat [каталог] [флаги]    # Windows (через WSL/cwrsync)
 ```bash
 fs-normalizer                      # нормализация: выбрать каталог в диалоге
 fs-normalizer /path/to/dir         # без диалога
+fs-normalizer /path/to/dir --dry-run
 
 fs-checker                         # проверка: выбрать каталог в диалоге
 fs-checker /path/to/dir            # без диалога
@@ -108,6 +109,7 @@ fs-syncher                         # синхронизация: выбрать 
 fs-syncher /path/to/dir            # без диалога
 
 fs-tools normalize /path/to/dir    # то же через диспетчер
+fs-tools normalize /path/to/dir --dry-run
 fs-tools check /path/to/dir
 fs-tools sync /path/to/dir
 python -m fs_tools normalize       # эквивалент fs-tools normalize
@@ -166,6 +168,11 @@ python -m fs_tools normalize       # эквивалент fs-tools normalize
 
 Конфликт (занятое целевое имя) — безопасный пропуск, на код возврата не влияет.
 
+### Dry-run (`--dry-run`)
+
+`--dry-run` строит план нормализации без переименования объектов. В отчёте режим
+помечается как `dry-run (без изменений)`. Журнал `.fs-log` в этом режиме не пишется.
+
 ### Публичное API
 
 ```python
@@ -179,6 +186,9 @@ target = Path("/path/to/dir")
 fsnm = FsNormalizer(build_normalizer(), load_fs_ignore(target))
 renamed, skipped = fsnm.apply(target)
 write_fs_log(target, fsnm.renames)                         # дописать .fs-log
+
+renamed, skipped = fsnm.apply(target, dry_run=True)        # только план, без rename
+fsnm.planned                                                # пары src -> dst для dry-run
 ```
 
 ---
@@ -482,8 +492,8 @@ print(outcome.sent, outcome.deleted)
   локально) либо `(изменений нет)`.
 
 Файл скрыт, создаётся при отсутствии и **дополняется** при повторных запусках (намеренное
-исключение из идемпотентности), добавлен в `.gitignore`. Синхронизация дописывает журнал
-только в **боевом** прогоне (`--dry-run` его не трогает).
+исключение из идемпотентности), добавлен в `.gitignore`. Нормализация и синхронизация
+дописывают журнал только в **боевом** прогоне (`--dry-run` его не трогает).
 
 ## Примеры
 

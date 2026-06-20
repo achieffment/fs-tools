@@ -23,10 +23,11 @@ alwaysApply: true
  «имя — один компонент пути»
   (`safety.py`) живёт в `normalizer/`, а не в `shared/`: checker ничего не
   переименовывает.
-- `normalizer/` — правила (`rules/`), конвейер (`name.py`, `build_normalizer`), обход
-  и переименование (`engine.py`, класс `FsNormalizer`), фильтр `.fs-ignore`
-  (`ignore.py`), обёртка журнала (`log.py`, `write_fs_log`), точка входа
-  (`runner.py`). Новое правило регистрируется в `build_normalizer()` и
+- `normalizer/` — единое объявление CLI-флагов normalizer (`cli_args.py`), правила
+  (`rules/`), конвейер (`name.py`, `build_normalizer`), обход и переименование
+  (`engine.py`, класс `FsNormalizer`), фильтр `.fs-ignore` (`ignore.py`), обёртка
+  журнала (`log.py`, `write_fs_log`), точка входа (`runner.py`). Новое правило
+  регистрируется в `build_normalizer()` и
   ре-экспортируется в `rules/__init__.py` и `normalizer/__init__.py` (`__all__`).
 - `checker/` — разбор `.fs-check` (`rule.py`), разворачивание и сбор нарушений
   (`engine.py`, класс `FsChecker`), отчёт (`report.py`), веб-хук (`notify.py`,
@@ -49,10 +50,10 @@ alwaysApply: true
 
 Точки входа и коды возврата:
 
-- normalizer/checker: `runner.main(argv) -> int` (тонкая обёртка над `shared.cli`) +
-  `run(root) -> int`. Аргумент-каталог (`path`, `nargs="?"`) минует диалог, иначе —
-  интерактивный `pick_directory()`. Коды `0`/`1`/`2`
-  зафиксированы контрактом и проверяются тестами.
+- normalizer/checker: `runner.main(argv) -> int` + `run(root, ...) -> int`. Без
+  аргумента каталог выбирается интерактивно через `pick_directory()`, аргумент-каталог
+  минует диалог. У normalizer есть `--dry-run` (план без переименований). Коды
+  `0`/`1`/`2` зафиксированы контрактом и проверяются тестами.
 - syncher: `runner.main(argv) -> int` + `run(root, args) -> int`. Без аргумента
   каталог выбирается интерактивно через `pick_directory()`, аргумент-каталог
   минует диалог. Коды `0/1/2/3` (наихудший среди профилей)
@@ -60,13 +61,21 @@ alwaysApply: true
 - Диспетчер `fs_tools.cli:main` (`fs-tools <normalize|check|sync>`) и `__main__.py`
   импортируют `runner` выбранного режима **лениво** (через `importlib` в обработчике),
   чтобы
-  `--help` и доступный режим работали без extra другого режима. Подкоманда `sync`
-  объявляет флаги режима и пробрасывает их (а не только `path`).
+  `--help` и доступный режим работали без extra другого режима. Подкоманды
+  `normalize` и `sync` объявляют флаги режима и пробрасывают их (а не только `path`).
 
 Журнал `.fs-log` — намеренное исключение из идемпотентности (дополняется на каждом
-запуске), он в `.gitignore`, а `reset.*` (только у normalizer) убирают его явным
-`rm`/`del`. У `syncher` журнал пишется только в боевом прогоне (не в `--dry-run`),
-а откат песочницы — через `git restore`/`git clean` (без `reset.*`).
+боевом запуске), он в `.gitignore`, а `reset.*` (только у normalizer) убирают его
+явным `rm`/`del`. У `normalizer` и `syncher` журнал пишется только в боевом прогоне
+(`--dry-run` его не трогает), а откат песочницы syncher — через `git restore`/
+`git clean` (без `reset.*`).
+
+Локальный шаблон runner-парсеров:
+
+- Если в режиме есть дополнительные CLI-флаги (как `--dry-run`), парсер собирается в
+  приватной функции `_build_parser()` по аналогии с `syncher/runner.py`.
+- Для одноразовой подсказки `path_help` в `_build_parser()` не выноси отдельную
+  константу без повторного использования.
 
 Документация: единый `README.md` (три секции), `examples/README.md` (+ секции
 режимов). Перед завершением убедись, что ни один пласт не отстал.

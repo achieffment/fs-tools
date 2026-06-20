@@ -16,6 +16,11 @@ from .shared.cli import add_path_argument
 
 def main(argv: list[str] | None = None) -> int:
     """Разобрать `fs-tools` CLI и вызвать runner выбранного режима."""
+    # Normalizer-флаги объявляются через общий модуль, чтобы не дублировать контракт CLI.
+    map_norm_argument = importlib.import_module(".normalizer.cli_args", __package__)
+    add_norm_argument = map_norm_argument.add_normalizer_argument
+    norm_argv_from_namespace = map_norm_argument.normalizer_argv_from_namespace
+
     # Sync-флаги объявляются через общий модуль, чтобы не дублировать контракт CLI.
     map_sych_argument = importlib.import_module(".syncher.cli_args", __package__)
     add_sync_argument = map_sych_argument.add_sync_argument
@@ -35,6 +40,7 @@ def main(argv: list[str] | None = None) -> int:
 
     p_fsnm = sub.add_parser("normalize", help="нормализовать имена файлов и папок")
     add_path_argument(p_fsnm)
+    add_norm_argument(p_fsnm)
 
     p_fsch = sub.add_parser("check", help="проверить наличие путей по .fs-check")
     add_path_argument(p_fsch)
@@ -50,7 +56,7 @@ def main(argv: list[str] | None = None) -> int:
             Callable[[list[str] | None], int],
             importlib.import_module(".normalizer.runner", __package__).main,
         )
-        return run_mode([args.path] if args.path else [])
+        return run_mode(norm_argv_from_namespace(args))
     if args.mode == "check":
         run_mode = cast(
             Callable[[list[str] | None], int],
