@@ -5,21 +5,27 @@ from pathlib import Path
 from fs_tools.normalizer import main
 
 
-def test_main_clean_run_returns_zero(tmp_path, monkeypatch):
+def test_main_clean_run_returns_zero(tmp_path, monkeypatch, capsys):
     """Проверяет сценарий: main clean run returns zero."""
     (tmp_path / "Отчёт.txt").write_text("x")
     monkeypatch.setattr("fs_tools.shared.cli.pick_directory", lambda *a, **k: str(tmp_path))
     assert main([]) == 0
+    out = capsys.readouterr().out
+    assert f"Каталог: {tmp_path}" in out
+    assert "Готово. Переименовано: 1, пропущено: 0 (конфликты: 0, ошибки: 0)." in out
     assert (tmp_path / "otchiot.txt").exists()
 
 
-def test_main_conflict_only_returns_zero(tmp_path, monkeypatch):
+def test_main_conflict_only_returns_zero(tmp_path, monkeypatch, capsys):
     # Конфликт — безопасный пропуск: код возврата остаётся 0.
     """Проверяет сценарий: main conflict only returns zero."""
     (tmp_path / "a b.md").write_text("a")  # -> "a-b.md"
     (tmp_path / "a-b.md").write_text("b")  # уже занято
     monkeypatch.setattr("fs_tools.shared.cli.pick_directory", lambda *a, **k: str(tmp_path))
     assert main([]) == 0
+    out = capsys.readouterr().out
+    assert f"Каталог: {tmp_path}" in out
+    assert "Готово. Переименовано: 0, пропущено: 1 (конфликты: 1, ошибки: 0)." in out
 
 
 def test_main_rename_error_returns_two(tmp_path, monkeypatch):

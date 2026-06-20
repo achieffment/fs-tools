@@ -36,23 +36,16 @@ def run(root: Path) -> int:
     """
     try:
         FsNormalizer = importlib.import_module(".engine", __package__).FsNormalizer
-        load_fs_ignore = importlib.import_module(
-            ".ignore", __package__
-        ).load_fs_ignore
+        build_normalizer = importlib.import_module(".name", __package__).build_normalizer
+        load_fs_ignore = importlib.import_module(".ignore", __package__).load_fs_ignore
+        format_report = importlib.import_module(".report", __package__).format_report
         write_fs_log = importlib.import_module(".log", __package__).write_fs_log
-        build_normalizer = importlib.import_module(
-            ".name", __package__
-        ).build_normalizer
     except ImportError as exc:
         sys.stderr.write(f"{exc}\n")
         return 1
     fsnm = FsNormalizer(build_normalizer(), load_fs_ignore(root))
-    print(f"Каталог: {root}")
     renamed, skipped = fsnm.apply(root)
-    print(
-        f"Готово. Переименовано: {renamed}, пропущено: {skipped} "
-        f"(конфликты: {fsnm.conflicts}, ошибки: {len(fsnm.errlist)})."
-    )
+    print(format_report(root, fsnm, renamed, skipped))
     # Журнал — вторичный артефакт: переименования уже выполнены, поэтому сбой записи
     # не роняем трейсбеком, а лишь предупреждаем. На код возврата это не влияет.
     try:

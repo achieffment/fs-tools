@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any
 
 from .ignore import FsIgnore, load_fs_ignore
 from .log import FS_LOG, write_fs_log
+from .report import format_report
 from .runner import main
 
 if TYPE_CHECKING:
@@ -50,6 +51,7 @@ __all__ = [
     "load_fs_ignore",
     "FS_LOG",
     "write_fs_log",
+    "format_report",
     "NameNormalizer",
     "build_normalizer",
     *_RULE_EXPORTS,
