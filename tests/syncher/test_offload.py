@@ -54,14 +54,66 @@ def test_apply_after_push_delete_keeps_included_dir(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     """Проверяет сценарий: apply after push delete keeps included dir."""
-    (tmp_path / "sub").mkdir()
-    (tmp_path / "sub" / "a.txt").write_text("a", encoding="utf-8")
-    monkeypatch.setattr(offload_mod, "source_dirs", lambda profile, include_only=False: ["sub"])
-    profile = _backup(tmp_path, after_push="delete", include=["sub/"])
-    offload, errlist = apply_after_push(profile, ["sub/a.txt"])
-    assert offload == ["sub/a.txt"] and not errlist
-    assert not (tmp_path / "sub" / "a.txt").exists()
-    assert (tmp_path / "sub").exists()           # include-каталог сохраняется
+    (tmp_path / "scope" / "anchor" / "nested").mkdir(parents=True)
+    (tmp_path / "scope" / "anchor" / "nested" / "a.txt").write_text("a", encoding="utf-8")
+    monkeypatch.setattr(
+        offload_mod,
+        "source_dirs",
+        lambda profile, include_only=False: ["scope", "scope/anchor", "scope/anchor/nested"],
+    )
+    profile = _backup(
+        tmp_path,
+        after_push="delete",
+        include=["*/", "**/anchor/", "**/anchor/**"],
+    )
+    offload, errlist = apply_after_push(profile, ["scope/anchor/nested/a.txt"])
+    assert offload == ["scope/anchor/nested/a.txt"] and not errlist
+    assert (tmp_path / "scope" / "anchor").exists()        # якорный каталог сохранён
+    assert not (tmp_path / "scope" / "anchor" / "nested").exists()  # вложенный удалён
+
+
+def test_apply_after_push_delete_keeps_nested_anchor(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Проверяет сценарий: apply after push delete keeps nested anchor."""
+    (tmp_path / "scope" / "anchor" / "nested").mkdir(parents=True)
+    (tmp_path / "scope" / "anchor" / "nested" / "a.txt").write_text("a", encoding="utf-8")
+    monkeypatch.setattr(
+        offload_mod,
+        "source_dirs",
+        lambda profile, include_only=False: ["scope", "scope/anchor", "scope/anchor/nested"],
+    )
+    profile = _backup(
+        tmp_path,
+        after_push="delete",
+        include=["*/", "**/anchor/", "**/anchor/**", "**/anchor/**/nested/**/"],
+    )
+    offload, errlist = apply_after_push(profile, ["scope/anchor/nested/a.txt"])
+    assert offload == ["scope/anchor/nested/a.txt"] and not errlist
+    assert (tmp_path / "scope" / "anchor" / "nested").exists()      # вложенный якорь сохранён
+
+
+def test_apply_after_push_delete_drops_nested_same_anchor(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Проверяет сценарий: apply after push drops nested same anchor."""
+    (tmp_path / "scope" / "Back" / "Back").mkdir(parents=True)
+    (tmp_path / "scope" / "Back" / "Back" / "a.txt").write_text("a", encoding="utf-8")
+    monkeypatch.setattr(
+        offload_mod,
+        "source_dirs",
+        lambda profile, include_only=False: ["scope", "scope/Back", "scope/Back/Back"],
+    )
+    profile = _backup(
+        tmp_path,
+        after_push="delete",
+        include=["*/", "**/Back/", "**/Back/**"],
+        exclude=["*"],
+    )
+    offload, errlist = apply_after_push(profile, ["scope/Back/Back/a.txt"])
+    assert offload == ["scope/Back/Back/a.txt"] and not errlist
+    assert (tmp_path / "scope" / "Back").exists()            # внешний якорь сохранён
+    assert not (tmp_path / "scope" / "Back" / "Back").exists()  # вложенный одноимённый удалён
 
 
 def test_apply_after_push_backup(tmp_path: Path) -> None:
@@ -186,21 +238,73 @@ def test_real_offload_keeps_matched_include_dirs(tmp_path: Path) -> None:
     """Проверяет сценарий: real offload keeps matched include dirs."""
     src = tmp_path / "src"
     dst = tmp_path / "dst"
-    back = src / "Work" / "ProjectA" / "Back"
-    back.mkdir(parents=True)
-    (back / "dump.sql").write_text("sql", encoding="utf-8")
+    anchor = src / "scope" / "anchor"
+    nested = anchor / "nested"
+    nested.mkdir(parents=True)
+    (nested / "dump.sql").write_text("sql", encoding="utf-8")
     dst.mkdir()
     profile = _backup(
         src,
         target_path=str(dst),
-        include=["**/", "**/Back/", "**/Back/**"],
+        include=["*/", "**/anchor/", "**/anchor/**"],
         exclude=["*"],
         after_push="delete",
         verify=True,
     )
     result = run_offload(profile, dry_run=False)
     assert result.ok
-    assert result.offload == ["Work/ProjectA/Back/dump.sql"]
-    assert (back).exists()                        # целевой include-каталог сохранён
-    assert not (back / "dump.sql").exists()       # удаляется только содержимое
-    assert (dst / "Work" / "ProjectA" / "Back" / "dump.sql").exists()
+    assert result.offload == ["scope/anchor/nested/dump.sql"]
+    assert anchor.exists()                         # якорный каталог сохранён
+    assert not nested.exists()                     # вложенный каталог удалён
+    assert (dst / "scope" / "anchor" / "nested" / "dump.sql").exists()
+
+
+@requires_rsync
+def test_real_offload_keeps_explicit_nested_anchor(tmp_path: Path) -> None:
+    """Проверяет сценарий: real offload keeps explicit nested anchor."""
+    src = tmp_path / "src"
+    dst = tmp_path / "dst"
+    anchor = src / "scope" / "anchor"
+    nested = anchor / "nested"
+    nested.mkdir(parents=True)
+    (nested / "dump.sql").write_text("sql", encoding="utf-8")
+    dst.mkdir()
+    profile = _backup(
+        src,
+        target_path=str(dst),
+        include=["*/", "**/anchor/", "**/anchor/**", "**/anchor/**/nested/**/"],
+        exclude=["*"],
+        after_push="delete",
+        verify=True,
+    )
+    result = run_offload(profile, dry_run=False)
+    assert result.ok
+    assert result.offload == ["scope/anchor/nested/dump.sql"]
+    assert anchor.exists()
+    assert nested.exists()                         # вложенный якорь явно сохранён
+    assert (dst / "scope" / "anchor" / "nested" / "dump.sql").exists()
+
+
+@requires_rsync
+def test_real_offload_drops_nested_same_anchor(tmp_path: Path) -> None:
+    """Проверяет сценарий: real offload drops nested same anchor."""
+    src = tmp_path / "src"
+    dst = tmp_path / "dst"
+    nested = src / "scope" / "Back" / "Back"
+    nested.mkdir(parents=True)
+    (nested / "dump.sql").write_text("sql", encoding="utf-8")
+    dst.mkdir()
+    profile = _backup(
+        src,
+        target_path=str(dst),
+        include=["*/", "**/Back/", "**/Back/**"],
+        exclude=["*"],
+        after_push="delete",
+        verify=True,
+    )
+    result = run_offload(profile, dry_run=False)
+    assert result.ok
+    assert result.offload == ["scope/Back/Back/dump.sql"]
+    assert (src / "scope" / "Back").exists()         # внешний якорь сохранён
+    assert not (src / "scope" / "Back" / "Back").exists()  # вложенный одноимённый удалён
+    assert (dst / "scope" / "Back" / "Back" / "dump.sql").exists()

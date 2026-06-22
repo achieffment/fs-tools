@@ -8,8 +8,10 @@
 """
 from __future__ import annotations
 
+import fnmatch
 from dataclasses import dataclass, field
 from datetime import datetime
+from functools import lru_cache
 from pathlib import Path
 
 from .config import Profile
@@ -49,13 +51,86 @@ def _default_backup_dir(profile: Profile) -> Path:
     return profile.source_path.parent / "_fs-backup" / profile.name / date
 
 
+def _anchor_includes(include: list[str]) -> list[str]:
+    """Якорные include-паттерны каталогов (универсально, без привязки к именам)."""
+    anchors: list[str] = []
+    seen: set[str] = set()
+    for pat in include:
+        curr = pat.strip()
+        if not curr:
+            continue
+        anchor: str | None = None
+        if curr.endswith("/**/"):
+            anchor = curr[:-4] + "/"
+        elif curr.endswith("/"):
+            anchor = curr
+        if anchor is None:
+            continue
+        bare = anchor.rstrip("/")
+        tail = bare.rsplit("/", 1)[-1]
+        if tail in {"*", "**"}:
+            continue
+        if any(ch in tail for ch in "*?[]"):
+            continue
+        if anchor not in seen:
+            seen.add(anchor)
+            anchors.append(anchor)
+    return anchors
+
+
+def _matches_anchor(rel: str, anchor: str) -> bool:
+    """Совпадает ли относительный каталог с якорным include-паттерном."""
+    clean = anchor.strip("/")
+    if not clean:
+        return False
+    rel_parts = tuple(part for part in rel.split("/") if part)
+    anchor_parts = tuple(part for part in clean.split("/") if part)
+
+    @lru_cache(maxsize=None)
+    def match(ix: int, jx: int) -> bool:
+        if jx == len(anchor_parts):
+            return ix == len(rel_parts)
+        part = anchor_parts[jx]
+        if part == "**":
+            if match(ix, jx + 1):
+                return True
+            if ix < len(rel_parts) and match(ix + 1, jx):
+                return True
+            return False
+        if ix >= len(rel_parts):
+            return False
+        if not fnmatch.fnmatchcase(rel_parts[ix], part):
+            return False
+        return match(ix + 1, jx + 1)
+
+    return match(0, 0)
+
+
+def _is_descendant(path: str, parent: str) -> bool:
+    """True, если относительный каталог path лежит внутри parent."""
+    return path == parent or path.startswith(parent + "/")
+
+
 def _protected_dirs(profile: Profile) -> set[Path]:
-    """Каталоги области include, которые нельзя удалять после offload."""
+    """Каталоги якорной include-области, которые нельзя удалять после offload."""
     if not profile.include:
+        return set()
+    anchors = _anchor_includes(profile.include)
+    if not anchors:
         return set()
     root = profile.source_path
     rel_dirs = source_dirs(profile, include_only=True)
-    return {root / rel for rel in rel_dirs}
+    protected: set[Path] = set()
+    for anchor in anchors:
+        matched = [rel for rel in rel_dirs if _matches_anchor(rel, anchor)]
+        matched = sorted(matched, key=lambda rel: (rel.count("/"), rel))
+        selected: list[str] = []
+        for rel in matched:
+            if any(_is_descendant(rel, parent) for parent in selected):
+                continue
+            selected.append(rel)
+        protected = protected.union({root / rel for rel in selected})
+    return protected
 
 
 def _prune_empty_dirs(root: Path, start: Path, *, protected: set[Path]) -> None:
