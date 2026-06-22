@@ -249,6 +249,22 @@ def source_files(profile: Profile) -> list[str]:
     return sorted(path for path, is_dir in items if not is_dir)
 
 
+def source_dirs(profile: Profile, *, include_only: bool = False) -> list[str]:
+    """Каталоги источника в области фильтров (без корневой `.`).
+
+    При `include_only=True` в конец фильтров добавляется `- *`, чтобы оставить только
+    пути, явно покрытые include-правилами (и необходимые промежуточные каталоги).
+    Ошибка листинга → пустой список.
+    """
+    filters = filter_args(profile.exclude, profile.include)
+    if include_only:
+        filters = filters + ["--filter=- *"]
+    items = _run_listing(_source(profile.source_path), filters)
+    if items is None:
+        return []
+    return sorted(path for path, is_dir in items if is_dir)
+
+
 def delete_preflight(profile: Profile) -> DeletePlan:
     """Сухой прогон с `--delete` для подсчёта удаляемых на сервере объектов."""
     outcome = run_rsync(build_command(profile, dry_run=True, delete=True))

@@ -21,7 +21,7 @@ alwaysApply: false
    (`source_files`) МИНУС это множество.
 5. `after_push` применяется только к подтверждённым:
   - `delete` — удалить локальный файл, затем подчистить опустевшие каталоги (но не
-     сам `local_root`);
+     сам `local_root`); каталоги include-области профиля сохраняются;
   - `archive` — перенести в `archive_dir` (дефолт
     `<local_root>/../_fs-backup/<profile>/<YYYY-MM-DD>/`), сохраняя относительный путь;
    - `nothing` — ничего не делать.

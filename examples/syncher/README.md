@@ -61,6 +61,8 @@ Windows OpenSSH и chocolatey/cwrsync runtime.
   возврат одного каталога `include = ["projects/keep/build/"]` поверх правила
   `build/` — это и есть override на уровне папок;
 - **`[[backup]]` «vault»** — offload с `after_push = "archive"` и `verify = true`.
+  Каталоги, явно покрытые include-правилами backup-профиля, при offload сохраняются:
+  удаляется/переносится только подтверждённо переданное содержимое.
 
 ## Ожидаемый итог `--dry-run`
 

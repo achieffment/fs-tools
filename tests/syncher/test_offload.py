@@ -50,6 +50,20 @@ def test_apply_after_push_delete(tmp_path: Path) -> None:
     assert tmp_path.exists()                     # сам корень не трогаем
 
 
+def test_apply_after_push_delete_keeps_included_dir(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Проверяет сценарий: apply after push delete keeps included dir."""
+    (tmp_path / "sub").mkdir()
+    (tmp_path / "sub" / "a.txt").write_text("a", encoding="utf-8")
+    monkeypatch.setattr(offload_mod, "source_dirs", lambda profile, include_only=False: ["sub"])
+    profile = _backup(tmp_path, after_push="delete", include=["sub/"])
+    offload, errlist = apply_after_push(profile, ["sub/a.txt"])
+    assert offload == ["sub/a.txt"] and not errlist
+    assert not (tmp_path / "sub" / "a.txt").exists()
+    assert (tmp_path / "sub").exists()           # include-каталог сохраняется
+
+
 def test_apply_after_push_backup(tmp_path: Path) -> None:
     """Проверяет сценарий: apply after push backup."""
     (tmp_path / "a.txt").write_text("a", encoding="utf-8")
@@ -165,3 +179,28 @@ def test_real_offload_excluded_file_not_deleted(tmp_path: Path) -> None:
     assert not (src / "keep.txt").exists()       # переданное удалено
     assert (src / "scratch.tmp").exists()        # исключённое осталось локально
     assert not (dst / "scratch.tmp").exists()    # и на сервер не ушло
+
+
+@requires_rsync
+def test_real_offload_keeps_matched_include_dirs(tmp_path: Path) -> None:
+    """Проверяет сценарий: real offload keeps matched include dirs."""
+    src = tmp_path / "src"
+    dst = tmp_path / "dst"
+    back = src / "Work" / "ProjectA" / "Back"
+    back.mkdir(parents=True)
+    (back / "dump.sql").write_text("sql", encoding="utf-8")
+    dst.mkdir()
+    profile = _backup(
+        src,
+        target_path=str(dst),
+        include=["**/", "**/Back/", "**/Back/**"],
+        exclude=["*"],
+        after_push="delete",
+        verify=True,
+    )
+    result = run_offload(profile, dry_run=False)
+    assert result.ok
+    assert result.offload == ["Work/ProjectA/Back/dump.sql"]
+    assert (back).exists()                        # целевой include-каталог сохранён
+    assert not (back / "dump.sql").exists()       # удаляется только содержимое
+    assert (dst / "Work" / "ProjectA" / "Back" / "dump.sql").exists()

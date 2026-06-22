@@ -13,7 +13,7 @@ from datetime import datetime
 from pathlib import Path
 
 from .config import Profile
-from .rsync import RsyncOutcome, build_command, run_rsync, source_files
+from .rsync import RsyncOutcome, build_command, run_rsync, source_dirs, source_files
 
 
 @dataclass
@@ -49,10 +49,21 @@ def _default_backup_dir(profile: Profile) -> Path:
     return profile.source_path.parent / "_fs-backup" / profile.name / date
 
 
-def _prune_empty_dirs(root: Path, start: Path) -> None:
-    """Удалить опустевшие каталоги вверх до root (сам root не трогаем)."""
+def _protected_dirs(profile: Profile) -> set[Path]:
+    """Каталоги области include, которые нельзя удалять после offload."""
+    if not profile.include:
+        return set()
+    root = profile.source_path
+    rel_dirs = source_dirs(profile, include_only=True)
+    return {root / rel for rel in rel_dirs}
+
+
+def _prune_empty_dirs(root: Path, start: Path, *, protected: set[Path]) -> None:
+    """Удалить опустевшие каталоги вверх до root, кроме защищённых каталогов."""
     curr = start
     while curr != root and curr.is_dir():
+        if curr in protected:
+            return
         try:
             next(curr.iterdir())
             return
@@ -74,6 +85,7 @@ def apply_after_push(
 
     root = profile.source_path
     backup_path = profile.backup_path or _default_backup_dir(profile)
+    protected = _protected_dirs(profile)
     for rel in confirm:
         src = root / rel
         if not src.exists():
@@ -81,12 +93,12 @@ def apply_after_push(
         try:
             if profile.after_push == "delete":
                 src.unlink()
-                _prune_empty_dirs(root, src.parent)
+                _prune_empty_dirs(root, src.parent, protected=protected)
             elif profile.after_push == "backup":
                 dst = backup_path / rel
                 dst.parent.mkdir(parents=True, exist_ok=True)
                 src.replace(dst)
-                _prune_empty_dirs(root, src.parent)
+                _prune_empty_dirs(root, src.parent, protected=protected)
             offload.append(rel)
         except OSError as exc:
             errlist.append(f"{rel}: {exc}")
