@@ -46,22 +46,24 @@ bin/check.bat        # Windows
   проверяется как `is_dir()`;
 - **мандат-файл** без `/` (`…/Work/*/*/Data/project.md`): проверка `exists()`
   (файл или папка);
-- **негатив** `!_Archive` — исключает служебный `_Archive` из подстановок `*`/`**`.
+- **негативы `!` через ordered pathspec**:
+  - short basename-паттерн (например, `!_Archive`);
+  - path-based исключение конкретного пути (например, `!/Workspace/Code/Projects`);
+  - path-based исключение по маске (например, `!/Code/PHP/**`);
+  - порядок строк учитывается (`last-match-wins` для конфликтующих паттернов).
+  - re-include не используется: в checker `!!...` схлопывается до `!...`.
 
 ## Ожидаемый результат
 
-На этом дереве прогон сообщает ровно **7** отсутствующих путей:
+На этом дереве прогон сообщает ровно **4** отсутствующих пути:
 
 ```text
-Отсутствуют пути (7):
+Отсутствуют пути (4):
   Activities/3D/Resources
-  Activities/Web/Projects/Addl/_Archive/aero.example/Data
   Activities/Web/Projects/Addl/safegrid.example/Data
   Activities/Web/Projects/Self/personal.example/Back
-  Activities/Web/Projects/Work/Fabrikam/_Archive/acoustic.example/Back
-  Activities/Web/Projects/Work/Fabrikam/_Archive/acoustic.example/Data
   Activities/Web/Projects/Work/Fabrikam/widgets.example/Data/project.md
-Проверено правил: 17. Найдено каталогов-кандидатов: 26. Отсутствует: 7.
+Проверено правил: 17. Найдено каталогов-кандидатов: 22. Отсутствует: 4.
 ```
 
 Как читать результат:
@@ -72,17 +74,12 @@ bin/check.bat        # Windows
 | `…/Addl/safegrid.example/Data` | обычный проект `safegrid.example`: `Back` есть, `Data` нет (`Addl/*/Data`) |
 | `…/Self/personal.example/Back` | обычный проект `personal.example`: `Data` есть, `Back` нет (`Self/*/Back`) |
 | `…/Work/Fabrikam/widgets.example/Data/project.md` | проект есть, `Data` есть, но обязательного файла `project.md` нет (мандат-файл) |
-| `…/Addl/_Archive/aero.example/Data` | архивный проект проверяется правилом `**/_Archive/*/Data` (литерал `_Archive`); `Back` есть, `Data` нет |
-| `…/Work/Fabrikam/_Archive/acoustic.example/Back` и `/Data` | архивный проект без `Back`/`Data` — оба сообщаются (`**/_Archive/*/…`) |
 
 Чего в отчёте **нет** (и это правильно):
 
-- `Activities/Web/Projects/Addl/_Archive/Back` — `*` в `Addl/*/Back` выбрал
-  `_Archive`, но негатив `!_Archive` его отбросил (служебный каталог, не проект);
-- `Activities/Web/Projects/Work/Fabrikam/_Archive/…` для правил `Work/*/*/Back|Data` и
-  `…/Data/project.md` — `_Archive` стоит на **промежуточной** `*`-позиции (позиция
-  проекта), но всё равно отсекается негативом, поэтому `Back`/`Data`/`project.md`
-  там не требуются;
+- любые ветки `_Archive` (включая `Addl/_Archive/...` и
+  `Work/Fabrikam/_Archive/...`) — отсекаются коротким pathspec-паттерном
+  `!_Archive`, поэтому архивные `Back`/`Data`/`project.md` не требуются;
 - `Activities/3D/Projects` и любые `Back`/`Data`/`project.md` у существующих
   проектов (`crm.example.com`, `widgets.example` — кроме его `project.md`, `wheels.example`) —
   они на месте.

@@ -5,10 +5,9 @@
 мандат. Нарушение — отсутствие мандата в найденном якоре. Если префикс не дал
 якорей (литерал отсутствует, `*`/`**` ничего не нашли) — это не нарушение.
 
-Негативы (`!`) прунят якори по ИМЕНИ каждой `*`/`**`-выбранной компоненты
-(`_selected_names` + `Negation`), а не только по листу: так `_Archive` отсекается и
-на промежуточных `*`-позициях. Литералы шаблона (в т.ч. записанный буквально
-`_Archive` в `**/_Archive/*`) под прунинг НЕ попадают.
+Негативы (`!`) применяются единым ordered pathspec-каналом к относительным путям
+якорей и мандатов (`anchor/require`). В checker это всегда исключение из проверки:
+если совпало — кандидат пропускается.
 """
 from __future__ import annotations
 
@@ -17,9 +16,6 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .rule import FsRule, Rule
-
-# Метасимволы glob: сегмент с ними — подстановка (его компонента проверяется негативом).
-_GLOB_META = ("*", "?", "[")
 
 
 @dataclass
@@ -34,45 +30,6 @@ class CheckResult:
 def _is_hidden(rel: Path) -> bool:
     """Скрытый ли путь: любая компонента начинается с `.` (такие не обходим)."""
     return any(part.startswith(".") for part in rel.parts)
-
-
-def _has_glob(segment: str) -> bool:
-    return any(meta in segment for meta in _GLOB_META)
-
-
-def _selected_names(prefix: tuple[str, ...], parts: tuple[str, ...]) -> list[str]:
-    """Имена компонент якоря, выбранных подстановкой `*`/`**` — только их прунит негатив.
-
-    Литералы (включая `_Archive`, записанный буквально) сюда НЕ попадают. Поддержан
-    один `**` на правило: его захват выравнивается на «середину» компонент пути, а
-    `*`-сегменты слева/справа — позиционно.
-    """
-    if "**" not in prefix:  # 1:1 выравнивание сегмент <-> компонента
-        names = []
-        for seg, part in zip(prefix, parts):
-            if _has_glob(seg):
-                names.append(part)
-        return names
-    ix = prefix.index("**")
-    lf, rt = prefix[:ix], prefix[ix + 1:]
-    if rt:
-        md = parts[len(lf):len(parts) - len(rt)]
-    else:
-        md = parts[len(lf):]
-    names = list(md)  # всё, что поймал `**`, — это подстановка
-    names_left = []
-    for seg, part in zip(lf, parts):
-        if _has_glob(seg):
-            names_left.append(part)
-    names = names + names_left
-    if rt:
-        rtail = parts[len(parts) - len(rt):]
-        names_right = []
-        for seg, part in zip(rt, rtail):
-            if _has_glob(seg):
-                names_right.append(part)
-        names = names + names_right
-    return names
 
 
 class FsChecker:
@@ -106,10 +63,12 @@ class FsChecker:
             rel = adir.relative_to(root)
             if rel.parts and _is_hidden(rel):
                 continue
-            if any(
-                self._negation.is_pruned(name)
-                for name in _selected_names(rule.anchors, rel.parts)
-            ):
+            if self._negation.is_pruned_path(rel, is_dir=True):
+                continue
+            target_rel = rel / rule.require
+            if self._negation.is_pruned_path(target_rel, is_dir=False):
+                continue
+            if self._negation.is_pruned_path(target_rel, is_dir=True):
                 continue
             anccnt = anccnt + 1
             target = adir / rule.require

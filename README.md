@@ -206,8 +206,11 @@ fsnm.planned                                               # пары src -> dst
 - Сегменты: литерал, `*` (один уровень), `**` (ноль и более), глоб внутри сегмента.
 - Мандат — последний сегмент. Завершающий `/` → строго каталог (`is_dir()`); без него —
   `exists()` (файл или папка).
-- Негатив `!` исключает имя из подстановок `*`/`**` (узкий момент `_Archive`), не влияя
-  на литералы.
+- Негативы `!` работают через единый ordered pathspec-канал: матч по относительным
+  путям якоря и мандата (`anchor/require`), поддержка масок `**`, `*`, `?`, `[]`,
+  порядок строк значим (`last-match-wins`).
+- В checker `!` — только исключение из проверки: re-include не используется.
+  Ведущие `!` схлопываются, поэтому `!!/Code/PHP/**` трактуется как `!/Code/PHP/**`.
 
 ```gitignore
 # фиксированные каталоги — отдельными правилами-литералами
@@ -221,7 +224,7 @@ fsnm.planned                                               # пары src -> dst
 /Activities/Web/Projects/Work/*/*/Data/project.md
 # архивные проекты на любом уровне
 /Activities/Web/Projects/**/_Archive/*/Back
-# _Archive не попадает под * и **
+# short pathspec-паттерн: исключить ветки _Archive на любой глубине
 !_Archive
 ```
 
@@ -232,15 +235,12 @@ fsnm.planned                                               # пары src -> dst
 
 ```text
 Каталог: /mnt/disk/Home
-Отсутствуют пути (7):
+Отсутствуют пути (4):
   Activities/3D/Resources
-  Activities/Web/Projects/Addl/_Archive/aero.example/Data
   Activities/Web/Projects/Addl/safegrid.example/Data
   Activities/Web/Projects/Self/personal.example/Back
-  Activities/Web/Projects/Work/Fabrikam/_Archive/acoustic.example/Back
-  Activities/Web/Projects/Work/Fabrikam/_Archive/acoustic.example/Data
   Activities/Web/Projects/Work/Fabrikam/widgets.example/Data/project.md
-Проверено правил: 17. Найдено каталогов-кандидатов: 26. Отсутствует: 7.
+Проверено правил: 17. Найдено каталогов-кандидатов: 22. Отсутствует: 4.
 ```
 
 | Код | Условие |

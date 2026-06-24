@@ -35,7 +35,7 @@ from typing import Any
 import pathspec
 from pathspec import RegexPattern
 
-from ..shared.pathspec_compat import _FACTORY
+from ..shared.pathspec_match import build_spec, path_text
 
 
 def _case_insensitive(spec: pathspec.PathSpec[Any]) -> pathspec.PathSpec[Any]:
@@ -81,10 +81,7 @@ class FsIgnore:
         Путь приводится к posix (`/` как разделитель на всех ОС); каталогам
         добавляется завершающий `/`, чтобы работали dir-only паттерны (`build/`).
         """
-        text = rel.as_posix()
-        if is_dir:
-            text = text + "/"
-        return self._spec.match_file(text)
+        return self._spec.match_file(path_text(rel, is_dir))
 
 
 def load_fs_ignore(root: Path) -> FsIgnore | None:
@@ -101,6 +98,6 @@ def load_fs_ignore(root: Path) -> FsIgnore | None:
         bare = path.read_text(encoding="utf-8-sig")
     except OSError:
         return None
-    spec = pathspec.PathSpec.from_lines(_FACTORY, bare.splitlines())
+    spec = build_spec(bare.splitlines())
     incl = any(p.include is False for p in spec.patterns)
     return FsIgnore(spec, incl)

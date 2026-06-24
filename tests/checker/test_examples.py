@@ -13,9 +13,9 @@ def test_examples_matches_readme(capsys: pytest.CaptureFixture[str]) -> None:
     code = run(EXAMPLES)
     out = capsys.readouterr().out
     assert code == 2
-    assert "Отсутствуют пути (7):" in out
-    assert "Проверено правил: 17. Найдено каталогов-кандидатов: 26. Отсутствует: 7." in out
+    assert "Отсутствуют пути (4):" in out
+    assert "Проверено правил: 17. Найдено каталогов-кандидатов: 22. Отсутствует: 4." in out
     assert "Activities/3D/Resources" in out
-    assert "Activities/Web/Projects/Addl/_Archive/aero.example/Data" in out
+    assert "Activities/Web/Projects/Addl/safegrid.example/Data" in out
     assert "Activities/Web/Projects/Self/personal.example/Back" in out
     assert "Activities/Web/Projects/Work/Fabrikam/widgets.example/Data/project.md" in out

@@ -132,7 +132,7 @@ def test_dir_only_satisfied_by_dir(make_tree: Callable[[Iterable[str]], Path]) -
 
 
 # --------------------------------------------------------------------------- #
-# Узкий момент _Archive: прунинг подстановок и проверка литерала
+# Узкий момент _Archive: short pathspec-паттерн и его влияние на проверки
 # --------------------------------------------------------------------------- #
 def test_archive_pruned_on_leaf_but_literal_checked(
     make_tree: Callable[[Iterable[str]], Path],
@@ -150,9 +150,9 @@ def test_archive_pruned_on_leaf_but_literal_checked(
         "!_Archive\n"
     )
     missing = _check(root, rule_text)
-    # Addl/_Archive/Back НЕ требуется (прунинг *), но архивный проект проверяется.
+    # `_Archive` исключён pathspec-паттерном на любой глубине, архивный проект не проверяется.
     assert "Activities/Web/Projects/Addl/_Archive/Back" not in missing
-    assert missing == ["Activities/Web/Projects/Addl/_Archive/aero.example/Back"]
+    assert not missing
 
 
 def test_archive_pruned_on_intermediate_star(
@@ -183,6 +183,91 @@ def test_archive_pruned_on_intermediate_star(
     ]
 
 
+def test_path_negation_pruned_specific_anchor(
+    make_tree: Callable[[Iterable[str]], Path],
+) -> None:
+    """Проверяет сценарий: path negation pruned specific anchor."""
+    root = make_tree(["Workspace/Code/", "Workspace/Database/"])
+    rule_text = (
+        "/Workspace/*/Projects\n"
+        "!/Workspace/Code/Projects\n"
+    )
+    missing = _check(root, rule_text)
+    assert missing == ["Workspace/Database/Projects"]
+
+
+def test_negation_short_and_path_together(
+    make_tree: Callable[[Iterable[str]], Path],
+) -> None:
+    """Проверяет сценарий: negation short and path together."""
+    root = make_tree(
+        [
+            "Activities/Web/Projects/Addl/_Archive/aero.example/",
+            "Activities/Web/Projects/Addl/Code/",
+            "Activities/Web/Projects/Addl/Real/",
+        ]
+    )
+    rule_text = (
+        "/Activities/Web/Projects/Addl/*/Back\n"
+        "!_Archive\n"
+        "!/Activities/Web/Projects/Addl/Code\n"
+    )
+    missing = _check(root, rule_text)
+    assert missing == ["Activities/Web/Projects/Addl/Real/Back"]
+
+
+def test_path_negation_order_last_match_wins_e2e(
+    make_tree: Callable[[Iterable[str]], Path],
+) -> None:
+    """Проверяет сценарий: path negation order last match wins e2e."""
+    root = make_tree(["Code/PHP/", "Code/Python/"])
+    rule_text = (
+        "/Code/*/Projects\n"
+        "!/Code/**\n"
+        "!!/Code/PHP/**\n"
+    )
+    missing = _check(root, rule_text)
+    assert not missing
+
+
+def test_path_negation_double_bang_equals_single_bang_e2e(
+    make_tree: Callable[[Iterable[str]], Path],
+) -> None:
+    """Проверяет сценарий: path negation double bang equals single bang e2e."""
+    root = make_tree(["Code/PHP/", "Code/Python/"])
+    rule_text1 = (
+        "/Code/*/Projects\n"
+        "!/Code/PHP/**\n"
+    )
+    rule_text2 = (
+        "/Code/*/Projects\n"
+        "!!/Code/PHP/**\n"
+    )
+    missing1 = _check(root, rule_text1)
+    missing2 = _check(root, rule_text2)
+    assert missing1 == ["Code/Python/Projects"]
+    assert missing2 == ["Code/Python/Projects"]
+
+
+def test_path_negation_mask_excludes_branch(
+    make_tree: Callable[[Iterable[str]], Path],
+) -> None:
+    """Проверяет сценарий: path negation mask excludes branch."""
+    root = make_tree(
+        [
+            "Code/PHP/Projects/",
+            "Code/PHP/Legacy/",
+            "Code/Python/",
+        ]
+    )
+    rule_text = (
+        "/Code/*/Projects\n"
+        "!/Code/PHP/**\n"
+    )
+    missing = _check(root, rule_text)
+    assert missing == ["Code/Python/Projects"]
+
+
 # Канонический .fs-check (источник истины для оракула ниже).
 _CANONICAL_RULE = (
     "/Activities\n"
@@ -206,12 +291,12 @@ _CANONICAL_RULE = (
 )
 
 
-def test_canonical_oracle_exactly_four(
+def test_canonical_oracle_archive_excluded(
     make_tree: Callable[[Iterable[str]], Path],
 ) -> None:
-    # Минимизированное дерево домена: у aero.example нет Data, у acoustic.example нет
-    # ни Back, ни Data. Ожидаемый эталон — ровно 4 нарушения.
-    """Проверяет сценарий: canonical oracle exactly four."""
+    # В canonical-правиле `_Archive` исключён short pathspec-паттерном `!_Archive`,
+    # поэтому архивные нарушения не репортятся.
+    """Проверяет сценарий: canonical oracle with archive excluded."""
     P = "Activities/Web/Projects/"
     root = make_tree(
         [
@@ -239,12 +324,7 @@ def test_canonical_oracle_exactly_four(
         ]
     )
     missing = _check(root, _CANONICAL_RULE)
-    assert missing == [
-        "Activities/3D/Resources",
-        "Activities/Web/Projects/Addl/_Archive/aero.example/Data",
-        "Activities/Web/Projects/Work/Fabrikam/_Archive/acoustic.example/Back",
-        "Activities/Web/Projects/Work/Fabrikam/_Archive/acoustic.example/Data",
-    ]
+    assert missing == ["Activities/3D/Resources"]
 
 
 def test_anchors_and_rules_counters(make_tree: Callable[[Iterable[str]], Path]) -> None:

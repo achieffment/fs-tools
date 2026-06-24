@@ -75,24 +75,89 @@ def test_negatives_go_to_pathspec_not_rules(write_rule: Callable[[str], Path]) -
     fs_rule = load_fs_rule(root)
     # Положительное правило — одно; негатив в правила не попал.
     assert [r.pattern for r in fs_rule.rules] == ["/Activities/*/Projects"]
-    # Негатив прунит имя _Archive, но не обычный проект.
-    assert fs_rule.negation.is_pruned("_Archive") is True
-    assert fs_rule.negation.is_pruned("crm.example.com") is False
+    # Единый pathspec-канал: _Archive отсекается как basename-паттерн.
+    assert fs_rule.negation.is_pruned_path(Path("Activities/Web/_Archive"), is_dir=True) is True
+    assert fs_rule.negation.is_pruned_path(Path("Activities/Web/Projects"), is_dir=True) is False
 
 
 def test_negation_glob_pattern(write_rule: Callable[[str], Path]) -> None:
     """Проверяет сценарий: negation glob pattern."""
     root = write_rule("!_Archive*\n")
     negation = load_fs_rule(root).negation
-    assert negation.is_pruned("_Archive_01") is True
-    assert negation.is_pruned("_Archive") is True
-    assert negation.is_pruned("Archive") is False
+    assert negation.is_pruned_path(Path("Activities/_Archive_01"), is_dir=True) is True
+    assert negation.is_pruned_path(Path("Activities/_Archive"), is_dir=True) is True
+    assert negation.is_pruned_path(Path("Activities/Archive"), is_dir=True) is False
 
 
 def test_no_negatives_prunes_nothing(write_rule: Callable[[str], Path]) -> None:
     """Проверяет сценарий: no negatives prunes nothing."""
     root = write_rule("/Activities\n")
-    assert load_fs_rule(root).negation.is_pruned("_Archive") is False
+    negation = load_fs_rule(root).negation
+    assert negation.is_pruned_path(Path("Activities/Web"), is_dir=True) is False
+
+
+def test_negation_path_anchored_match(write_rule: Callable[[str], Path]) -> None:
+    """Проверяет сценарий: negation path anchored match."""
+    root = write_rule("/Workspace/*/Projects\n!/Workspace/Code/Projects\n")
+    negation = load_fs_rule(root).negation
+    assert negation.is_pruned_path(Path("Workspace/Code/Projects"), is_dir=True) is True
+    assert negation.is_pruned_path(Path("Workspace/Database/Projects"), is_dir=True) is False
+
+
+def test_negation_path_basename_anywhere(write_rule: Callable[[str], Path]) -> None:
+    """Проверяет сценарий: negation path basename anywhere."""
+    root = write_rule("/Workspace/*/Projects\n!**/Code\n")
+    negation = load_fs_rule(root).negation
+    assert negation.is_pruned_path(Path("Workspace/Code"), is_dir=True) is True
+    assert negation.is_pruned_path(Path("Workspace/Web"), is_dir=True) is False
+
+
+def test_negation_path_mask_double_star(write_rule: Callable[[str], Path]) -> None:
+    """Проверяет сценарий: negation path mask double star."""
+    root = write_rule("/Code/*/Projects\n!/Code/PHP/**\n")
+    negation = load_fs_rule(root).negation
+    assert negation.is_pruned_path(Path("Code/PHP"), is_dir=True) is True
+    assert negation.is_pruned_path(Path("Code/PHP/Legacy/Projects"), is_dir=True) is True
+    assert negation.is_pruned_path(Path("Code/Python"), is_dir=True) is False
+
+
+def test_negation_path_mask_single_char_and_star(write_rule: Callable[[str], Path]) -> None:
+    """Проверяет сценарий: negation path mask single char and star."""
+    root = write_rule("/Code/*/Projects\n!/Code/*/v?ndor\n")
+    negation = load_fs_rule(root).negation
+    assert negation.is_pruned_path(Path("Code/PHP/vendor"), is_dir=True) is True
+    assert negation.is_pruned_path(Path("Code/PHP/vxndor"), is_dir=True) is True
+    assert negation.is_pruned_path(Path("Code/PHP/vndor"), is_dir=True) is False
+
+
+def test_negation_order_last_match_wins(write_rule: Callable[[str], Path]) -> None:
+    """Проверяет сценарий: negation order last match wins."""
+    root = write_rule("/Code/*/Projects\n!/Code/**\n!!/Code/PHP/**\n")
+    negation = load_fs_rule(root).negation
+    assert negation.is_pruned_path(Path("Code/Python/Projects"), is_dir=True) is True
+    assert negation.is_pruned_path(Path("Code/PHP/Projects"), is_dir=True) is True
+
+
+def test_negation_double_bang_equals_single_bang(write_rule: Callable[[str], Path]) -> None:
+    """Проверяет сценарий: negation double bang equals single bang."""
+    root1 = write_rule("!/Code/PHP/**\n")
+    root2 = write_rule("!!/Code/PHP/**\n")
+    neg1 = load_fs_rule(root1).negation
+    neg2 = load_fs_rule(root2).negation
+    probe = Path("Code/PHP/Projects")
+    assert neg1.is_pruned_path(probe, is_dir=True) is True
+    assert neg2.is_pruned_path(probe, is_dir=True) is True
+
+
+def test_negation_triple_bang_equals_single_bang(write_rule: Callable[[str], Path]) -> None:
+    """Проверяет сценарий: negation triple bang equals single bang."""
+    root1 = write_rule("!_Archive\n")
+    root2 = write_rule("!!!_Archive\n")
+    neg1 = load_fs_rule(root1).negation
+    neg2 = load_fs_rule(root2).negation
+    probe = Path("Activities/Web/_Archive")
+    assert neg1.is_pruned_path(probe, is_dir=True) is True
+    assert neg2.is_pruned_path(probe, is_dir=True) is True
 
 
 def test_utf8_sig_bom_does_not_break_first_line(tmp_path: Path) -> None:

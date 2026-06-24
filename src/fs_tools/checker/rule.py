@@ -5,8 +5,10 @@
 
 - положительные правила -> разбираются на префикс (якори) и последний сегмент
   (мандат); их разворачивает движок через `pathlib.Path.glob` (см. engine.py);
-- негативные правила (`!...`) -> собираются в `pathspec.PathSpec` и работают как
-  прунинг подстановок `*`/`**` по имени одной компоненты (gitignore-семантика).
+- негативные правила (`!...`) -> собираются в единый ordered `pathspec.PathSpec`
+  и применяются к относительным путям якорей/мандатов (с учётом порядка строк).
+  В checker `!` всегда означает исключение из проверки; ведущие `!` схлопываются
+  (`!!/a` эквивалентно `!/a`).
 
 Свой код тут — только тривиальная оркестрация (пропуск комментариев/пустых строк,
 снятие `!` и якорного `/`, разбиение на сегменты); gitignore-семантику самих
@@ -20,7 +22,7 @@ from typing import Any
 
 import pathspec
 
-from ..shared.pathspec_compat import _FACTORY
+from ..shared.pathspec_match import build_spec, path_text
 
 
 class FsRuleError(Exception):
@@ -41,6 +43,15 @@ def _rstrip_rule(line: str) -> str:
             break  # экранированный пробел — значимый
         stripped = head
     return stripped
+
+
+def _normalize_negation(line: str) -> str:
+    """Нормализует негатив: схлопывает ведущие `!` до одного отрицания.
+
+    Возвращает паттерн БЕЗ ведущих `!` для передачи в pathspec. Таким образом
+    `!!/a` и `!!!/a` трактуются как `!/a` (без re-include семантики).
+    """
+    return line.lstrip("!")
 
 
 @dataclass(frozen=True)
@@ -79,20 +90,20 @@ class Rule:
 
 
 class Negation:
-    """Прунинг подстановок `*`/`**` по имени одной компоненты якоря.
+    """Негативы `.fs-check`: единый ordered pathspec-канал.
 
-    Шаблоны из строк `!...` (без ведущего `!`) компилируются в `pathspec.PathSpec`.
-    Матч идёт по ИМЕНИ одного сегмента (`match_file(name + "/")`), а не по полному
-    пути: иначе gitignore-семантика «совпал каталог → совпало поддерево» исключила
-    бы и содержимое (например, архивные проекты под `_Archive`).
+    Шаблоны из строк `!...` (без ведущих `!`) компилируются в `pathspec.PathSpec`.
+    Матч идёт по относительным путям якорей/мандатов. Порядок строк учитывается
+    pathspec (`last-match-wins`), но в checker это влияет только на исключения:
+    re-include через `!!...` не поддерживается (ведущие `!` схлопываются).
     """
 
     def __init__(self, spec: pathspec.PathSpec[Any]):
         self._spec = spec
 
-    def is_pruned(self, name: str) -> bool:
-        """Совпадает ли имя одной компоненты с негативом (тогда якорь отбрасывается)."""
-        return self._spec.match_file(name + "/")
+    def is_pruned_path(self, rel_path: Path, is_dir: bool) -> bool:
+        """Совпадает ли относительный путь якоря/мандата с негативом."""
+        return self._spec.match_file(path_text(rel_path, is_dir))
 
 
 @dataclass(frozen=True)
@@ -108,7 +119,7 @@ def load_fs_rule(root: Path) -> FsRule:
 
     Нет файла -> FsRuleError (некорректный запуск). Пропуск
     комментариев (ведущий `#`) и пустых строк делает сам этот разбор для ВСЕГО файла
-    (до классификации) — в pathspec уходят только `!`-шаблоны без ведущего `!`.
+    (до классификации) — в pathspec уходят `!`-шаблоны без ведущих `!`.
     """
     path = root / ".fs-check"
     if not path.is_file():
@@ -125,11 +136,13 @@ def load_fs_rule(root: Path) -> FsRule:
         if not cont or cont.startswith("#"):
             continue  # пустая строка или комментарий (только ведущий `#`)
         if cont.startswith("!"):
-            negatives.append(cont[1:])  # `!`-шаблон отдаём pathspec без ведущего `!`
+            neg = _normalize_negation(cont)
+            if neg:
+                negatives.append(neg)
             continue
         rule = Rule.from_pattern(cont)
         if rule.require:  # отбрасываем вырожденные строки вроде "/" без сегментов
             rules.append(rule)
 
-    spec: pathspec.PathSpec[Any] = pathspec.PathSpec.from_lines(_FACTORY, negatives)
+    spec = build_spec(negatives)
     return FsRule(rules=tuple(rules), negation=Negation(spec))
