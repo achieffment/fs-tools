@@ -27,11 +27,13 @@
 # Без завершающего / мандат — это файл ИЛИ папка (проверка exists()).
 /Activities/Web/Projects/Work/*/*/Data/project.md
 
-# Back/Data в архивных проектах на любом уровне Web/Projects
+# Демонстрация шаблона `**`: Back/Data в архивных проектах на любом уровне
+# Web/Projects. В этом же демо ниже стоит `!_Archive`, поэтому эти два правила
+# намеренно показаны «для формата», но в итоговую проверку не попадают.
 /Activities/Web/Projects/**/_Archive/*/Back
 /Activities/Web/Projects/**/_Archive/*/Data
 
-# Служебный _Archive не должен попадать под обобщённые * и **
+# Short pathspec-негатив: исключает ветки `_Archive` на любой глубине.
 !_Archive
 
 # Path-based негатив (в стиле .gitignore): точечное исключение конкретного мандата.
