@@ -16,11 +16,15 @@ def format_report(root: Path, result: CheckResult) -> str:
     if result.missing:
         lines.append(f"Отсутствуют пути ({len(result.missing)}):")
         lines = lines + [f"  {path}" for path in result.missing]
-    else:
-        lines.append("Все требуемые пути на месте.")
+    status = (
+        "warn. Найдены отсутствующие пути."
+        if result.missing
+        else "ok. Все требуемые пути на месте."
+    )
+    lines.append(f"Статус: {status}")
     lines.append(
-        f"Проверено правил: {result.rules_checked}. "
-        f"Найдено каталогов-кандидатов: {result.anchors_found}. "
-        f"Отсутствует: {len(result.missing)}."
+        f"Сводка: проверено правил: {result.rules_checked}; "
+        f"найдено каталогов-кандидатов: {result.anchors_found}; "
+        f"отсутствует: {len(result.missing)}."
     )
     return "\n".join(lines)

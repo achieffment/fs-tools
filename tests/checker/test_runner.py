@@ -71,7 +71,7 @@ def test_no_violations_returns_zero(
     code = _run(monkeypatch, str(root))
     out = capsys.readouterr().out
     assert code == 0
-    assert "Все требуемые пути на месте." in out
+    assert "Статус: ok. Все требуемые пути на месте." in out
 
 
 def test_violations_return_two(
@@ -87,7 +87,9 @@ def test_violations_return_two(
     assert code == 2
     assert "Отсутствуют пути (1):" in out
     assert "Activities/Web/Projects" in out
-    assert "Проверено правил: 1." in out
+    assert "Статус: warn. Найдены отсутствующие пути." in out
+    assert "Сводка: проверено правил: 1;" in out
+    assert "отсутствует: 1." in out
 
 
 def test_argument_bypasses_picker(
@@ -107,7 +109,7 @@ def test_argument_bypasses_picker(
     monkeypatch.setattr(runner, "send_webhook", lambda text: True)
     code = runner.main([str(root)])
     assert code == 0
-    assert "Все требуемые пути на месте." in capsys.readouterr().out
+    assert "Статус: ok. Все требуемые пути на месте." in capsys.readouterr().out
 
 
 def test_missing_writes_log_and_sends_webhook(

@@ -15,8 +15,16 @@ def format_report(
     lines = [f"Каталог: {root}"]
     mode = "dry-run" if dry_run else "production"
     lines.append(f"Режим: {mode}")
+    errcnt = len(result.errlist)
+    if errcnt:
+        status = "error. Нормализация завершена с ошибками."
+    elif result.conflicts:
+        status = "warn. Нормализация завершена с конфликтами."
+    else:
+        status = "ok. Нормализация завершена успешно."
+    lines.append(f"Статус: {status}")
     lines.append(
-        f"Готово. Переименовано: {renamed}, пропущено: {skipped} "
-        f"(конфликты: {result.conflicts}, ошибки: {len(result.errlist)})."
+        f"Сводка: переименовано: {renamed}; пропущено: {skipped}; "
+        f"конфликты: {result.conflicts}; ошибки: {errcnt}."
     )
     return "\n".join(lines)

@@ -13,7 +13,8 @@ def test_main_clean_run_returns_zero(tmp_path, monkeypatch, capsys):
     out = capsys.readouterr().out
     assert f"Каталог: {tmp_path}" in out
     assert "Режим: production" in out
-    assert "Готово. Переименовано: 1, пропущено: 0 (конфликты: 0, ошибки: 0)." in out
+    assert "Статус: ok. Нормализация завершена успешно." in out
+    assert "Сводка: переименовано: 1; пропущено: 0; конфликты: 0; ошибки: 0." in out
     assert (tmp_path / "otchiot.txt").exists()
     log = (tmp_path / ".fs-log").read_text(encoding="utf-8")
     assert "Инструмент: normalizer" in log
@@ -33,7 +34,8 @@ def test_main_conflict_only_returns_zero(tmp_path, monkeypatch, capsys):
     err = captured.err
     assert f"Каталог: {tmp_path}" in out
     assert "Режим: production" in out
-    assert "Готово. Переименовано: 0, пропущено: 1 (конфликты: 1, ошибки: 0)." in out
+    assert "Статус: warn. Нормализация завершена с конфликтами." in out
+    assert "Сводка: переименовано: 0; пропущено: 1; конфликты: 1; ошибки: 0." in out
     assert err == ""
 
 
@@ -90,7 +92,8 @@ def test_main_dry_run_returns_zero_without_changes(tmp_path, monkeypatch, capsys
     out = capsys.readouterr().out
     assert f"Каталог: {tmp_path}" in out
     assert "Режим: dry-run" in out
-    assert "Готово. Переименовано: 1, пропущено: 0 (конфликты: 0, ошибки: 0)." in out
+    assert "Статус: ok. Нормализация завершена успешно." in out
+    assert "Сводка: переименовано: 1; пропущено: 0; конфликты: 0; ошибки: 0." in out
     assert "Журнал:" in out
     assert (tmp_path / "Отчёт.txt").exists()
     assert (tmp_path / "otchiot.txt").exists() is False

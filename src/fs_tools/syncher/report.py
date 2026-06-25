@@ -54,8 +54,24 @@ def format_profile(report: ProfileReport) -> str:
 
 
 def format_report(root: Path, result: list[ProfileReport]) -> str:
-    """Полный итоговый отчёт по всем профилям."""
-    lines = [f"Итог ({root}):"]
-    for report in result:
-        lines.append("  " + format_profile(report))
+    """Единый итоговый блок: двухстрочные статус и сводка."""
+    worst = max((report.code for report in result), default=0)
+    if worst == 0:
+        status = f"ok. Синхронизация каталога {root} завершена успешно."
+    elif worst == 3:
+        status = "error. Синхронизация остановлена delete-guard."
+    else:
+        status = "error. Синхронизация завершена с ошибками rsync/offload."
+
+    sent = sum(len(report.sent) for report in result)
+    deleted = sum(len(report.deleted) for report in result)
+    offload = sum(len(report.offload) for report in result)
+    errcnt = sum(len(report.errlist) for report in result)
+    blocked = sum(1 for report in result if report.blocked)
+
+    lines = [f"Статус: {status}"]
+    lines.append(
+        f"Сводка: профилей: {len(result)}; передано: {sent}; удалено: {deleted}; "
+        f"выгружено: {offload}; ошибок: {errcnt}; блокировок: {blocked}."
+    )
     return "\n".join(lines)

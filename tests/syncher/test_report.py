@@ -40,10 +40,14 @@ def test_format_profile_blocked() -> None:
 
 
 def test_format_report_lists_all(tmp_path: Path) -> None:
-    """Проверяет сценарий: format report lists all."""
+    """Проверяет сценарий: format report summary."""
     result = [
         ProfileReport(name="a", kind="sync", code=0),
         ProfileReport(name="b", kind="backup", code=2, errlist=["boom"]),
     ]
     text = format_report(tmp_path, result)
-    assert "Профиль «a»" in text and "Профиль «b»" in text
+    assert "Статус: error. Синхронизация завершена с ошибками rsync/offload." in text
+    assert (
+        "Сводка: профилей: 2; передано: 0; удалено: 0; выгружено: 0; "
+        "ошибок: 1; блокировок: 0."
+    ) in text

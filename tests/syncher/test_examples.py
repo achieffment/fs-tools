@@ -24,6 +24,11 @@ def test_examples_dry_run_matches_readme(capsys: pytest.CaptureFixture[str]) -> 
     assert code == 0
     assert "Профиль «site» (sync): передано 3, удалено 2, выгружено 0, ошибок 0" in out
     assert "Профиль «vault» (backup): передано 3, удалено 0, выгружено 0, ошибок 0" in out
+    assert "Статус: ok. Синхронизация каталога " in out
+    assert (
+        "Сводка: профилей: 2; передано: 6; удалено: 2; выгружено: 0; "
+        "ошибок: 0; блокировок: 0."
+    ) in out
     lpath = EXAMPLES / ".fs-log"
     assert lpath.exists()
     log = lpath.read_text(encoding="utf-8")

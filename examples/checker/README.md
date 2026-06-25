@@ -66,7 +66,8 @@ bin/check.bat        # Windows
   Activities/Web/Projects/Addl/safegrid.example/Data
   Activities/Web/Projects/Self/personal.example/Back
   Activities/Web/Projects/Work/Fabrikam/widgets.example/Data/project.md
-Проверено правил: 17. Найдено каталогов-кандидатов: 22. Отсутствует: 4.
+Статус: warn. Найдены отсутствующие пути.
+Сводка: проверено правил: 17; найдено каталогов-кандидатов: 22; отсутствует: 4.
 ```
 
 Как читать результат:

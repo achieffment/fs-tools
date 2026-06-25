@@ -20,7 +20,8 @@ def test_format_report_ok() -> None:
     text = format_report(root, result, renamed=3, skipped=1)
     assert "Каталог: /tmp/demo" in text
     assert "Режим: production" in text
-    assert "Готово. Переименовано: 3, пропущено: 1 (конфликты: 0, ошибки: 0)." in text
+    assert "Статус: ok. Нормализация завершена успешно." in text
+    assert "Сводка: переименовано: 3; пропущено: 1; конфликты: 0; ошибки: 0." in text
 
 
 def test_format_report_with_errors() -> None:
@@ -30,7 +31,8 @@ def test_format_report_with_errors() -> None:
     text = format_report(root, result, renamed=5, skipped=6)
     assert "Каталог: /tmp/demo" in text
     assert "Режим: production" in text
-    assert "Готово. Переименовано: 5, пропущено: 6 (конфликты: 2, ошибки: 4)." in text
+    assert "Статус: error. Нормализация завершена с ошибками." in text
+    assert "Сводка: переименовано: 5; пропущено: 6; конфликты: 2; ошибки: 4." in text
 
 
 def test_format_report_dry_run() -> None:
@@ -40,4 +42,5 @@ def test_format_report_dry_run() -> None:
     text = format_report(root, result, renamed=2, skipped=1, dry_run=True)
     assert "Каталог: /tmp/demo" in text
     assert "Режим: dry-run" in text
-    assert "Готово. Переименовано: 2, пропущено: 1 (конфликты: 1, ошибки: 0)." in text
+    assert "Статус: warn. Нормализация завершена с конфликтами." in text
+    assert "Сводка: переименовано: 2; пропущено: 1; конфликты: 1; ошибки: 0." in text
