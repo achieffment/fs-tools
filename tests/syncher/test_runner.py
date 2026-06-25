@@ -127,6 +127,7 @@ def test_dry_run_no_transfer_no_log(tmp_path: Path, make_tree: Callable[..., Pat
     assert main([str(src), "--dry-run"]) == 0
     assert not (dst / "a.txt").exists()          # dry-run ничего не передаёт
     text = (src / ".fs-log").read_text(encoding="utf-8")
+    assert "Инструмент: syncher" in text
     assert "Режим: dry-run" in text
     assert "+ a.txt" in text
 
@@ -196,4 +197,5 @@ def test_profile_dry_run_no_log(
     assert "Режим: dry-run" in out
     assert not (dst / "a.txt").exists()
     log = (src / ".fs-log").read_text(encoding="utf-8")
+    assert "Инструмент: syncher" in log
     assert "Режим: dry-run" in log

@@ -16,6 +16,7 @@ __all__ = ["FS_LOG", "write_fs_log"]
 def write_fs_log(
     root: Path,
     missing: list[str],
+    tool: str = "checker",
     mode: str = "production",
     when: datetime | None = None,
 ) -> Path:
@@ -25,4 +26,4 @@ def write_fs_log(
     наличии нарушений; пометка — для прямого использования API). Параметр `when` нужен
     для тестов; по умолчанию берётся текущее локальное время.
     """
-    return append_log(root, missing, "(нарушений нет)", mode=mode, when=when)
+    return append_log(root, missing, "(нарушений нет)", meta=(tool, mode), when=when)

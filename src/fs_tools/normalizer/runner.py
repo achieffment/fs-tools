@@ -56,7 +56,7 @@ def run(root: Path, *, dry_run: bool = False) -> int:
     # Журнал — вторичный артефакт: план/переименования уже вычислены, поэтому сбой
     # записи не роняем трейсбеком, а лишь предупреждаем. На код возврата это не влияет.
     try:
-        lpath = write_fs_log(root, actions, mode=mode)
+        lpath = write_fs_log(root, actions, tool="normalizer", mode=mode)
         print(f"Журнал: {lpath}")
     except OSError as exc:
         sys.stderr.write(f"Не удалось записать журнал .fs-log: {exc}\n")

@@ -16,6 +16,7 @@ __all__ = ["FS_LOG", "write_fs_log"]
 def write_fs_log(
     root: Path,
     renames: list[tuple[Path, Path]],
+    tool: str = "normalizer",
     mode: str = "production",
     when: datetime | None = None,
 ) -> Path:
@@ -26,4 +27,4 @@ def write_fs_log(
     нужен для тестов; по умолчанию берётся текущее локальное время.
     """
     lines = [f"{src.as_posix()} -> {dest.as_posix()}" for src, dest in renames]
-    return append_log(root, lines, "(изменений нет)", mode=mode, when=when)
+    return append_log(root, lines, "(изменений нет)", meta=(tool, mode), when=when)

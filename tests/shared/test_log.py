@@ -1,4 +1,4 @@
-"""Общие механики журнала .fs-log (shared.log): дата, режим, append, utf-8.
+"""Общие механики журнала .fs-log (shared.log): дата, инструмент, режим, append.
 
 Мод-специфичные строки и текст пустого блока проверяются в мод-тестах
 (normalizer: пары `old -> new` и «(изменений нет)»; checker: пути и «(нарушений нет)»).
@@ -16,6 +16,7 @@ def test_append_log_creates_file_with_timestamp_and_indent(tmp_path: Path) -> No
     assert lpath == tmp_path / FS_LOG
     text = lpath.read_text(encoding="utf-8")
     assert "2026-06-14 09:00:00" in text
+    assert "Инструмент: unknown" in text
     assert "Режим: production" in text
     assert "  первая" in text       # строки тела пишутся с отступом
     assert "  вторая" in text
@@ -27,20 +28,22 @@ def test_append_log_empty_uses_marker(tmp_path: Path) -> None:
     lpath = append_log(tmp_path, [], "(пусто)", when=when)
     text = lpath.read_text(encoding="utf-8")
     assert "2026-06-14 09:05:00" in text
+    assert "Инструмент: unknown" in text
     assert "Режим: production" in text
     assert "  (пусто)" in text
 
 
-def test_append_log_uses_explicit_mode(tmp_path: Path) -> None:
-    """Проверяет сценарий: append log uses explicit mode."""
+def test_append_log_uses_explicit_tool_and_mode(tmp_path: Path) -> None:
+    """Проверяет сценарий: append log uses explicit tool and mode."""
     lpath = append_log(
         tmp_path,
         [],
         "(пусто)",
-        mode="dry-run",
+        meta=("normalizer", "dry-run"),
         when=datetime(2026, 6, 14, 9, 10, 0),
     )
     text = lpath.read_text(encoding="utf-8")
+    assert "Инструмент: normalizer" in text
     assert "Режим: dry-run" in text
 
 

@@ -151,7 +151,7 @@ def run(root: Path, args: argparse.Namespace) -> int:
     mode = "dry-run" if is_dry else "production"
     actions = [op for report in result for op in report.actions()]
     try:
-        write_fs_log(root, actions, mode=mode)
+        write_fs_log(root, actions, tool="syncher", mode=mode)
     except OSError as exc:
         sys.stderr.write(f"Не удалось записать журнал .fs-log: {exc}\n")
     if (not is_dry) and worst in (2, 3):

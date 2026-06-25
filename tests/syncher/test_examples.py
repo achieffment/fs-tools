@@ -27,4 +27,5 @@ def test_examples_dry_run_matches_readme(capsys: pytest.CaptureFixture[str]) -> 
     lpath = EXAMPLES / ".fs-log"
     assert lpath.exists()
     log = lpath.read_text(encoding="utf-8")
+    assert "Инструмент: syncher" in log
     assert "Режим: dry-run" in log

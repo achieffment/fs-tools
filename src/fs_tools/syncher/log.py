@@ -16,6 +16,7 @@ __all__ = ["FS_LOG", "write_fs_log"]
 def write_fs_log(
     root: Path,
     actions: list[str],
+    tool: str = "syncher",
     mode: str = "production",
     when: datetime | None = None,
 ) -> Path:
@@ -27,4 +28,4 @@ def write_fs_log(
     Пустой список фиксируется пометкой «(изменений нет)». Параметр `when` нужен для
     тестов; по умолчанию берётся текущее локальное время.
     """
-    return append_log(root, actions, "(изменений нет)", mode=mode, when=when)
+    return append_log(root, actions, "(изменений нет)", meta=(tool, mode), when=when)

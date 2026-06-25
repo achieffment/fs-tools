@@ -15,8 +15,8 @@ alwaysApply: true
  (`pathspec_compat.py`, `_FACTORY`), доступ к единому `.env` (`env.py`: `load_env`
  однократно грузит `.env` в `os.environ` через `load_dotenv(override=False)` — процесс
  важнее файла; плюс путь и `chmod 600`, ленивый `dotenv`), единый журнал
- `.fs-log` (`log.py`, `append_log` — содержимое строк и текст пустого блока
- задаются параметром), общая отправка веб-хуков (`notify.py`: URL/tok по ключам,
+ `.fs-log` (`log.py`, `append_log` — заголовок с датой/инструментом/режимом,
+ содержимое строк и текст пустого блока задаются параметрами), общая отправка веб-хуков (`notify.py`: URL/tok по ключам,
  https-only, lazy `requests`), общий разбор аргументов, `resolve_root` и шаблон
  `run_mode_main` (`cli.py`).
  Барьер
