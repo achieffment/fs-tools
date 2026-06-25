@@ -76,6 +76,19 @@ alwaysApply: true
   (`*/report.py`), тестами (`tests/*/test_report.py`, `tests/*/test_runner.py`,
   `tests/*/test_examples.py`) и документацией (`README.md`, `examples/*/README.md`).
 
+Контракт текста веб-хуков:
+
+- Текст webhook-сообщений для режимов фиксирован и должен быть стабильным:
+  - checker: `fs-checker - выполнен с ошибкой.`;
+  - syncher: `fs-syncher - выполнен с ошибкой.`.
+- Отправка webhook остаётся fire-and-forget и не влияет на код возврата.
+- checker отправляет webhook только при наличии нарушений (`missing` не пуст).
+- syncher отправляет webhook только в production-прогоне и только при
+  наихудшем коде `2` или `3`.
+- Любые изменения текста webhook синхронизируются между кодом раннеров,
+  режимными тестами (`tests/checker/test_runner.py`,
+  `tests/syncher/test_runner.py`) и документацией.
+
 Журнал `.fs-log` — намеренное исключение из идемпотентности (дополняется на каждом
 запуске), он в `.gitignore`, а `reset.*` (только у normalizer) убирают его явным
 `rm`/`del`. Все режимы пишут журнал в `production` и `dry-run`; в `dry-run`

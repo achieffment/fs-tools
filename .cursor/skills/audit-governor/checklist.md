@@ -9,6 +9,7 @@
 - `examples/normalizer/README.md`
 - `examples/syncher/README.md`
 - `pyproject.toml`
+- `.cursor/rules/audit-governor.mdc`
 - `.cursor/rules/naming-symmetry.mdc`
 - `.cursor/rules/consistency.mdc`
 - `.cursor/rules/cross-platform-safety.mdc`
@@ -58,6 +59,20 @@
   одноразовый `path_help` не вынесен в отдельную константу.
 - Проверить dry-run контракт: `normalizer` и `syncher` пишут `.fs-log` при
   `--dry-run` с меткой режима `dry-run` и планом изменений.
+- Проверить общий контракт логирования `.fs-log` для всех режимов:
+  - единый формат заголовка блока (`дата`, `Инструмент`, `Режим`, `Результат`);
+  - append-only поведение (новые прогоны дописываются, а не перезаписывают файл);
+  - режимные маркеры пустого результата (`(изменений нет)` / `(нарушений нет)`)
+    согласованы между `src/fs_tools/shared/log.py`, режимными `log.py`,
+    тестами `tests/shared/test_log.py`, `tests/*/test_log.py` и документацией.
+- Проверить контракт терминального вывода: двухстрочный финальный блок
+  `Статус:` + `Сводка:` в `normalizer`/`checker`/`syncher` и его консистентность
+  между кодом, тестами и документацией.
+- Проверить контракт текста веб-хуков:
+  - `fs-checker - выполнен с ошибкой.`
+  - `fs-syncher - выполнен с ошибкой.`
+  - условия отправки (checker: при missing; syncher: только production и код 2/3)
+    согласованы в раннерах, тестах и документации.
 - Отсутствие необоснованных suppression-комментариев:
   - `# pylint: disable`
   - `# noqa`
