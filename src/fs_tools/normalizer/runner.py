@@ -52,11 +52,10 @@ def run(root: Path, *, dry_run: bool = False) -> int:
     renamed, skipped = fsnm.apply(root, dry_run=dry_run)
     print(format_report(root, fsnm, renamed, skipped, dry_run=dry_run))
     mode = "dry-run" if dry_run else "production"
-    actions = fsnm.planned if dry_run else fsnm.renames
     # Журнал — вторичный артефакт: план/переименования уже вычислены, поэтому сбой
     # записи не роняем трейсбеком, а лишь предупреждаем. На код возврата это не влияет.
     try:
-        lpath = write_fs_log(root, actions, tool="normalizer", mode=mode)
+        lpath = write_fs_log(root, fsnm.actions, tool="normalizer", mode=mode)
         print(f"Журнал: {lpath}")
     except OSError as exc:
         sys.stderr.write(f"Не удалось записать журнал .fs-log: {exc}\n")

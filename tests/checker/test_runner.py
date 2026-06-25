@@ -125,14 +125,14 @@ def test_missing_writes_log_and_sends_webhook(
     log = (root / FS_LOG).read_text(encoding="utf-8")
     assert "Activities/Web/Projects" in log
     assert len(sent) == 1
-    assert "отсутствуют пути" in sent[0]
+    assert sent[0] == "fs-checker - выполнен с ошибкой."
 
 
-def test_no_violations_no_log_no_webhook(
+def test_no_violations_logs_empty_result_no_webhook(
     monkeypatch: pytest.MonkeyPatch,
     make_tree: Callable[[Iterable[str]], Path],
 ) -> None:
-    """Проверяет сценарий: no violations no log no webhook."""
+    """Проверяет сценарий: no violations logs empty result no webhook."""
     root = make_tree(["Activities/Web/Projects/"])
     (root / ".fs-check").write_text("/Activities/Web/Projects\n", encoding="utf-8")
     sent: list[str] = []
@@ -140,5 +140,9 @@ def test_no_violations_no_log_no_webhook(
     monkeypatch.setattr(runner, "send_webhook", lambda text: bool(sent.append(text)) or True)
     code = runner.main([])
     assert code == 0
-    assert not (root / FS_LOG).exists()
+    log = (root / FS_LOG).read_text(encoding="utf-8")
+    assert "Инструмент: checker" in log
+    assert "Режим: production" in log
+    assert "Результат:" in log
+    assert "(нарушений нет)" in log
     assert not sent

@@ -18,6 +18,7 @@ def test_append_log_creates_file_with_timestamp_and_indent(tmp_path: Path) -> No
     assert "2026-06-14 09:00:00" in text
     assert "Инструмент: unknown" in text
     assert "Режим: production" in text
+    assert "Результат:" in text
     assert "  первая" in text       # строки тела пишутся с отступом
     assert "  вторая" in text
 
@@ -30,6 +31,7 @@ def test_append_log_empty_uses_marker(tmp_path: Path) -> None:
     assert "2026-06-14 09:05:00" in text
     assert "Инструмент: unknown" in text
     assert "Режим: production" in text
+    assert "Результат:" in text
     assert "  (пусто)" in text
 
 

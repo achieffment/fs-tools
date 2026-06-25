@@ -26,7 +26,6 @@ def test_sync_argv_full_flags() -> None:
             "--all",
             "--dry-run",
             "--force-delete",
-            "--verbose",
         ]
     )
     assert sync_argv_from_namespace(args) == [
@@ -38,7 +37,6 @@ def test_sync_argv_full_flags() -> None:
         "--all",
         "--dry-run",
         "--force-delete",
-        "--verbose",
     ]
 
 

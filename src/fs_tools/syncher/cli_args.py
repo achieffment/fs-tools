@@ -31,13 +31,6 @@ def add_sync_argument(pars: argparse.ArgumentParser) -> None:
         action="store_true",
         help="Снять защиту от массового удаления (delete-guard).",
     )
-    pars.add_argument(
-        "--verbose",
-        action="store_true",
-        help="Печатать подробный вывод rsync.",
-    )
-
-
 def sync_argv_from_namespace(args: argparse.Namespace) -> list[str]:
     """Восстановить argv режима синхронизации из разобранных диспетчером флагов."""
     argv: list[str] = [args.path] if args.path else []
@@ -49,6 +42,4 @@ def sync_argv_from_namespace(args: argparse.Namespace) -> list[str]:
         argv.append("--dry-run")
     if args.force_delete:
         argv.append("--force-delete")
-    if args.verbose:
-        argv.append("--verbose")
     return argv

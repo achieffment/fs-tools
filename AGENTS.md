@@ -77,12 +77,13 @@ pip install -e ".[normalizer,checker,syncher,dev]"                     # editabl
   перезаписи `dest`; deepest-first; case-only через временное имя; `.fs-log` только
   append. Скрытые (на `.`) и корень не трогаем.
 - **Нормализация (`normalizer`)**: `--dry-run` строит план без переименований;
-  журнал `.fs-log` пишется и в `dry-run`, и в `production`: в `dry-run` — по
-  плану (`planned`), в `production` — по выполненным `renames`.
+  журнал `.fs-log` пишется и в `dry-run`, и в `production` как последовательность
+  событий (`old -> new`, `(КОНФЛИКТ) ...`, `(ОШИБКА) ...`).
 - **Dry-run и журналы (оба режима)**: `normalizer` и `syncher` в `--dry-run`
   дописывают `.fs-log` с режимом `dry-run` и планом действий.
-- **Формат `.fs-log`**: заголовок каждого блока включает дату, строку
-  `Инструмент: normalizer|checker|syncher` и строку `Режим: production|dry-run`.
+- **Формат `.fs-log`**: заголовок каждого блока включает дату, строки
+  `Инструмент: normalizer|checker|syncher`, `Режим: production|dry-run`,
+  `Результат:` и далее список строк в исходном порядке событий.
 - **Стиль runner-парсера**: если у режима есть свои флаги, используй
   `_build_parser()` (как в `syncher` и `normalizer`) и не выноси одноразовый
   `path_help` в отдельную константу.

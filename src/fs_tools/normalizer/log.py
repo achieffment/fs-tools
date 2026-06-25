@@ -1,7 +1,8 @@
-"""Журнал переименований .fs-log: дата, режим + список операций.
+"""Журнал normalizer .fs-log: дата, режим + список результатов.
 
-Формат — общий `shared.log`; различие лишь в содержимом строк (пары `old -> new`)
-и тексте пустого блока (`(изменений нет)`).
+Формат — общий `shared.log`; различие лишь в содержимом строк (пары `old -> new`
+и диагностические строки `(КОНФЛИКТ)`/`(ОШИБКА)`) и тексте пустого блока
+(`(изменений нет)`).
 """
 from __future__ import annotations
 
@@ -15,16 +16,23 @@ __all__ = ["FS_LOG", "write_fs_log"]
 
 def write_fs_log(
     root: Path,
-    renames: list[tuple[Path, Path]],
+    result: list[str] | list[tuple[Path, Path]],
     tool: str = "normalizer",
     mode: str = "production",
     when: datetime | None = None,
 ) -> Path:
-    """Дописать в root/.fs-log запись прогона: дата, режим + список переименований.
+    """Дописать в root/.fs-log запись прогона: дата, режим + список результатов.
 
-    В лог попадают ТОЛЬКО выполненные переименования — ошибки и конфликты сюда не
-    пишутся. Пустой список фиксируется пометкой «(изменений нет)». Параметр `when`
-    нужен для тестов; по умолчанию берётся текущее локальное время.
+    `result` принимает либо готовые строковые события, либо legacy-пары
+    переименований `(src, dst)`, которые переводятся в строку `src -> dst`.
+    Пустой список фиксируется пометкой «(изменений нет)». Параметр `when` нужен для
+    тестов; по умолчанию берётся текущее локальное время.
     """
-    lines = [f"{src.as_posix()} -> {dest.as_posix()}" for src, dest in renames]
+    lines: list[str] = []
+    for item in result:
+        if isinstance(item, tuple):
+            src, dest = item
+            lines.append(f"{src.as_posix()} -> {dest.as_posix()}")
+        else:
+            lines.append(item)
     return append_log(root, lines, "(изменений нет)", meta=(tool, mode), when=when)

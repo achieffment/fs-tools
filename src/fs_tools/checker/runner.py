@@ -41,20 +41,17 @@ def run(root: Path) -> int:
         return 1
     fsch = FsChecker(fs_rule).check(root)
     print(format_report(root, fsch))
+    # Журнал — вторичный артефакт: проверка уже выполнена, поэтому сбой записи
+    # не роняем трейсбеком, а лишь предупреждаем (на код возврата не влияет).
+    try:
+        lpath = write_fs_log(root, fsch.missing, tool="checker", mode="production")
+        print(f"Журнал: {lpath}")
+    except OSError as exc:
+        sys.stderr.write(f"Не удалось записать журнал .fs-log: {exc}\n")
     if fsch.missing:
-        # Журнал — вторичный артефакт: проверка уже выполнена, поэтому сбой записи
-        # не роняем трейсбеком, а лишь предупреждаем (на код возврата не влияет).
-        try:
-            lpath = write_fs_log(root, fsch.missing, tool="checker", mode="production")
-            print(f"Журнал: {lpath}")
-        except OSError as exc:
-            sys.stderr.write(f"Не удалось записать журнал .fs-log: {exc}\n")
         # Уведомление о невалидной структуре: текст лишь сигнализирует о проблеме,
         # детали — в .fs-log. Fire-and-forget, ошибки/таймаут не влияют на прогон.
-        send_webhook(
-            f"fs-checker: в каталоге {root} отсутствуют пути ({len(fsch.missing)}). "
-            "Подробности — в .fs-log."
-        )
+        send_webhook("fs-checker - выполнен с ошибкой.")
     return 2 if fsch.missing else 0
 
 

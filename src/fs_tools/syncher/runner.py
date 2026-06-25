@@ -61,7 +61,7 @@ def _select_roll(config: Config, names: list[str] | None) -> list[Profile]:
     return selected
 
 
-def _run_sync(profile: Profile, *, dry_run: bool, force: bool, verbose: bool) -> ProfileReport:
+def _run_sync(profile: Profile, *, dry_run: bool, force: bool) -> ProfileReport:
     do_delete = profile.delete
     if do_delete and not dry_run and not (force or profile.force_delete):
         plan = delete_preflight(profile)
@@ -74,8 +74,6 @@ def _run_sync(profile: Profile, *, dry_run: bool, force: bool, verbose: bool) ->
                 blocked=True,
             )
     outcome = run_rsync(build_command(profile, dry_run=dry_run, delete=do_delete))
-    if verbose and outcome.stdout:
-        print(outcome.stdout)
     errlist = [outcome.stderr.strip()] if (not outcome.ok and outcome.stderr.strip()) else []
     return ProfileReport(
         name=profile.name,
@@ -99,12 +97,12 @@ def _run_backup(profile: Profile, *, dry_run: bool) -> ProfileReport:
     )
 
 
-def _run_profile(profile: Profile, *, dry_run: bool, force: bool, verbose: bool) -> ProfileReport:
+def _run_profile(profile: Profile, *, dry_run: bool, force: bool) -> ProfileReport:
     effective_dry = dry_run or profile.dry_run
     if profile.kind == "backup":
         report = _run_backup(profile, dry_run=effective_dry)
     else:
-        report = _run_sync(profile, dry_run=effective_dry, force=force, verbose=verbose)
+        report = _run_sync(profile, dry_run=effective_dry, force=force)
     report.dry_run = effective_dry
     return report
 
@@ -131,16 +129,22 @@ def run(root: Path, args: argparse.Namespace) -> int:
     print(format_header(root, [p.name for p in selected], any_dry))
 
     result: list[ProfileReport] = []
+    actions: list[str] = []
     for profile in selected:
         report = _run_profile(
             profile,
             dry_run=args.dry_run,
             force=args.force_delete,
-            verbose=args.verbose,
         )
         print(format_profile(report))
+        actions = actions + report.actions()
+        if report.blocked:
+            actions.append(
+                f"(КОНФЛИКТ) [{report.name}] остановлено delete-guard "
+                f"(к удалению {len(report.deleted)})."
+            )
         for err in report.errlist:
-            sys.stderr.write(f"[{report.name}] {err}\n")
+            actions.append(f"(ОШИБКА) [{report.name}] {err}")
         result.append(report)
 
     print(format_report(root, result))
@@ -149,16 +153,12 @@ def run(root: Path, args: argparse.Namespace) -> int:
 
     is_dry = all(report.dry_run for report in result)
     mode = "dry-run" if is_dry else "production"
-    actions = [op for report in result for op in report.actions()]
     try:
         write_fs_log(root, actions, tool="syncher", mode=mode)
     except OSError as exc:
         sys.stderr.write(f"Не удалось записать журнал .fs-log: {exc}\n")
     if (not is_dry) and worst in (2, 3):
-        send_webhook(
-            f"fs-syncher: прогон в {root} завершился с кодом {worst}. "
-            "Подробности — в .fs-log и выводе."
-        )
+        send_webhook("fs-syncher - выполнен с ошибкой.")
 
     return worst
 

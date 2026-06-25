@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import os
-import sys
 import uuid
 from pathlib import Path
 
@@ -23,10 +22,12 @@ class FsNormalizer:
         # Заполняются в apply() (сбрасываются на каждом вызове):
         # renames   — успешно выполненные переименования (относительно root);
         # planned   — планируемые пары для dry-run (относительно root);
+        # actions   — последовательный журнал событий для .fs-log (успех/конфликт/ошибка);
         # errlist   — пары, для которых os.rename упал с OSError (реальный сбой);
         # conflicts — число пропусков из-за занятого целевого имени (безопасно).
         self.renames: list[tuple[Path, Path]] = []
         self.planned: list[tuple[Path, Path]] = []
+        self.actions: list[str] = []
         self.errlist: list[tuple[Path, Path]] = []
         self.conflicts = 0
 
@@ -83,6 +84,7 @@ class FsNormalizer:
         # учитываются отдельно (errlist/conflicts) и тоже входят в общий skipped.
         self.renames = []
         self.planned = []
+        self.actions = []
         self.errlist = []
         self.conflicts = 0
         renamed = 0
@@ -103,12 +105,13 @@ class FsNormalizer:
                 # переименовании на регистронезависимой ФС dest.exists() истинно,
                 # но указывает на сам srcp (samefile), и конфликтом не является.
                 if dest.exists() and not srcp.samefile(dest):
-                    sys.stderr.write(f"Пропуск (конфликт): {srcp} -> {dest}\n")
                     self.conflicts = self.conflicts + 1
+                    self.actions.append(f"(КОНФЛИКТ) {src_rel.as_posix()} -> {dst_rel.as_posix()}")
                     skipped = skipped + 1
                     continue
                 if dry_run:
                     self.planned.append((src_rel, dst_rel))
+                    self.actions.append(f"{src_rel.as_posix()} -> {dst_rel.as_posix()}")
                     renamed = renamed + 1
                     continue
                 if case:
@@ -119,9 +122,12 @@ class FsNormalizer:
                 else:
                     os.rename(srcp, dest)
                 self.renames.append((src_rel, dst_rel))
+                self.actions.append(f"{src_rel.as_posix()} -> {dst_rel.as_posix()}")
                 renamed = renamed + 1
             except OSError as exc:
-                sys.stderr.write(f"Ошибка переименования {srcp} -> {dest}: {exc}\n")
                 self.errlist.append((src_rel, dst_rel))
+                self.actions.append(
+                    f"(ОШИБКА) {src_rel.as_posix()} -> {dst_rel.as_posix()}: {exc}"
+                )
                 skipped = skipped + 1
         return renamed, skipped

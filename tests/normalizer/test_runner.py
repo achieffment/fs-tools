@@ -18,6 +18,7 @@ def test_main_clean_run_returns_zero(tmp_path, monkeypatch, capsys):
     log = (tmp_path / ".fs-log").read_text(encoding="utf-8")
     assert "Инструмент: normalizer" in log
     assert "Режим: production" in log
+    assert "Результат:" in log
 
 
 def test_main_conflict_only_returns_zero(tmp_path, monkeypatch, capsys):
@@ -27,13 +28,16 @@ def test_main_conflict_only_returns_zero(tmp_path, monkeypatch, capsys):
     (tmp_path / "a-b.md").write_text("b")  # уже занято
     monkeypatch.setattr("fs_tools.shared.cli.pick_directory", lambda *a, **k: str(tmp_path))
     assert main([]) == 0
-    out = capsys.readouterr().out
+    captured = capsys.readouterr()
+    out = captured.out
+    err = captured.err
     assert f"Каталог: {tmp_path}" in out
     assert "Режим: production" in out
     assert "Готово. Переименовано: 0, пропущено: 1 (конфликты: 1, ошибки: 0)." in out
+    assert err == ""
 
 
-def test_main_rename_error_returns_two(tmp_path, monkeypatch):
+def test_main_rename_error_returns_two(tmp_path, monkeypatch, capsys):
     """Проверяет сценарий: main rename error returns two."""
     (tmp_path / "Отчёт.txt").write_text("ДАННЫЕ")  # -> "otchiot.txt"
     class _RenameProxy:
@@ -47,6 +51,7 @@ def test_main_rename_error_returns_two(tmp_path, monkeypatch):
     monkeypatch.setattr("fs_tools.normalizer.engine.os.rename", _RenameProxy())
     monkeypatch.setattr("fs_tools.shared.cli.pick_directory", lambda *a, **k: str(tmp_path))
     assert main([]) == 2
+    assert capsys.readouterr().err == ""
     assert (tmp_path / "Отчёт.txt").read_text() == "ДАННЫЕ"  # данные уцелели
 
 
@@ -92,6 +97,7 @@ def test_main_dry_run_returns_zero_without_changes(tmp_path, monkeypatch, capsys
     text = (tmp_path / ".fs-log").read_text(encoding="utf-8")
     assert "Инструмент: normalizer" in text
     assert "Режим: dry-run" in text
+    assert "Результат:" in text
     assert "Отчёт.txt -> otchiot.txt" in text
 
 

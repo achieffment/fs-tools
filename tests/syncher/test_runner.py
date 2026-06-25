@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 
 from fs_tools.syncher import runner
+from fs_tools.syncher.report import ProfileReport
 from fs_tools.syncher.runner import main
 
 # Пропуск интеграционных тестов, если в системе нет rsync.
@@ -113,6 +114,7 @@ def test_success_and_log(tmp_path: Path, make_tree: Callable[..., Path]) -> None
     assert main([str(src)]) == 0
     assert (dst / "a.txt").exists()
     log = (src / ".fs-log").read_text(encoding="utf-8")
+    assert "Результат:" in log
     assert "+ a.txt" in log
 
 
@@ -129,6 +131,7 @@ def test_dry_run_no_transfer_no_log(tmp_path: Path, make_tree: Callable[..., Pat
     text = (src / ".fs-log").read_text(encoding="utf-8")
     assert "Инструмент: syncher" in text
     assert "Режим: dry-run" in text
+    assert "Результат:" in text
     assert "+ a.txt" in text
 
 
@@ -199,3 +202,37 @@ def test_profile_dry_run_no_log(
     log = (src / ".fs-log").read_text(encoding="utf-8")
     assert "Инструмент: syncher" in log
     assert "Режим: dry-run" in log
+    assert "Результат:" in log
+
+
+def test_errors_are_written_to_log_in_order(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Проверяет сценарий: errors are written to log in order."""
+    src = tmp_path / "src"
+    dst = tmp_path / "dst"
+    src.mkdir()
+    dst.mkdir()
+    (src / ".fs-sync.toml").write_text(_sync_config(src, dst), encoding="utf-8")
+    monkeypatch.setattr(runner, "rsync_available", lambda: True)
+    monkeypatch.setattr(runner, "ssh_available", lambda: True)
+    sent: list[str] = []
+    monkeypatch.setattr(runner, "send_webhook", lambda text: bool(sent.append(text)) or True)
+    monkeypatch.setattr(
+        runner,
+        "_run_profile",
+        lambda *args, **kwargs: ProfileReport(
+            name="main",
+            kind="mirror",
+            code=2,
+            sent=["sent.txt"],
+            errlist=["sync failed"],
+        ),
+    )
+    assert main([str(src)]) == 2
+    assert sent == ["fs-syncher - выполнен с ошибкой."]
+    assert "[main] sync failed" not in capsys.readouterr().err
+    log = (src / ".fs-log").read_text(encoding="utf-8")
+    op_ix = log.index("  + sent.txt")
+    err_ix = log.index("  (ОШИБКА) [main] sync failed")
+    assert op_ix < err_ix

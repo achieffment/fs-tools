@@ -2,6 +2,7 @@
 
 Общие механики журнала — в tests/shared/test_log.py. Фикстура `make_tree` — в conftest.py.
 """
+import os
 from datetime import datetime
 from pathlib import Path
 
@@ -20,6 +21,7 @@ def test_write_fs_log_creates_file(tmp_path):
     assert "2026-06-11 13:39:00" in text
     assert "Инструмент: normalizer" in text
     assert "Режим: production" in text
+    assert "Результат:" in text
     assert "  Отчёт за март -> Otchiot-za-mart" in text
 
 
@@ -31,6 +33,7 @@ def test_write_fs_log_empty_marks_no_changes(tmp_path):
     assert "2026-06-11 14:02:11" in text
     assert "Инструмент: normalizer" in text
     assert "Режим: production" in text
+    assert "Результат:" in text
     assert "(изменений нет)" in text
 
 
@@ -57,6 +60,7 @@ def test_write_fs_log_dry_run_mode(tmp_path):
     text = lpath.read_text(encoding="utf-8")
     assert "Инструмент: normalizer" in text
     assert "Режим: dry-run" in text
+    assert "Результат:" in text
 
 
 def test_fs_renames_collected(make_tree):
@@ -84,14 +88,49 @@ def test_fs_renames_reset_on_second_run(make_tree):
     # На нормализованном дереве переименований нет — список сброшен.
     assert not fsnm.renames
 
-def test_fs_conflict_not_logged(tmp_path):
-    """Проверяет сценарий: fs conflict not logged."""
+def test_fs_conflict_is_logged(tmp_path):
+    """Проверяет сценарий: fs conflict is logged."""
     (tmp_path / "a b.md").write_text("a")  # -> "a-b.md"
     (tmp_path / "a-b.md").write_text("b")  # уже занято
     fsnm = FsNormalizer(build_normalizer())
     fsnm.apply(tmp_path)
-    # В журнал попадает только выполненное; конфликт (пропуск) не логируется.
+    assert fsnm.actions == ["(КОНФЛИКТ) a b.md -> a-b.md"]
     assert not fsnm.renames
+
+
+def test_fs_log_keeps_success_conflict_error_order(tmp_path, monkeypatch):
+    """Проверяет сценарий: fs log keeps success conflict error order."""
+    (tmp_path / "Отчёт.txt").write_text("ok", encoding="utf-8")
+    (tmp_path / "a b.md").write_text("conflict", encoding="utf-8")
+    (tmp_path / "a-b.md").write_text("taken", encoding="utf-8")
+    (tmp_path / "Плохой.doc").write_text("err", encoding="utf-8")
+    fsnm = FsNormalizer(build_normalizer())
+    ordered = [
+        tmp_path / "Отчёт.txt",
+        tmp_path / "a b.md",
+        tmp_path / "Плохой.doc",
+    ]
+    monkeypatch.setattr(FsNormalizer, "_collect", lambda _self, _root: ordered)
+    base_rename = os.rename
+
+    def rename_with_error(src: Path, dst: Path) -> None:
+        if src.name == "Плохой.doc":
+            raise OSError("rename failed")
+        base_rename(src, dst)
+
+    monkeypatch.setattr(os, "rename", rename_with_error)
+    fsnm.apply(tmp_path)
+    lpath = write_fs_log(
+        tmp_path,
+        fsnm.actions,
+        mode="production",
+        when=datetime(2026, 6, 11, 16, 0, 0),
+    )
+    text = lpath.read_text(encoding="utf-8")
+    s_ix = text.index("  Отчёт.txt -> otchiot.txt")
+    c_ix = text.index("  (КОНФЛИКТ) a b.md -> a-b.md")
+    e_ix = text.index("  (ОШИБКА) Плохой.doc -> plokhoi.doc: rename failed")
+    assert s_ix < c_ix < e_ix
 
 
 def test_fs_log_file_itself_not_normalized(tmp_path):

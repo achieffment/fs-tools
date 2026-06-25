@@ -13,6 +13,7 @@ def test_write_fs_log_lists_missing_paths(tmp_path: Path) -> None:
     text = lpath.read_text(encoding="utf-8")
     assert "Инструмент: checker" in text
     assert "Режим: production" in text
+    assert "Результат:" in text
     assert "  Activities/Web/Projects" in text
 
 
@@ -23,4 +24,5 @@ def test_write_fs_log_empty_marks_no_violations(tmp_path: Path) -> None:
     )
     assert "Инструмент: checker" in text
     assert "Режим: production" in text
+    assert "Результат:" in text
     assert "(нарушений нет)" in text
