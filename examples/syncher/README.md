@@ -31,7 +31,7 @@
 ## Как запустить
 
 ```bash
-# из корня проекта; канонический прогон — dry-run (без изменений)
+# из корня проекта; канонический прогон — dry-run
 bin/sync.sh examples/syncher --dry-run         # Linux/macOS (терминал)
 bin/sync.command examples/syncher --dry-run    # macOS (двойной клик в Finder)
 bin/sync.bat examples/syncher --dry-run        # Windows (через WSL/cwrsync)
@@ -92,11 +92,11 @@ Windows OpenSSH и chocolatey/cwrsync runtime.
 
 Профиль «vault» в `--dry-run` показывает план передачи трёх файлов архива из папок
 `2026-01/` и `2026-02/`; локальные файлы не трогаются, перенос в `_fs-backup`
-выполняется только в боевом режиме после подтверждённой передачи.
+выполняется только в режиме `production` после подтверждённой передачи.
 
-## Боевой прогон и сброс
+## Production-прогон и сброс
 
-Боевой прогон (без `--dry-run`) **изменяет** песочницу: наполняет `server/`,
+Production-прогон (без `--dry-run`) **изменяет** песочницу: наполняет `server/`,
 зеркалит удаление каталога `obsolete-project/`, а offload переносит файлы из
 `archive/` в `_fs-backup/`. Восстановить исходное состояние можно из git:
 

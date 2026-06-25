@@ -12,9 +12,11 @@ def test_main_clean_run_returns_zero(tmp_path, monkeypatch, capsys):
     assert main([]) == 0
     out = capsys.readouterr().out
     assert f"Каталог: {tmp_path}" in out
-    assert "Режим: боевой" in out
+    assert "Режим: production" in out
     assert "Готово. Переименовано: 1, пропущено: 0 (конфликты: 0, ошибки: 0)." in out
     assert (tmp_path / "otchiot.txt").exists()
+    log = (tmp_path / ".fs-log").read_text(encoding="utf-8")
+    assert "Режим: production" in log
 
 
 def test_main_conflict_only_returns_zero(tmp_path, monkeypatch, capsys):
@@ -26,7 +28,7 @@ def test_main_conflict_only_returns_zero(tmp_path, monkeypatch, capsys):
     assert main([]) == 0
     out = capsys.readouterr().out
     assert f"Каталог: {tmp_path}" in out
-    assert "Режим: боевой" in out
+    assert "Режим: production" in out
     assert "Готово. Переименовано: 0, пропущено: 1 (конфликты: 1, ошибки: 0)." in out
 
 
@@ -81,12 +83,14 @@ def test_main_dry_run_returns_zero_without_changes(tmp_path, monkeypatch, capsys
     assert main(["--dry-run"]) == 0
     out = capsys.readouterr().out
     assert f"Каталог: {tmp_path}" in out
-    assert "Режим: dry-run (без изменений)" in out
+    assert "Режим: dry-run" in out
     assert "Готово. Переименовано: 1, пропущено: 0 (конфликты: 0, ошибки: 0)." in out
-    assert "Журнал:" not in out
+    assert "Журнал:" in out
     assert (tmp_path / "Отчёт.txt").exists()
     assert (tmp_path / "otchiot.txt").exists() is False
-    assert (tmp_path / ".fs-log").exists() is False
+    text = (tmp_path / ".fs-log").read_text(encoding="utf-8")
+    assert "Режим: dry-run" in text
+    assert "Отчёт.txt -> otchiot.txt" in text
 
 
 def test_argument_with_dry_run_bypasses_picker(tmp_path, monkeypatch):

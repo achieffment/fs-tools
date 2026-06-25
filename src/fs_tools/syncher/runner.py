@@ -113,8 +113,8 @@ def run(root: Path, args: argparse.Namespace) -> int:
     """Прогнать профили в каталоге root; вернуть наихудший код (0 < 2 < 3).
 
     Загружает .fs-sync.toml, отбирает профили, проверяет наличие ssh для SSH-целей
-    (ошибки запуска → 1), прогоняет профили последовательно, печатает отчёт и в боевом
-    прогоне дописывает .fs-log и шлёт веб-хук при наихудшем коде 2/3.
+    (ошибки запуска → 1), прогоняет профили последовательно, печатает отчёт, дописывает
+    .fs-log и в production-прогоне шлёт веб-хук при наихудшем коде 2/3.
     """
     try:
         cfg = load_config(root)
@@ -147,18 +147,18 @@ def run(root: Path, args: argparse.Namespace) -> int:
 
     worst = max((r.code for r in result), default=0)
 
-    has_live = any(not report.dry_run for report in result)
-    if has_live:
-        actions = [op for report in result if not report.dry_run for op in report.actions()]
-        try:
-            write_fs_log(root, actions)
-        except OSError as exc:
-            sys.stderr.write(f"Не удалось записать журнал .fs-log: {exc}\n")
-        if worst in (2, 3):
-            send_webhook(
-                f"fs-syncher: прогон в {root} завершился с кодом {worst}. "
-                "Подробности — в .fs-log и выводе."
-            )
+    is_dry = all(report.dry_run for report in result)
+    mode = "dry-run" if is_dry else "production"
+    actions = [op for report in result for op in report.actions()]
+    try:
+        write_fs_log(root, actions, mode=mode)
+    except OSError as exc:
+        sys.stderr.write(f"Не удалось записать журнал .fs-log: {exc}\n")
+    if (not is_dry) and worst in (2, 3):
+        send_webhook(
+            f"fs-syncher: прогон в {root} завершился с кодом {worst}. "
+            "Подробности — в .fs-log и выводе."
+        )
 
     return worst
 

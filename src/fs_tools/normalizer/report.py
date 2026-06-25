@@ -13,7 +13,7 @@ def format_report(
 ) -> str:
     """Заголовок с каталогом и итог прогона нормализации."""
     lines = [f"Каталог: {root}"]
-    mode = "dry-run (без изменений)" if dry_run else "боевой"
+    mode = "dry-run" if dry_run else "production"
     lines.append(f"Режим: {mode}")
     lines.append(
         f"Готово. Переименовано: {renamed}, пропущено: {skipped} "

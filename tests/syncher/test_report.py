@@ -20,7 +20,7 @@ def test_actions_markers() -> None:
 def test_format_header_modes(tmp_path: Path) -> None:
     """Проверяет сценарий: format header modes."""
     real = format_header(tmp_path, ["a", "b"], dry_run=False)
-    assert "боевой" in real and "a, b" in real
+    assert "production" in real and "a, b" in real
     dry = format_header(tmp_path, [], dry_run=True)
     assert "dry-run" in dry and "—" in dry
 

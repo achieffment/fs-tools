@@ -31,7 +31,7 @@ class ProfileReport:
 
 def format_header(root: Path, names: list[str], dry_run: bool) -> str:
     """Стартовая строка: профили, корень и режим прогона."""
-    mode = "dry-run (без изменений)" if dry_run else "боевой"
+    mode = "dry-run" if dry_run else "production"
     listed = ", ".join(names) if names else "—"
     return f"Каталог: {root}\nПрофили: {listed}\nРежим: {mode}"
 

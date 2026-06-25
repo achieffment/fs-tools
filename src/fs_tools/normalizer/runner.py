@@ -51,14 +51,15 @@ def run(root: Path, *, dry_run: bool = False) -> int:
     fsnm = FsNormalizer(build_normalizer(), load_fs_ignore(root))
     renamed, skipped = fsnm.apply(root, dry_run=dry_run)
     print(format_report(root, fsnm, renamed, skipped, dry_run=dry_run))
-    if not dry_run:
-        # Журнал — вторичный артефакт: переименования уже выполнены, поэтому сбой записи
-        # не роняем трейсбеком, а лишь предупреждаем. На код возврата это не влияет.
-        try:
-            lpath = write_fs_log(root, fsnm.renames)
-            print(f"Журнал: {lpath}")
-        except OSError as exc:
-            sys.stderr.write(f"Не удалось записать журнал .fs-log: {exc}\n")
+    mode = "dry-run" if dry_run else "production"
+    actions = fsnm.planned if dry_run else fsnm.renames
+    # Журнал — вторичный артефакт: план/переименования уже вычислены, поэтому сбой
+    # записи не роняем трейсбеком, а лишь предупреждаем. На код возврата это не влияет.
+    try:
+        lpath = write_fs_log(root, actions, mode=mode)
+        print(f"Журнал: {lpath}")
+    except OSError as exc:
+        sys.stderr.write(f"Не удалось записать журнал .fs-log: {exc}\n")
     return 2 if fsnm.errlist else 0
 
 

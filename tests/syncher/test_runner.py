@@ -118,7 +118,7 @@ def test_success_and_log(tmp_path: Path, make_tree: Callable[..., Path]) -> None
 
 @requires_rsync
 def test_dry_run_no_transfer_no_log(tmp_path: Path, make_tree: Callable[..., Path]) -> None:
-    """Проверяет сценарий: dry run no transfer no log."""
+    """Проверяет сценарий: dry run no transfer writes log."""
     src = tmp_path / "src"
     dst = tmp_path / "dst"
     make_tree(src, ["a.txt"])
@@ -126,7 +126,9 @@ def test_dry_run_no_transfer_no_log(tmp_path: Path, make_tree: Callable[..., Pat
     (src / ".fs-sync.toml").write_text(_sync_config(src, dst), encoding="utf-8")
     assert main([str(src), "--dry-run"]) == 0
     assert not (dst / "a.txt").exists()          # dry-run ничего не передаёт
-    assert not (src / ".fs-log").exists()        # и не пишет журнал
+    text = (src / ".fs-log").read_text(encoding="utf-8")
+    assert "Режим: dry-run" in text
+    assert "+ a.txt" in text
 
 
 @requires_rsync
@@ -181,7 +183,7 @@ def test_profile_dry_run_no_log(
     make_tree: Callable[..., Path],
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    """Проверяет сценарий: profile dry run no log."""
+    """Проверяет сценарий: profile dry run writes log."""
     src = tmp_path / "src"
     dst = tmp_path / "dst"
     make_tree(src, ["a.txt"])
@@ -191,6 +193,7 @@ def test_profile_dry_run_no_log(
     )
     assert main([str(src)]) == 0
     out = capsys.readouterr().out
-    assert "Режим: dry-run (без изменений)" in out
+    assert "Режим: dry-run" in out
     assert not (dst / "a.txt").exists()
-    assert not (src / ".fs-log").exists()
+    log = (src / ".fs-log").read_text(encoding="utf-8")
+    assert "Режим: dry-run" in log

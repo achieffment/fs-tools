@@ -22,5 +22,5 @@ include = ["projects/keep/build/"]       # override: вернуть один bui
 name = "vault"
 local_root = "archive"
 remote_root = "server-archive"
-after_push = "archive"                   # в боевом режиме перенос подтверждённого в _fs-backup
+after_push = "archive"                   # в режиме production перенос подтверждённого в _fs-backup
 verify = true

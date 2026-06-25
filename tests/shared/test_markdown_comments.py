@@ -10,7 +10,7 @@ _LANGS = {"bash", "sh", "shell", "powershell", "pwsh", "bat", "cmd"}
 
 def _iter_markdown_files(root: Path) -> list[Path]:
     files = sorted(root.rglob("*.md"))
-    return [path for path in files if ".venv" not in path.parts]
+    return [path for path in files if ".venv" not in path.parts and ".scratch" not in path.parts]
 
 
 def _block_errors(path: Path) -> list[str]:

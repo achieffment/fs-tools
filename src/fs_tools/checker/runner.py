@@ -45,7 +45,7 @@ def run(root: Path) -> int:
         # Журнал — вторичный артефакт: проверка уже выполнена, поэтому сбой записи
         # не роняем трейсбеком, а лишь предупреждаем (на код возврата не влияет).
         try:
-            lpath = write_fs_log(root, fsch.missing)
+            lpath = write_fs_log(root, fsch.missing, mode="production")
             print(f"Журнал: {lpath}")
         except OSError as exc:
             sys.stderr.write(f"Не удалось записать журнал .fs-log: {exc}\n")

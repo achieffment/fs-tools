@@ -18,6 +18,7 @@ def test_write_fs_log_creates_file(tmp_path):
     assert lpath == tmp_path / FS_LOG
     text = lpath.read_text(encoding="utf-8")
     assert "2026-06-11 13:39:00" in text
+    assert "Режим: production" in text
     assert "  Отчёт за март -> Otchiot-za-mart" in text
 
 
@@ -27,6 +28,7 @@ def test_write_fs_log_empty_marks_no_changes(tmp_path):
     lpath = write_fs_log(tmp_path, [], when=when)
     text = lpath.read_text(encoding="utf-8")
     assert "2026-06-11 14:02:11" in text
+    assert "Режим: production" in text
     assert "(изменений нет)" in text
 
 
@@ -40,6 +42,18 @@ def test_write_fs_log_appends(tmp_path):
     assert "  a -> b" in text
     assert "2026-06-11 14:00:00" in text
     assert "(изменений нет)" in text
+
+
+def test_write_fs_log_dry_run_mode(tmp_path):
+    """Проверяет сценарий: write fs log dry run mode."""
+    lpath = write_fs_log(
+        tmp_path,
+        [(Path("x"), Path("y"))],
+        mode="dry-run",
+        when=datetime(2026, 6, 11, 15, 0, 0),
+    )
+    text = lpath.read_text(encoding="utf-8")
+    assert "Режим: dry-run" in text
 
 
 def test_fs_renames_collected(make_tree):

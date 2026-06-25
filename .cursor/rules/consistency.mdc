@@ -65,9 +65,9 @@ alwaysApply: true
   `normalize` и `sync` объявляют флаги режима и пробрасывают их (а не только `path`).
 
 Журнал `.fs-log` — намеренное исключение из идемпотентности (дополняется на каждом
-боевом запуске), он в `.gitignore`, а `reset.*` (только у normalizer) убирают его
-явным `rm`/`del`. У `normalizer` и `syncher` журнал пишется только в боевом прогоне
-(`--dry-run` его не трогает), а откат песочницы syncher — через `git restore`/
+запуске), он в `.gitignore`, а `reset.*` (только у normalizer) убирают его явным
+`rm`/`del`. У `normalizer` и `syncher` журнал пишется в `production` и `dry-run`
+(в `dry-run` фиксируется план), а откат песочницы syncher — через `git restore`/
 `git clean` (без `reset.*`).
 
 Локальный шаблон runner-парсеров:

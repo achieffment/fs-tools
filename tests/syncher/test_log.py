@@ -15,6 +15,7 @@ def test_write_fs_log_marks_actions(tmp_path: Path) -> None:
     lpath = write_fs_log(tmp_path, ["+ a.txt", "- old.txt", ">> x.bin"], when=when)
     assert lpath == tmp_path / FS_LOG
     text = lpath.read_text(encoding="utf-8")
+    assert "Режим: production" in text
     assert "  + a.txt" in text
     assert "  - old.txt" in text
     assert "  >> x.bin" in text
@@ -25,4 +26,16 @@ def test_write_fs_log_empty_marks_no_changes(tmp_path: Path) -> None:
     text = write_fs_log(tmp_path, [], when=datetime(2026, 6, 16, 9, 5, 0)).read_text(
         encoding="utf-8"
     )
+    assert "Режим: production" in text
     assert "(изменений нет)" in text
+
+
+def test_write_fs_log_dry_run_mode(tmp_path: Path) -> None:
+    """Проверяет сценарий: write fs log dry run mode."""
+    text = write_fs_log(
+        tmp_path,
+        ["+ planned.txt"],
+        mode="dry-run",
+        when=datetime(2026, 6, 16, 9, 10, 0),
+    ).read_text(encoding="utf-8")
+    assert "Режим: dry-run" in text
