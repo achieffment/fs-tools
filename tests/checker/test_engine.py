@@ -66,6 +66,18 @@ def test_double_star_zero_and_many_levels(make_tree: Callable[[Iterable[str]], P
     assert missing == ["P/Addl/_Archive/proj2/Back"]
 
 
+def test_double_star_hidden_branch_ignored(make_tree: Callable[[Iterable[str]], Path]) -> None:
+    """Проверяет сценарий: double star hidden branch ignored."""
+    root = make_tree(
+        [
+            "P/.hidden/_Archive/proj/",
+            "P/Visible/_Archive/proj2/",
+        ]
+    )
+    missing = _check(root, "/P/**/_Archive/*/Back\n")
+    assert missing == ["P/Visible/_Archive/proj2/Back"]
+
+
 def test_dedup_identical_violations(make_tree: Callable[[Iterable[str]], Path]) -> None:
     """Проверяет сценарий: dedup identical violations."""
     root = make_tree(["Activities/Web/"])
@@ -336,3 +348,22 @@ def test_anchors_and_rules_counters(make_tree: Callable[[Iterable[str]], Path]) 
     # Якори: два занятия (3D, Web) для первого правила + сам root для второго.
     assert result.anchors_found == 3
     assert not result.missing
+
+
+def test_grouped_rules_preserve_anchor_counter(make_tree: Callable[[Iterable[str]], Path]) -> None:
+    """Проверяет сценарий: grouped rules preserve anchor counter."""
+    root = make_tree(
+        [
+            "Activities/3D/Projects/",
+            "Activities/3D/Resources/",
+            "Activities/Web/Projects/",
+        ]
+    )
+    (root / ".fs-check").write_text(
+        "/Activities/*/Projects\n/Activities/*/Resources\n",
+        encoding="utf-8",
+    )
+    result = FsChecker(load_fs_rule(root)).check(root)
+    # Для каждого из 2 правил найдено по 2 якоря (3D и Web) => 4.
+    assert result.anchors_found == 4
+    assert result.missing == ["Activities/Web/Resources"]
