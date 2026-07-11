@@ -288,7 +288,7 @@ cp -r examples /tmp/examples-test
 | Подпапка | Вход | Результат (файл) |
 |----------|------|------------------|
 | symbols-before-date | `@@@20.05.2020` | `2020-05-20` |
-| symbols-before-date | `###2021.03.10` | `2021-03-10` |
+| symbols-before-date | `###2021.03.10` | `###2021-03-10` (`#` — символ имени, не срезается) |
 | symbols-before-date | `!!!05.2020` | `2020-05-00` |
 | symbols-around-date | `~~~20.05.2020~~~` | `2020-05-20` |
 | symbols-around-date | `(2021.03.10)` | `2021-03-10` |
@@ -310,7 +310,7 @@ cp -r examples /tmp/examples-test
 | emoji-version-mix | `v2 Отчёт 20.05.2020` | `v2-otchiot_2020-05-20` |
 | emoji-version-mix | `release 1 Müller` | `release-01-muller` |
 | everything | `--- Привет 5 20.05.2020 !!!` | `privet-05_2020-05-20` |
-| everything | `@@ café 3 05.2020 ##` | `cafe-03_2020-05-00` |
+| everything | `@@ café 3 05.2020 ##` | `cafe-03_2020-05-00_##` (`#` — символ имени, не срезается) |
 | everything | `Отчёт №1 от 20.05.2020` | `otchiot-no.-01-ot_2020-05-20` (`№` → `No.`) |
 | everything | `___naïve 7 2020___` | `___naive-07_2020-00-00` |
 | brackets-mix | `Файл (1) копия` | `fail-01-kopiia` (число в скобках + ведущий ноль) |

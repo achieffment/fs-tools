@@ -99,10 +99,12 @@ pip install -e ".[normalizer,checker,syncher,dev]"                     # editabl
   (наихудший среди профилей). Внешние бинарники: `rsync` (обязателен), `ssh` (SSH-цели).
   Журнал пишется в `production` и `dry-run` (с соответствующей меткой режима).
 - **Консистентность**: изменение поведения синхронизирует код, тесты, примеры и
-  документацию. Детали и осознанные допущения — в `.cursor/rules/`.
+  документацию. Детали и осознанные допущения — в правилах проекта (`.claude/rules/`
+  для Claude Code; `.cursor/rules/` для Cursor).
 - **Симметрия именования**: словарь замен и правило подбора симметричных локальных
-  имён зафиксированы в `.cursor/rules/naming-symmetry.mdc` (включая исключения по
-  stdlib-контрактам и публичным API).
+  имён зафиксированы в `.claude/rules/naming-symmetry.md` (Cursor:
+  `.cursor/rules/naming-symmetry.mdc`), включая исключения по stdlib-контрактам и
+  публичным API.
 - **Запрет `AugAssign/Add`**: инкрементальное сложение не используем; вместо него
   пишем явную форму `name = name + value`. Контроль закреплён тестом
   `tests/shared/test_no_augassign.py`.
@@ -143,8 +145,9 @@ pip install -e ".[normalizer,checker,syncher,dev]"                     # editabl
 
 - Для аудитов использовать project skill `audit-governor` с режимами `audit changed` и
   `audit full`.
-- Единый контракт аудита закреплён в `.cursor/rules/audit-governor.mdc`; его требования
-  обязательны при любом запросе аудита.
+- Единый контракт аудита закреплён в skill `audit-governor`
+  (Claude Code: `.claude/skills/audit-governor/`; Cursor: `.cursor/rules/audit-governor.mdc`);
+  его требования обязательны при любом запросе аудита.
 - В режиме `audit changed` проверять весь набор правок: staged/unstaged/untracked, все
   коммиты ветки от base (`main`/`master`) и итоговый diff; не ограничиваться последним
   коммитом.
