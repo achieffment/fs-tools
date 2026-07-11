@@ -9,13 +9,14 @@
 - `examples/normalizer/README.md`
 - `examples/syncher/README.md`
 - `pyproject.toml`
-- `CLAUDE.md` (корневой: аудит-контракт, симметрия имён, консистентность,
-  кросс-платформенная безопасность, комментарии, импорты, lazy-import)
-- `src/fs_tools/syncher/CLAUDE.md` (формат `.fs-sync.toml`, offload,
-  rsync-mapping)
-- `src/fs_tools/normalizer/CLAUDE.md` (фильтр `.fs-ignore`, `DateRule`)
-- `src/fs_tools/checker/CLAUDE.md` (семантика `.fs-check`)
-- `examples/CLAUDE.md` (формирование примеров-фикстур)
+- `CLAUDE.md` (корневой: индекс со ссылками на `.claude/rules/*.md`,
+  `@`-импорт `AGENTS.md`)
+- `.claude/rules/*.md` (16 файлов — адаптация `.cursor/rules/*.mdc`,
+  1:1 плюс `rules-sync.md`): `audit-governor.md`, `comments-style.md`,
+  `config-format.md`, `consistency.md`, `cross-platform-safety.md`,
+  `date-rule.md`, `examples.md`, `imports.md`, `lazy-import-order.md`,
+  `naming-symmetry.md`, `offload-safety.md`, `path-matching.md`,
+  `rsync-mapping.md`, `rule-matching.md`, `testing.md`, `rules-sync.md`
 
 ## Область аудита
 
@@ -31,7 +32,7 @@
 - Проверить все ключевые модули в `src/fs_tools/`.
 - Проверить все тесты в `tests/`.
 - Проверить документацию и examples.
-- Проверить правила (`CLAUDE.md` + вложенные) и агентные инструкции.
+- Проверить правила (`CLAUDE.md` + `.claude/rules/*.md`) и агентные инструкции.
 
 ## Обязательные проверки качества
 
@@ -41,8 +42,8 @@
   читаемость.
 - Консистентность кода, тестов, examples, docs, rules.
 - Кроссплатформенность и безопасность.
-- Комментарии: минимум, актуальность, выравнивание по разделу
-  «Комментарии — кратко и по существу» корневого `CLAUDE.md`.
+- Комментарии: минимум, актуальность, выравнивание по
+  `.claude/rules/comments-style.md`.
 - Проверить автоконтроль Markdown-выравнивания:
   `tests/shared/test_markdown_comments.py` проходит в составе `pytest`; для
   командных fenced-блоков выравнивание считается по локальным подблокам
@@ -105,5 +106,5 @@
 - Комментарии соответствуют правилам и не раздуты.
 - Кроссплатформенность и безопасность соблюдены.
 - Нет необоснованных suppression-комментариев.
-- При необходимости обновлены `CLAUDE.md`/вложенные `CLAUDE.md` и/или
+- При необходимости обновлены `CLAUDE.md`/`.claude/rules/*.md` и/или
   `AGENTS.md` минимально и по факту.
