@@ -91,12 +91,15 @@ rsync --version
 bin/normalize.sh [каталог]        # Linux/macOS (терминал) → fs-normalizer
 bin/check.sh [каталог]            # Linux/macOS (терминал) → fs-checker
 bin/sync.sh [каталог] [флаги]     # Linux/macOS (терминал) → fs-syncher
+bin/scheme.sh [каталог]           # Linux/macOS (терминал) → fs-schemer
 bin/normalize.command             # macOS (двойной клик в Finder)
 bin/check.command                 # macOS (двойной клик в Finder)
 bin/sync.command                  # macOS (двойной клик в Finder)
+bin/scheme.command                # macOS (двойной клик в Finder)
 bin/normalize.bat [каталог]       # Windows → fs-normalizer
 bin/check.bat [каталог]           # Windows → fs-checker
 bin/sync.bat [каталог] [флаги]    # Windows (через WSL/cwrsync) → fs-syncher
+bin/scheme.bat [каталог]          # Windows → fs-schemer
 ```
 
 ## Использование
@@ -135,6 +138,7 @@ python -m fs_tools normalize                 # эквивалент fs-tools nor
 0 3 * * * /path/to/fs-tools/bin/normalize.sh /mnt/disk/Home    # нормализация ночью
 0 9 * * * /path/to/fs-tools/bin/check.sh /mnt/disk/Home        # проверка утром
 0 1 * * * /path/to/fs-tools/bin/sync.sh /mnt/disk/Home         # синхронизация ночью
+0 7 * * * /path/to/fs-tools/bin/scheme.sh /mnt/disk/Home       # проверка схемы утром
 ```
 
 ---

@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Общий bootstrap для обёрток Linux/macOS: готовит .venv в корне проекта и делает
-# editable-установку со всеми тремя extra. Подключается обёртками через `source`; сам
-# по себе ничего не запускает. После вызова `_fs_tools_bootstrap "<корень>"` задаёт:
+# editable-установку со всеми четырьмя extra. Подключается обёртками через `source`;
+# сам по себе ничего не запускает. После вызова `_fs_tools_bootstrap "<корень>"` задаёт:
 #   FS_TOOLS_HOME — корень проекта (нужен для поиска единого .env);
-#   FS_TOOLS_VBIN — каталог bin виртуального окружения (fs-normalizer/fs-checker/fs-syncher).
+#   FS_TOOLS_VBIN — каталог bin виртуального окружения
+#                   (fs-normalizer/fs-checker/fs-syncher/fs-schemer).
 # Возвращает ненулевой код при сбое подготовки окружения.
 
 _fs_tools_bootstrap() {
@@ -22,7 +23,7 @@ _fs_tools_bootstrap() {
             rm -rf "$venv"
             return 1
         fi
-        if ! "$pyex" -m pip install -e "${root}[normalizer,checker,syncher]"; then
+        if ! "$pyex" -m pip install -e "${root}[normalizer,checker,syncher,schemer]"; then
             echo "Не удалось установить зависимости (возможно, временный сбой сети). Повторите запуск." >&2
             rm -rf "$venv"
             return 1

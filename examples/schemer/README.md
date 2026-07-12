@@ -35,6 +35,11 @@ fs-schemer
 
 # либо сразу аргументом, без диалога:
 fs-schemer examples/schemer/Warehouse
+
+# то же через обёртки bin/ (создают .venv и editable-установку при первом запуске):
+bin/scheme.sh         # Linux/macOS (терминал)
+bin/scheme.command    # macOS (двойной клик в Finder)
+bin/scheme.bat        # Windows
 ```
 
 ## Файл конфигурации

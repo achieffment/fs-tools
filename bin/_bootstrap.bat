@@ -1,7 +1,7 @@
 @echo off
 REM Общий bootstrap для обёрток Windows: готовит .venv в корне проекта и делает
-REM editable-установку со всеми тремя extra. Вызывается обёртками через `call`; задаёт
-REM переменные FS_TOOLS_HOME (корень проекта) и FS_TOOLS_VBIN (каталог Scripts
+REM editable-установку со всеми четырьмя extra. Вызывается обёртками через `call`;
+REM задаёт переменные FS_TOOLS_HOME (корень проекта) и FS_TOOLS_VBIN (каталог Scripts
 REM виртуального окружения). При сбое подготовки выходит с ненулевым кодом.
 set "FS_TOOLS_HOME=%~1"
 set "FS_TOOLS_VBIN=%FS_TOOLS_HOME%\.venv\Scripts"
@@ -17,7 +17,7 @@ echo Подготовка окружения (.venv)...
 if exist "%FS_TOOLS_HOME%\.venv" rmdir /s /q "%FS_TOOLS_HOME%\.venv"
 python -m venv "%FS_TOOLS_HOME%\.venv"
 if errorlevel 1 goto venvfail
-"%pyex%" -m pip install -e "%FS_TOOLS_HOME%[normalizer,checker,syncher]"
+"%pyex%" -m pip install -e "%FS_TOOLS_HOME%[normalizer,checker,syncher,schemer]"
 if errorlevel 1 goto pipfail
 exit /b 0
 
