@@ -1,9 +1,9 @@
-"""Диспетчер `fs-tools <normalize|check|sync> [КАТАЛОГ] [ФЛАГИ]`.
+"""Диспетчер `fs-tools <normalize|check|sync|scheme> [КАТАЛОГ] [ФЛАГИ]`.
 
-Подкоманды соответствуют трём режимам. Runner выбранного режима импортируется
+Подкоманды соответствуют четырём режимам. Runner выбранного режима импортируется
 лениво — внутри обработчика подкоманды, чтобы `fs-tools --help` и доступный режим
 работали даже без extra другого режима (например, без `Unidecode` для нормализации
-или без `requests`/`python-dotenv` для синхронизации).
+или без `requests`/`python-dotenv` для синхронизации/проверки схемы).
 """
 from __future__ import annotations
 
@@ -30,12 +30,13 @@ def main(argv: list[str] | None = None) -> int:
         prog="fs-tools",
         description=(
             "Кросс-платформенные операции с файловой системой: нормализация имён "
-            "(normalize), проверка наличия путей по правилам (check) и односторонняя "
-            "синхронизация каталога с сервером через rsync (sync)."
+            "(normalize), проверка наличия путей по правилам (check), односторонняя "
+            "синхронизация каталога с сервером через rsync (sync) и проверка "
+            "структуры/контента базы знаний по fs-schm.toml (scheme)."
         ),
     )
     sub = pars.add_subparsers(
-        dest="mode", required=True, metavar="<normalize|check|sync>"
+        dest="mode", required=True, metavar="<normalize|check|sync|scheme>"
     )
 
     p_fsnm = sub.add_parser("normalize", help="нормализовать имена файлов и папок")
@@ -48,6 +49,9 @@ def main(argv: list[str] | None = None) -> int:
     p_fssy = sub.add_parser("sync", help="синхронизировать каталог с сервером (rsync)")
     add_path_argument(p_fssy)
     add_sync_argument(p_fssy)
+
+    p_fssm = sub.add_parser("scheme", help="проверить структуру/контент по fs-schm.toml")
+    add_path_argument(p_fssm)
 
     # Ленивый импорт режима: тянем только то, что нужно выбранной подкоманде.
     args = pars.parse_args(argv)
@@ -69,4 +73,10 @@ def main(argv: list[str] | None = None) -> int:
             importlib.import_module(".syncher.runner", __package__).main,
         )
         return run_mode(sync_argv_from_namespace(args))
+    if args.mode == "scheme":
+        run_mode = cast(
+            Callable[[list[str] | None], int],
+            importlib.import_module(".schemer.runner", __package__).main,
+        )
+        return run_mode([args.path] if args.path else [])
     return 1

@@ -25,6 +25,7 @@
 | `rsync-mapping.mdc`             | `rsync-mapping.md`            | Трансляция include/exclude в фильтры rsync                  |
 | `rule-matching.mdc`             | `rule-matching.md`            | Семантика `.fs-check`                                       |
 | `rules-sync.mdc`                | `rules-sync.md`               | Этот файл — синхронизация правил между редакторами          |
+| `scheme-format.mdc`             | `scheme-format.md`            | Формат `fs-schm.toml` и модель движка `schemer`             |
 | `testing.mdc`                   | `testing.md`                  | Тесты режимов и проверка изменений                           |
 
 Новое правило — добавить пару сразу в обоих каталогах и строку в этой таблице

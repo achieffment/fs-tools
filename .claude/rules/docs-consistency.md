@@ -10,7 +10,7 @@
 | Тип изменения                                    | Код / тесты                                                                                   | Правила и docs                                                                                       |
 |-----------------------------------------------------|--------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
 | Новое правило normalizer                            | `rules/`, `build_normalizer()`, `rules/__init__.py`/`normalizer/__init__.py` (`__all__`), `tests/normalizer/rules/test_<rule>.py`, `examples/normalizer/<NN-rule>/` | [`examples.md`](examples.md) (нумерация фикстур), README normalizer-секция                              |
-| Изменение состава пакета `shared/`/`normalizer/`/`checker/`/`syncher/` | соответствующий модуль                                                                            | этот файл — раздел «Распределение по пакетам»                                                            |
+| Изменение состава пакета `shared/`/`normalizer/`/`checker/`/`syncher/`/`schemer/` | соответствующий модуль                                                                  | этот файл — раздел «Распределение по пакетам»                                                            |
 | Точка входа / код возврата (`runner.main`/`run`)    | `*/runner.py`, `*/cli_args.py`                                                                    | раздел «Точки входа и коды возврата», `tests/*/test_runner.py`                                           |
 | Контракт терминального вывода (`Статус:`/`Сводка:`) | `*/report.py`                                                                                     | раздел «Контракт терминального вывода», `tests/*/test_report.py`, `tests/*/test_runner.py`, `tests/*/test_examples.py`, README, `examples/*/README.md` |
 | Текст/условия отправки веб-хука                     | `*/notify.py`, `runner.py`                                                                        | раздел «Контракт текста веб-хуков», `tests/checker/test_runner.py`, `tests/syncher/test_runner.py`       |
@@ -22,6 +22,8 @@
 | Формат `.fs-sync.toml`                              | `syncher/config.py`                                                                               | [`config-format.md`](config-format.md)                                                                   |
 | Трансляция include/exclude → rsync                  | `syncher/ignore.py`                                                                               | [`rsync-mapping.md`](rsync-mapping.md)                                                                   |
 | Логика offload (`[[backup]]`)                       | `syncher/offload.py`                                                                              | [`offload-safety.md`](offload-safety.md)                                                                 |
+| Формат `fs-schm.toml` / модель групп                 | `schemer/config.py`                                                                                | [`scheme-format.md`](scheme-format.md)                                                                   |
+| Модель движка `schemer` (F1–F15)                     | `schemer/engine.py`                                                                                | [`scheme-format.md`](scheme-format.md)                                                                   |
 | Новое/удалённое правило Cursor/Claude               | —                                                                                                  | [`rules-sync.md`](rules-sync.md) — карта соответствия (обе версии)                                       |
 
 Распределение по пакетам (`src/fs_tools/`):
@@ -55,37 +57,45 @@
   (`offload.py`), отчёт (`report.py`), веб-хук (`notify.py`, обёртка над
   `shared.notify` с ключами `FSSYN_*`), обёртка журнала (`log.py`), точка входа
   (`runner.py`).
+- `schemer/` — чтение/валидация `fs-schm.toml` (`config.py`, `tomllib`), read-only
+  обход и сбор нарушений (`engine.py`, класс `FsSchemer`), отчёт (`report.py`),
+  веб-хук (`notify.py`, обёртка над `shared.notify` с ключами `FSSCH_*`), обёртка
+  журнала (`log.py`), точка входа (`runner.py`). Флагов режима, кроме `path`, нет —
+  `_build_parser()` не заводится (см. `runner.py`, шаблон как у `checker`).
 
-Симметрия двух первых режимов намеренная: ядро каждого — `engine.py` с классом `Fs*`
-(`FsNormalizer` / `FsChecker`); локальная переменная инстанса в `runner.run` — `fsnm`
-/ `fsch`. Сохраняй это соответствие при правках. Режим `syncher` **несимметричен**: у
-него нет `engine.py`/`Fs*`-класса и нет `safety.py` (структура — функциональная:
-`cli_args`/`config`/`ignore`/`rsync`/`offload`/`report`, конвейер собирается в
-`runner.run`).
+Симметрия normalizer/checker/schemer намеренная: ядро каждого — `engine.py` с классом
+`Fs*` (`FsNormalizer` / `FsChecker` / `FsSchemer`); локальная переменная инстанса в
+`runner.run` — `fsnm` / `fsch` / `fssm`. Сохраняй это соответствие при правках. Режим
+`syncher` **несимметричен**: у него нет `engine.py`/`Fs*`-класса и нет `safety.py`
+(структура — функциональная: `cli_args`/`config`/`ignore`/`rsync`/`offload`/`report`,
+конвейер собирается в `runner.run`).
 Симметрию сохраняют только врапнеры `log.py`/`runner.py` и раскладка тестов/примеров.
 
 Точки входа и коды возврата:
 
-- normalizer/checker: `runner.main(argv) -> int` + `run(root, ...) -> int`. Без
-  аргумента каталог выбирается интерактивно через `pick_directory()`, аргумент-каталог
-  минует диалог. У normalizer есть `--dry-run` (план без переименований). Коды
-  `0`/`1`/`2` зафиксированы контрактом и проверяются тестами.
+- normalizer/checker/schemer: `runner.main(argv) -> int` + `run(root, ...) -> int`.
+  Без аргумента каталог выбирается интерактивно через `pick_directory()`,
+  аргумент-каталог минует диалог. У normalizer есть `--dry-run` (план без
+  переименований). Коды `0`/`1`/`2` зафиксированы контрактом и проверяются тестами.
 - syncher: `runner.main(argv) -> int` + `run(root, args) -> int`. Без аргумента
   каталог выбирается интерактивно через `pick_directory()`, аргумент-каталог
   минует диалог. Коды `0/1/2/3` (наихудший среди профилей)
   зафиксированы контрактом.
-- Диспетчер `fs_tools.cli:main` (`fs-tools <normalize|check|sync>`) и `__main__.py`
-  импортируют `runner` выбранного режима **лениво** (через `importlib` в обработчике),
-  чтобы
+- Диспетчер `fs_tools.cli:main` (`fs-tools <normalize|check|sync|scheme>`) и
+  `__main__.py` импортируют `runner` выбранного режима **лениво** (через `importlib`
+  в обработчике), чтобы
   `--help` и доступный режим работали без extra другого режима. Подкоманды
-  `normalize` и `sync` объявляют флаги режима и пробрасывают их (а не только `path`).
+  `normalize` и `sync` объявляют флаги режима и пробрасывают их (а не только `path`);
+  `scheme` (как и `check`) — только `path`.
 
 Контракт терминального вывода:
 
-- Финальный блок терминального вывода у `normalizer`, `checker` и `syncher`
-  оформляется единообразно в две строки:
+- Финальный блок терминального вывода у `normalizer`, `checker`, `syncher` и
+  `schemer` оформляется единообразно в две строки:
   `Статус: <ok|warn|error>. <фраза>` и
-  `Сводка: <метрики в фиксированном порядке>`.
+  `Сводка: <метрики в фиксированном порядке>`. У `schemer` статус — только
+  `ok`/`error` (нет промежуточного `warn`: коды возврата — `0`/`1`/`2`, без
+  «предупреждения»).
 - Не возвращать в одном режиме отдельный формат наподобие `Готово...`, если
   остальные режимы уже используют `Статус:`/`Сводка:`.
 - Изменения формата терминального отчёта синхронизируются между кодом
@@ -96,20 +106,23 @@
 
 - Текст webhook-сообщений для режимов фиксирован и должен быть стабильным:
   - checker: `fs-checker - выполнен с ошибкой.`;
-  - syncher: `fs-syncher - выполнен с ошибкой.`.
+  - syncher: `fs-syncher - выполнен с ошибкой.`;
+  - schemer: `fs-schemer - выполнен с ошибкой.`.
 - Отправка webhook остаётся fire-and-forget и не влияет на код возврата.
 - checker отправляет webhook только при наличии нарушений (`missing` не пуст).
 - syncher отправляет webhook только в production-прогоне и только при
   наихудшем коде `2` или `3`.
+- schemer отправляет webhook только при наличии нарушений (симметрично checker).
 - Любые изменения текста webhook синхронизируются между кодом раннеров,
   режимными тестами (`tests/checker/test_runner.py`,
-  `tests/syncher/test_runner.py`) и документацией.
+  `tests/syncher/test_runner.py`, `tests/schemer/test_runner.py`) и документацией.
 
 Журнал `.fs-log` — намеренное исключение из идемпотентности (дополняется на каждом
 запуске), он в `.gitignore`, а `reset.*` (только у normalizer) убирают его явным
-`rm`/`del`. Все режимы пишут журнал в `production` и `dry-run`; в `dry-run`
-фиксируется последовательность dry-run-событий (включая конфликты/ошибки),
-а откат песочницы syncher — через `git restore`/`git clean` (без `reset.*`).
+`rm`/`del`. Все режимы пишут журнал в `production` и `dry-run` (у `checker`/`schemer`
+режим всегда `production` — своих флагов dry-run нет); в `dry-run` фиксируется
+последовательность dry-run-событий (включая конфликты/ошибки), а откат песочницы
+syncher — через `git restore`/`git clean` (без `reset.*`).
 
 Локальный шаблон runner-парсеров:
 
@@ -118,7 +131,7 @@
 - Для одноразовой подсказки `path_help` в `_build_parser()` не выноси отдельную
   константу без повторного использования.
 
-Документация: единый `README.md` (три секции), `examples/README.md` (+ секции
+Документация: единый `README.md` (четыре секции), `examples/README.md` (+ секции
 режимов). Перед завершением убедись, что ни один пласт не отстал.
 
 ## Антипаттерны

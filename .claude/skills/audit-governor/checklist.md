@@ -8,15 +8,17 @@
 - `examples/checker/README.md`
 - `examples/normalizer/README.md`
 - `examples/syncher/README.md`
+- `examples/schemer/README.md`
 - `pyproject.toml`
 - `CLAUDE.md` (корневой: индекс со ссылками на `.claude/rules/*.md`,
   `@`-импорт `AGENTS.md`)
-- `.claude/rules/*.md` (16 файлов — адаптация `.cursor/rules/*.mdc`,
+- `.claude/rules/*.md` (17 файлов — адаптация `.cursor/rules/*.mdc`,
   1:1 плюс `rules-sync.md`): `audit-governor.md`, `comments-style.md`,
   `config-format.md`, `cross-platform-safety.md`, `date-rule.md`,
   `docs-consistency.md`, `examples.md`, `imports.md`, `lazy-import-order.md`,
   `naming-symmetry.md`, `offload-safety.md`, `path-matching.md`,
-  `rsync-mapping.md`, `rule-matching.md`, `testing.md`, `rules-sync.md`
+  `rsync-mapping.md`, `rule-matching.md`, `scheme-format.md`, `testing.md`,
+  `rules-sync.md`
 
 ## Область аудита
 
@@ -68,13 +70,16 @@
     режимными `log.py`, тестами `tests/shared/test_log.py`,
     `tests/*/test_log.py` и документацией.
 - Проверить контракт терминального вывода: двухстрочный финальный блок
-  `Статус:` + `Сводка:` в `normalizer`/`checker`/`syncher` и его
-  консистентность между кодом, тестами и документацией.
+  `Статус:` + `Сводка:` в `normalizer`/`checker`/`syncher`/`schemer` и его
+  консистентность между кодом, тестами и документацией (у `schemer` статус —
+  только `ok`/`error`, без `warn`).
 - Проверить контракт текста веб-хуков:
   - `fs-checker - выполнен с ошибкой.`
   - `fs-syncher - выполнен с ошибкой.`
+  - `fs-schemer - выполнен с ошибкой.`
   - условия отправки (checker: при missing; syncher: только production и
-    код 2/3) согласованы в раннерах, тестах и документации.
+    код 2/3; schemer: при наличии нарушений) согласованы в раннерах, тестах
+    и документации.
 - Отсутствие необоснованных suppression-комментариев:
   - `# pylint: disable`
   - `# noqa`

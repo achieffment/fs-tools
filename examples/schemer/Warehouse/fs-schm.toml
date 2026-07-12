@@ -1,0 +1,65 @@
+# fs-schm.toml — лежит в корне проверяемого дерева (здесь — Warehouse)
+
+[defaults]
+exclude_prefix = "_"            # префикс "служебных" файлов группы
+
+[[group]]
+name = "_Knowledges"
+default_rule = { line = 1, text = "# Заметки" }
+
+  [[group.file]]
+  name = "_main.md"
+  line = 1
+  text = "# Заметки"
+
+  [[group.file]]
+  name = "_commands.md"
+  optional = true
+  line = 1
+  text = "# Команды"
+
+  [[group.file]]
+  name = "rules.md"
+  optional = true
+  line = 3
+  text = "## Правила"
+
+  [[group.file]]
+  name = "typical.md"
+  optional = true
+  line = 3
+  text = "## Типовые проблемы"
+
+  [[group.file]]
+  name = "prompts.md"
+  optional = true
+  line = 3
+  text = "## Промпты"
+
+  [[group.file]]
+  name = "structure.md"
+  optional = true
+  line = 3
+  text = "## Структура"
+
+[[group]]
+name = "_Commands"
+default_rule = { line = 1, text = "# Команды" }
+
+  [[group.file]]
+  name = "_main.md"
+  line = 1
+  text = "# Команды"
+
+[[group]]
+name = "_Blueprints"
+default_rule = { line = 1, text = "# Шаблоны" }
+
+  [[group.file]]
+  name = "_devs.md"
+  optional = true
+  line = 1
+  text = "# Наработки"
+
+[[group]]
+name = "_Resources"

@@ -10,22 +10,25 @@
 `test_rule.py`, `test_log.py`, `test_notify.py`, `test_runner.py`; syncher —
 `test_config.py`, `test_cli_args.py`, `test_ignore.py`, `test_rsync.py`,
 `test_offload.py`, `test_report.py`, `test_runner.py`, `test_notify.py`,
-`test_log.py`, `test_examples.py`. Режим запуска —
+`test_log.py`, `test_examples.py`; schemer — `test_config.py`, `test_engine.py`,
+`test_report.py`, `test_log.py`, `test_notify.py`, `test_runner.py`,
+`test_examples.py`. Режим запуска —
 `--import-mode=importlib` (задан в `pyproject.toml`); одноимённые `test_engine.py` /
 `test_ignore.py` / `test_log.py` / `test_runner.py` / `test_notify.py` сосуществуют
 (importlib). Хак вставки корня в `sys.path` не нужен (src-layout + editable).
 
 Каталоги тестов обязаны быть пакетами Python: в `tests/`, `tests/shared/`,
-`tests/normalizer/`, `tests/normalizer/rules/`, `tests/checker/`, `tests/syncher/`
-должен быть `__init__.py`. Новые тестовые подпапки создавай сразу с `__init__.py`.
-Без этого `pylint` может обходить дерево неполно даже при `--recursive=y`.
+`tests/normalizer/`, `tests/normalizer/rules/`, `tests/checker/`, `tests/syncher/`,
+`tests/schemer/` должен быть `__init__.py`. Новые тестовые подпапки создавай сразу с
+`__init__.py`. Без этого `pylint` может обходить дерево неполно даже при `--recursive=y`.
 
 - Корневой `tests/conftest.py` — только по-настоящему общие фикстуры: дерево
   `make_tree` (фабрика из списка путей в `tmp_path`). Мод-специфичные держатся в
   `conftest.py` подпапок: фабрика нормализатора `nn` (`build_normalizer`) —
   `tests/normalizer/conftest.py`; запись `.fs-check` `write_rule` —
   `tests/checker/conftest.py`; `make_tree(base, paths)` (переопределяет общий под
-  деревья источника/приёмника) + `write_config` — `tests/syncher/conftest.py`. Маркер
+  деревья источника/приёмника) + `write_config` — `tests/syncher/conftest.py`; запись
+  `fs-schm.toml` `write_scheme_toml` — `tests/schemer/conftest.py`. Маркер
   `requires_rsync` (skip без бинаря rsync) определяется локально в нуждающихся
   тест-файлах `syncher`.
 - `tests/shared/test_picker.py` — один общий файл: выбор каталога не дублируется.
@@ -36,7 +39,8 @@
 - `tests/shared/test_log.py` — общие механики журнала (метка времени, отступ, append,
   utf-8). Мод-специфичные строки журнала проверяются в мод-тестах: пары `old -> new`
   и «(изменений нет)» — у normalizer; пути и «(нарушений нет)» — у checker; маркеры
-  `+`/`-`/`>>` и «(изменений нет)» — у syncher.
+  `+`/`-`/`>>` и «(изменений нет)» — у syncher; строки нарушений и «(нарушений
+  нет)» — у schemer.
 - `tests/shared/test_notify.py` — общая логика веб-хука (`shared.notify`): чтение
   конфигурации из env, https-only, lazy `requests`, Bearer-заголовок, гашение
   сетевых ошибок.
@@ -49,6 +53,11 @@
   `FsNormalizer`, коды возврата `runner.main`.
 - **checker**: парсинг `.fs-check`, разворачивание правил, коды возврата, picker,
   веб-хук (мок сети).
+- **schemer**: парсинг/валидация `fs-schm.toml` (`SchemeConfigError`), классификация
+  групповых/тематических узлов, все категории нарушений (F1–F15: обязательный файл,
+  опциональный с контентом, пустая группа, файл вне групповой папки, контент-правило
+  `line`/`text`), исключение `fs-schm.toml` из loose-проверки, коды возврата,
+  веб-хук (мок сети).
 - **syncher**: парсинг/валидация `.fs-sync.toml` и коды `ConfigError`; трансляция
   include/exclude в фильтры rsync; разбор `--itemize-changes`/`--list-only`;
   delete-guard (пороги по количеству/доле, код 3); offload (verify → `after_push`,
@@ -56,11 +65,11 @@
   аргумента → интерактивный picker, аргумент-каталог минует диалог». Интеграционные тесты с реальным rsync —
   `@requires_rsync` (skip без бинаря).
 - **Аргумент-каталог минует диалог** — для всех режимов; при отсутствии аргумента
-  normalizer/checker/syncher используют интерактивный выбор каталога.
+  normalizer/checker/syncher/schemer используют интерактивный выбор каталога.
 - **Веб-хук**: окружение процесса важнее `.env` (проверяется в `test_env.py`);
-  checker/syncher-тесты проверяют ключи окружения и делегирование в `shared.notify`,
-  а поведение отправки (https-only, lazy `requests`, заголовки, гашение ошибок)
-  проверяется в `tests/shared/test_notify.py`.
+  checker/syncher/schemer-тесты проверяют ключи окружения и делегирование в
+  `shared.notify`, а поведение отправки (https-only, lazy `requests`, заголовки,
+  гашение ошибок) проверяется в `tests/shared/test_notify.py`.
 
 Проверка (инструменты в `.venv`; в PowerShell `&&` не поддерживается):
 
@@ -97,3 +106,6 @@
 
 Демо-инвариант syncher: `--dry-run` на `examples/syncher/` даёт зафиксированный итог
 (см. `examples/syncher/README.md`; проверяется `test_examples.py`, skip без rsync).
+
+Демо-инвариант schemer: прогон на `examples/schemer/Warehouse/` даёт ровно ожидаемое
+число нарушений (см. `examples/schemer/README.md`).

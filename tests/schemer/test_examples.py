@@ -1,0 +1,22 @@
+"""Регрессия песочницы: examples/schemer даёт зафиксированный итог из README."""
+from pathlib import Path
+
+import pytest
+
+from fs_tools.schemer.runner import run
+
+EXAMPLES = Path(__file__).resolve().parents[2] / "examples" / "schemer" / "Warehouse"
+
+
+def test_examples_matches_readme(capsys: pytest.CaptureFixture[str]) -> None:
+    """Проверяет сценарий: examples matches readme."""
+    code = run(EXAMPLES)
+    out = capsys.readouterr().out
+    assert code == 2
+    assert "Нарушения (4):" in out
+    assert "Статус: error. Найдены нарушения структуры/контента." in out
+    assert "Сводка: проверено групп: 4; проверено файлов: 6; нарушений: 4." in out
+    assert "заголовок не совпадает: Code/_Blueprints/_devs.md" in out
+    assert "отсутствует обязательный файл: Code/_Commands/_main.md" in out
+    assert "пустая группа: Code/_Resources" in out
+    assert "файл вне групповой папки: Code/loose.md" in out

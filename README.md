@@ -13,7 +13,11 @@
 - **синхронизация** (`fs-syncher`) — односторонняя синхронизация каталога с сервером
   (ПК → сервер) через внешний `rsync` по декларативному `.fs-sync.toml`. Состав
   передачи, зеркалирование удалений (с защитой delete-guard) и выгрузка-offload
-  задаются профилями.
+  задаются профилями;
+- **проверка схемы** (`fs-schemer`) — рекурсивно сверяет базу знаний с декларативными
+  группами `fs-schm.toml`: обязательные/опциональные служебные файлы, точный текст
+  заданной строки, запрет пустых групповых папок и файлов вне них. Структуру **не
+  меняет**.
 
 Все режимы доступны и по отдельности, и через единый диспетчер `fs-tools`.
 
@@ -27,6 +31,8 @@
   - `checker` → [requests](https://pypi.org/project/requests/),
     [python-dotenv](https://pypi.org/project/python-dotenv/) (веб-хук и `.env`);
   - `syncher` → [requests](https://pypi.org/project/requests/),
+    [python-dotenv](https://pypi.org/project/python-dotenv/) (веб-хук и `.env`);
+  - `schemer` → [requests](https://pypi.org/project/requests/),
     [python-dotenv](https://pypi.org/project/python-dotenv/) (веб-хук и `.env`).
 - Внешние бинарники для синхронизации: `rsync` (обязателен), `ssh` (для SSH-целей).
 
@@ -41,17 +47,18 @@ Windows/WSL — нативный `IFileOpenDialog` через `powershell.exe`, 
 
 ```bash
 python3 -m venv .venv
-source .venv/bin/activate                             # Windows: .venv\Scripts\activate
-pip install -e ".[normalizer,checker,syncher]"        # все режимы
+source .venv/bin/activate                                     # Windows: .venv\Scripts\activate
+pip install -e ".[normalizer,checker,syncher,schemer]"        # все режимы
 # или частично:
-pip install -e ".[normalizer]"                        # только нормализатор
-pip install -e ".[checker]"                           # только проверка
-pip install -e ".[syncher]"                           # только синхронизация
-pip install -e ".[normalizer,checker,syncher,dev]"    # + инструменты разработки
+pip install -e ".[normalizer]"                                # только нормализатор
+pip install -e ".[checker]"                                   # только проверка
+pip install -e ".[syncher]"                                   # только синхронизация
+pip install -e ".[schemer]"                                   # только проверка схемы
+pip install -e ".[normalizer,checker,syncher,schemer,dev]"    # + инструменты разработки
 ```
 
 После установки доступны команды `fs-normalizer`, `fs-checker`, `fs-syncher`,
-`fs-tools` (и `python -m fs_tools`).
+`fs-schemer`, `fs-tools` (и `python -m fs_tools`).
 
 ### Windows (Chocolatey + rsync)
 
@@ -108,10 +115,14 @@ fs-checker /path/to/dir    # без диалога
 fs-syncher                 # синхронизация: выбрать каталог в диалоге
 fs-syncher /path/to/dir    # без диалога
 
+fs-schemer                 # проверка схемы: выбрать каталог в диалоге
+fs-schemer /path/to/dir    # без диалога
+
 fs-tools normalize /path/to/dir              # то же через диспетчер
 fs-tools normalize /path/to/dir --dry-run
 fs-tools check /path/to/dir
 fs-tools sync /path/to/dir
+fs-tools scheme /path/to/dir
 
 python -m fs_tools normalize                 # эквивалент fs-tools normalize
 ```
@@ -283,6 +294,108 @@ from fs_tools.checker import FsChecker, format_report, load_fs_rule
 root = Path("/path/to/dir")
 fsch = FsChecker(load_fs_rule(root)).check(root)
 print(format_report(root, fsch))              # fsch.missing — отсортированный список
+```
+
+---
+
+## Режим проверки схемы (`fs-schemer`)
+
+Рекурсивно сверяет базу знаний с декларативными **группами** `fs-schm.toml`: дерево
+состоит из тематических узлов произвольной глубины, любой из которых может содержать
+групповые папки (`_Knowledges`, `_Commands`, …) с обязательными/опциональными
+служебными файлами и «обычными» файлами группы. Конфиг `fs-schm.toml` (без ведущей
+точки) лежит **в корне проверяемого дерева** и читается оттуда. Утилита **не меняет
+структуру** (read-only).
+
+### Формат `fs-schm.toml`
+
+```toml
+[defaults]
+exclude_prefix = "_"            # префикс "служебных" файлов группы
+
+[[group]]
+name = "_Knowledges"
+default_rule = { line = 1, text = "# Заметки" }
+
+  [[group.file]]
+  name = "_main.md"             # обязателен (optional не задан)
+  line = 1
+  text = "# Заметки"
+
+  [[group.file]]
+  name = "rules.md"
+  optional = true                # опционален; если есть — контент проверяется
+  line = 3
+  text = "## Правила"
+
+[[group]]
+name = "_Resources"             # группа без собственных файловых правил — валидно
+```
+
+- `[defaults].exclude_prefix` — префикс служебных файлов группы (дефолт `_`).
+- `[[group]].name` — basename групповой папки, матчится на любой глубине,
+  регистрозависимо.
+- `[[group]].default_rule` — контент-правило `{line, text}` для «обычных» файлов
+  группы (без записи `group.file`, не начинающихся с `exclude_prefix`).
+- `[[group.file]]` — единственный механизм на конкретное имя файла: `optional=false`
+  (дефолт) — файл обязателен; `optional=true` — отсутствие не нарушение, но при
+  наличии контент-проверка обязательна. `line`/`text` обязательны в каждой записи.
+
+### Категории нарушений
+
+| Тип | Условие |
+|-----|---------|
+| `missing_group_file` | обязательный `[[group.file]]` отсутствует в группе |
+| `bad_header` | строка `line` файла не совпадает с `text` |
+| `missing_line` | файл короче номера строки `line` |
+| `empty_group` | групповая папка не содержит ни одного видимого файла (в т.ч. вложенных) |
+| `loose_file` | файл лежит напрямую в тематическом узле, минуя групповые папки |
+
+`fs-schm.toml` в корне проверки исключён из `loose_file` литерально по имени (он не
+скрыт — без ведущей точки, в отличие от `.fs-sync.toml`/`.fs-check`).
+
+### Вывод и коды возврата
+
+```text
+Каталог: /mnt/disk/Warehouse
+Нарушения (4):
+  заголовок не совпадает: Code/_Blueprints/_devs.md (ожидается «# Наработки», факт «# Плохой заголовок»)
+  отсутствует обязательный файл: Code/_Commands/_main.md
+  пустая группа: Code/_Resources
+  файл вне групповой папки: Code/loose.md
+Статус: error. Найдены нарушения структуры/контента.
+Сводка: проверено групп: 4; проверено файлов: 6; нарушений: 4.
+```
+
+| Код | Условие |
+|-----|---------|
+| 0 | нарушений нет |
+| 1 | ошибка запуска: каталог не выбран / не найден / не каталог, нет/невалиден `fs-schm.toml` |
+| 2 | проверка выполнена, найдены нарушения |
+
+### Уведомления (веб-хук) и `.env`
+
+Проверка всегда дописывает журнал `.fs-log`; при нарушениях дополнительно шлёт
+fire-and-forget веб-хук (симметрично `fs-checker`). Конфигурация — в едином `.env`
+проекта, шаблон — [`.env.example`](.env.example):
+
+```dotenv
+FSSCH_WEBHOOK_URL=https://example.com/hook
+FSSCH_WEBHOOK_TOK=секретный-токен
+```
+
+Без `FSSCH_WEBHOOK_URL` уведомления отключены; токен необязателен; только `https://`.
+
+### Публичное API
+
+```python
+from pathlib import Path
+
+from fs_tools.schemer import FsSchemer, format_report, load_scheme_config
+
+root = Path("/path/to/dir")
+fssm = FsSchemer(load_scheme_config(root)).check(root)
+print(format_report(root, fssm))              # fssm.violations — отсортированный список
 ```
 
 ---
@@ -492,7 +605,7 @@ print(outcome.sent, outcome.deleted)
 
 Все режимы пишут единый журнал `.fs-log` в выбранный каталог (общий формат из
 `fs_tools.shared.log`): блок с меткой времени, строками
-`Инструмент: normalizer|checker|syncher`, `Режим: production|dry-run`,
+`Инструмент: normalizer|checker|syncher|schemer`, `Режим: production|dry-run`,
 `Результат:` и строками тела:
 
 - нормализатор — последовательность событий в порядке выполнения:
@@ -501,7 +614,9 @@ print(outcome.sent, outcome.deleted)
 - синхронизация — операции с маркерами: `+ <путь>` (отправлено/обновлено),
   `- <путь>` (удалено на сервере), `>> <путь>` (выгружено и удалено/архивировано
   локально), а также `(КОНФЛИКТ)`/`(ОШИБКА)` по профилям — тоже в
-  хронологическом порядке; при пустом результате пишется `(изменений нет)`.
+  хронологическом порядке; при пустом результате пишется `(изменений нет)`;
+- проверка схемы — строки нарушений (тип + путь, для контентных — ожидание/факт)
+  либо `(нарушений нет)`.
 
 Файл скрыт, создаётся при отсутствии и **дополняется** при повторных запусках
 (намеренное исключение из идемпотентности), добавлен в `.gitignore`. Журнал пишется
@@ -510,10 +625,12 @@ dry-run-событий без применения изменений.
 
 ## Примеры
 
-В [`examples/`](examples/) — три песочницы: `examples/normalizer/` (фикстуры по правилам
-+ скрипты отката `reset.*`), `examples/checker/` (дерево с `.fs-check` и намеренно
-отсутствующими путями) и `examples/syncher/` (источник + локальные приёмники, прогон без
-сети, канонический `--dry-run`). Подробности — в README соответствующих секций.
+В [`examples/`](examples/) — четыре песочницы: `examples/normalizer/` (фикстуры по
+правилам + скрипты отката `reset.*`), `examples/checker/` (дерево с `.fs-check` и
+намеренно отсутствующими путями), `examples/syncher/` (источник + локальные
+приёмники, прогон без сети, канонический `--dry-run`) и `examples/schemer/`
+(`Warehouse/fs-schm.toml` с намеренными нарушениями F1–F15). Подробности — в README
+соответствующих секций.
 
 ## Аудит по правилам
 
@@ -550,6 +667,6 @@ python -m build                     # сборка sdist + wheel
 ```
 
 Раскладка тестов зеркалит пакет: `tests/shared/`, `tests/normalizer/`, `tests/checker/`,
-`tests/syncher/` (режим `--import-mode=importlib`). Код проходит `ruff` и
-`mypy --strict` без замечаний. Интеграционные тесты режима синхронизации пропускаются,
-если в системе нет `rsync`.
+`tests/syncher/`, `tests/schemer/` (режим `--import-mode=importlib`). Код проходит
+`ruff` и `mypy --strict` без замечаний. Интеграционные тесты режима синхронизации
+пропускаются, если в системе нет `rsync`.

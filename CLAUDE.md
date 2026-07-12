@@ -22,6 +22,7 @@
 - [`.claude/rules/date-rule.md`](.claude/rules/date-rule.md) — осознанные допущения `DateRule` (`normalizer`);
 - [`.claude/rules/path-matching.md`](.claude/rules/path-matching.md) — фильтр `.fs-ignore`, gitignore-семантика (`normalizer`);
 - [`.claude/rules/rule-matching.md`](.claude/rules/rule-matching.md) — семантика `.fs-check`, разворачивание и негативы (`checker`);
+- [`.claude/rules/scheme-format.md`](.claude/rules/scheme-format.md) — формат `fs-schm.toml` и модель движка `schemer`;
 - [`.claude/rules/examples.md`](.claude/rules/examples.md) — формирование примеров-фикстур по режимам;
 - [`.claude/rules/rules-sync.md`](.claude/rules/rules-sync.md) — двусторонняя синхронизация правил Cursor (`.mdc`) и Claude (`.md`).
 

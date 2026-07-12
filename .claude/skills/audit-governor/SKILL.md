@@ -24,6 +24,7 @@ description: Выполняет строгий аудит правок или в
 - `examples/checker/README.md`
 - `examples/normalizer/README.md`
 - `examples/syncher/README.md`
+- `examples/schemer/README.md`
 - `pyproject.toml`
 - `CLAUDE.md` (корневой) и все `.claude/rules/*.md`
 - `checklist.md` этого skill
@@ -76,13 +77,14 @@ description: Выполняет строгий аудит правок или в
 - runner-паттерн: режимы с собственными флагами используют
   `_build_parser()` и не плодят одноразовые константы для `path_help`;
 - контракт терминального вывода: финальный блок в
-  `normalizer`/`checker`/`syncher` должен оставаться двухстрочным
+  `normalizer`/`checker`/`syncher`/`schemer` должен оставаться двухстрочным
   (`Статус:` + `Сводка:`) и синхронизированным в коде, тестах и
-  документации;
+  документации (у `schemer` статус — только `ok`/`error`, без `warn`);
 - контракт текста веб-хуков: фиксированные строки
-  `fs-checker - выполнен с ошибкой.` и `fs-syncher - выполнен с ошибкой.`
-  плюс условия отправки (checker: только при missing; syncher: только
-  production и наихудший код `2`/`3`) должны быть синхронизированы между
+  `fs-checker - выполнен с ошибкой.`, `fs-syncher - выполнен с ошибкой.` и
+  `fs-schemer - выполнен с ошибкой.` плюс условия отправки (checker: только
+  при missing; syncher: только production и наихудший код `2`/`3`; schemer:
+  только при наличии нарушений) должны быть синхронизированы между
   раннерами, тестами и docs.
 
 Если для прохождения проверок нужны изменения в `CLAUDE.md`, `.claude/rules/*.md`

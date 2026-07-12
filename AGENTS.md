@@ -1,7 +1,8 @@
 # AGENTS
 
-Памятка для агентов по репозиторию `fs-tools` — единый пакет трёх CLI-утилит
-(нормализация имён, проверка структуры, синхронизация с сервером) с общим ядром.
+Памятка для агентов по репозиторию `fs-tools` — единый пакет четырёх CLI-утилит
+(нормализация имён, проверка структуры, синхронизация с сервером, проверка схемы
+базы знаний) с общим ядром.
 
 ## Раскладка (src-layout)
 
@@ -41,21 +42,30 @@ src/fs_tools/
 │   ├── notify.py             # веб-хук (FSSYN_*, ленивый requests, через shared.env)
 │   ├── log.py                # write_fs_log (обёртка)
 │   └── runner.py             # main(argv) + run(root, args)
+├── schemer/                  # режим проверки схемы базы знаний (read-only)
+│   ├── config.py             # чтение/валидация fs-schm.toml (tomllib): группы, group.file
+│   ├── engine.py             # обход и сбор нарушений (FsSchemer, F1-F15)
+│   ├── report.py             # формат отчёта и строк нарушений
+│   ├── notify.py             # веб-хук (FSSCH_*, ленивый requests, через shared.env)
+│   ├── log.py                # write_fs_log (обёртка)
+│   └── runner.py             # main/run
 ├── cli.py                    # диспетчер fs-tools (ленивый импорт runner режима)
 └── __main__.py               # python -m fs_tools
 ```
 
 Несимметрия `syncher`: у режима нет `engine.py`/`Fs*`-класса и `safety.py` (структура —
 `cli_args`/`config`/`ignore`/`rsync`/`offload`/`report`); врапнеры `log.py`/`runner.py`
-и раскладка тестов/примеров симметрию сохраняют.
+и раскладка тестов/примеров симметрию сохраняют. `schemer` симметричен
+`normalizer`/`checker`: ядро — `engine.py` с классом `Fs*` (`FsSchemer`), собственных
+CLI-флагов нет (`_build_parser()` не заводится).
 
 Точки входа (`pyproject.toml [project.scripts]`): `fs-normalizer`, `fs-checker`,
-`fs-syncher`, `fs-tools` (диспетчер `<normalize|check|sync>`).
+`fs-syncher`, `fs-schemer`, `fs-tools` (диспетчер `<normalize|check|sync|scheme>`).
 
 ## Команды
 
 ```bash
-pip install -e ".[normalizer,checker,syncher,dev]"                     # editable + все extra + инструменты
+pip install -e ".[normalizer,checker,syncher,schemer,dev]"             # editable + все extra + инструменты
 .venv/bin/python -m pytest -q                                          # тесты (--import-mode=importlib задан в pyproject)
 .venv/bin/python -m pylint --persistent=n --recursive=y src tests/*    # Pylint: полный рекурсивный охват src + всех tests/*
 .venv/bin/python -m ruff check .                                       # линтер (исправление: ruff check --fix .)
@@ -91,13 +101,19 @@ pip install -e ".[normalizer,checker,syncher,dev]"                     # editabl
   симметричную тройку `map_norm_argument` / `add_norm_argument` /
   `norm_argv_from_namespace`.
 - **Веб-хук**: окружение процесса важнее `.env`; URL обязан быть `https://`. Ключи:
-  `FSCHK_*` (проверка), `FSSYN_*` (синхронизация).
+  `FSCHK_*` (проверка), `FSSYN_*` (синхронизация), `FSSCH_*` (проверка схемы).
 - **Синхронизация (`syncher`)**: однонаправленность ПК → сервер; единый источник истины
   сопоставления — сам `rsync` (своего матчера нет); offload удаляет/архивирует только
   подтверждённо переданное; delete-guard блокирует массовые удаления (код 3); артефакты
   (`.fs-sync.toml`, `.fs-log`, `.env`) не передаются никогда; коды возврата `0/1/2/3`
   (наихудший среди профилей). Внешние бинарники: `rsync` (обязателен), `ssh` (SSH-цели).
   Журнал пишется в `production` и `dry-run` (с соответствующей меткой режима).
+- **Проверка схемы (`schemer`)**: конфиг `fs-schm.toml` (без ведущей точки) читается из
+  того же каталога, что и весь режим; read-only, дерево не мутирует. Групповая папка
+  матчится по basename на любой глубине, регистрозависимо. Единый механизм
+  `[[group.file]]` (`optional`) выражает и обязательность, и опциональный
+  контент-контроль. Коды возврата `0/1/2` (без «предупреждения» — статус только
+  `ok`/`error`). Подробности — `.claude/rules/scheme-format.md`.
 - **Консистентность**: изменение поведения синхронизирует код, тесты, примеры и
   документацию. Детали и осознанные допущения — в правилах проекта (`.claude/rules/`
   для Claude Code; `.cursor/rules/` для Cursor).
@@ -124,17 +140,22 @@ pip install -e ".[normalizer,checker,syncher,dev]"                     # editabl
 `test_runner.py` у нормализатора; `test_engine.py`, `test_rule.py`, ... у checker;
 `test_config.py`, `test_cli_args.py`, `test_ignore.py`, `test_rsync.py`,
 `test_offload.py`, `test_report.py`, `test_runner.py`, `test_notify.py`,
-`test_log.py`, `test_examples.py` у syncher).
+`test_log.py`, `test_examples.py` у syncher; `test_config.py`, `test_engine.py`,
+`test_report.py`, `test_log.py`, `test_notify.py`, `test_runner.py`,
+`test_examples.py` у schemer).
 Каталоги тестов обязательны как пакеты: `tests/`, `tests/shared/`,
-`tests/normalizer/`, `tests/normalizer/rules/`, `tests/checker/`, `tests/syncher/`
-должны содержать `__init__.py`; новые тестовые подпапки создаются только с ним.
+`tests/normalizer/`, `tests/normalizer/rules/`, `tests/checker/`, `tests/syncher/`,
+`tests/schemer/` должны содержать `__init__.py`; новые тестовые подпапки создаются
+только с ним.
 Фикстуры: `make_tree` (общая) — `tests/conftest.py`; `nn` —
 `tests/normalizer/conftest.py`; `write_rule` — `tests/checker/conftest.py`;
 `make_tree(base, paths)` + `write_config` — `tests/syncher/conftest.py` (переопределяют
-общий `make_tree` под деревья источника/приёмника). Интеграционные тесты `syncher`
+общий `make_tree` под деревья источника/приёмника); `write_scheme_toml` —
+`tests/schemer/conftest.py`. Интеграционные тесты `syncher`
 помечены skip при отсутствии `rsync`. Идемпотентность нормализатора проверяй на копии
 `examples/normalizer/` (исходник под git не трогаем); демо-инвариант `syncher` —
-`examples/syncher/` `--dry-run`.
+`examples/syncher/` `--dry-run`; демо-инвариант `schemer` —
+`examples/schemer/Warehouse/`.
 
 ## Ограничения
 

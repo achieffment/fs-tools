@@ -47,8 +47,8 @@ alwaysApply: true
 - `regex -> rx`
 - `log_path -> lpath`
 - `shared/managed/converted -> shar/mang/con|conv`
-- инстансы режимов: `fsnm` (normalizer), `fsch` (checker)
-- те же имена инстансов (`fsnm`/`fsch`) применяются и в тестах, не только в `runner.py`
+- инстансы режимов: `fsnm` (normalizer), `fsch` (checker), `fssm` (schemer)
+- те же имена инстансов (`fsnm`/`fsch`/`fssm`) применяются и в тестах, не только в `runner.py`
 
 ### Локальные пары для CLI-диспетчера (fs_tools/cli.py)
 
