@@ -66,7 +66,7 @@ def _check_content(target: Path, rel: str, rule: ContentRule) -> Violation | Non
     """Проверить `line`/`text` файла: `missing_line` короче, `bad_header` не совпал."""
     try:
         text = target.read_text(encoding="utf-8-sig")
-    except OSError:
+    except (OSError, UnicodeDecodeError):
         return Violation(path=rel, kind="missing_line", expected=rule.text)
     lines = text.splitlines()
     if len(lines) < rule.line:

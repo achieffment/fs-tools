@@ -87,10 +87,12 @@ def test_violations_return_two(
     code = _run(monkeypatch, str(root))
     out = capsys.readouterr().out
     assert code == 2
-    assert "Нарушения (1):" in out
-    assert "Topic/_Resources" in out
+    assert "Нарушения" not in out
+    assert "Topic/_Resources" not in out
     assert "Статус: error. Найдены нарушения структуры/контента." in out
     assert "Сводка: проверено групп: 1;" in out
+    log = (root / FS_LOG).read_text(encoding="utf-8")
+    assert "Topic/_Resources" in log
 
 
 def test_argument_bypasses_picker(

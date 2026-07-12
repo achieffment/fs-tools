@@ -149,6 +149,16 @@ def test_missing_line_shorter_than_required(make_tree: Callable[[Iterable[str]],
     assert _kinds(root)["Topic/_Knowledges/rules.md"] == "missing_line"
 
 
+def test_non_utf8_content_reports_missing_line(
+    make_tree: Callable[[Iterable[str]], Path],
+) -> None:
+    """Файл без валидного UTF-8 не роняет обход -> missing_line."""
+    root = make_tree(["Topic/_Knowledges/"])
+    _write(root, "Topic/_Knowledges/_main.md", "# Заметки\n")
+    (root / "Topic/_Knowledges/rules.md").write_bytes(b"\xb2\xff\x00")
+    assert _kinds(root)["Topic/_Knowledges/rules.md"] == "missing_line"
+
+
 def test_f14_empty_group_reported(make_tree: Callable[[Iterable[str]], Path]) -> None:
     """F14: полностью пустая группа (без файлов, даже вложенных) -> empty_group."""
     root = make_tree(["Topic/_Resources/"])

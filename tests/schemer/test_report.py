@@ -35,14 +35,15 @@ def test_format_report_ok_status(tmp_path: Path) -> None:
     assert "Сводка: проверено групп: 1; проверено файлов: 1; нарушений: 0." in text
 
 
-def test_format_report_error_status_lists_violations(tmp_path: Path) -> None:
-    """С нарушениями — статус error, заголовок блока и строки нарушений."""
+def test_format_report_error_status_no_item_list(tmp_path: Path) -> None:
+    """С нарушениями — только статус error и сводка; список — задача `.fs-log`."""
     result = SchemerResult(
         violations=[Violation(path="Topic/_Resources", kind="empty_group")],
         groups_checked=1,
         files_checked=0,
     )
     text = format_report(tmp_path, result)
-    assert "Нарушения (1):" in text
-    assert "  пустая группа: Topic/_Resources" in text
+    assert "Нарушения" not in text
+    assert "Topic/_Resources" not in text
     assert "Статус: error. Найдены нарушения структуры/контента." in text
+    assert "Сводка: проверено групп: 1; проверено файлов: 0; нарушений: 1." in text

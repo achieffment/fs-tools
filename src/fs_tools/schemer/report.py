@@ -25,20 +25,18 @@ def format_violation(vio: Violation) -> str:
 
 
 def format_report(root: Path, result: SchemerResult) -> str:
-    """Заголовок с каталогом, список нарушений (или «нарушений нет») и сводка."""
-    lines = [f"Каталог: {root}"]
-    if result.violations:
-        lines.append(f"Нарушения ({len(result.violations)}):")
-        lines = lines + [f"  {format_violation(vio)}" for vio in result.violations]
+    """Заголовок с каталогом, статус и сводка. Список нарушений — только в `.fs-log`."""
     status = (
         "error. Найдены нарушения структуры/контента."
         if result.violations
         else "ok. Нарушений нет."
     )
-    lines.append(f"Статус: {status}")
-    lines.append(
-        f"Сводка: проверено групп: {result.groups_checked}; "
-        f"проверено файлов: {result.files_checked}; "
-        f"нарушений: {len(result.violations)}."
+    return "\n".join(
+        [
+            f"Каталог: {root}",
+            f"Статус: {status}",
+            f"Сводка: проверено групп: {result.groups_checked}; "
+            f"проверено файлов: {result.files_checked}; "
+            f"нарушений: {len(result.violations)}.",
+        ]
     )
-    return "\n".join(lines)
