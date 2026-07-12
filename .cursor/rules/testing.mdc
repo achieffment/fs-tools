@@ -5,6 +5,8 @@ alwaysApply: true
 
 # Тесты режимов
 
+Дополняет раздел «Тесты» в [AGENTS.md](../../AGENTS.md).
+
 Раскладка тестов зеркалит пакет (файл `test_<module>.py` на модуль): нормализатор —
 `test_name.py`, `test_safety.py`, `test_engine.py` (FsNormalizer e2e), `test_ignore.py`,
 `test_log.py` (+ `rules/test_<rule>.py`, `test_runner.py`); checker — `test_engine.py`,
