@@ -72,11 +72,11 @@ bin/check.bat        # Windows
 
 Как читать результат:
 
-| Путь | Почему попал в отчёт |
-|------|----------------------|
-| `Activities/3D/Resources` | у занятия `3D` есть `Projects`, но нет `Resources` (`/Activities/*/Resources`) |
-| `…/Addl/safegrid.example/Data` | обычный проект `safegrid.example`: `Back` есть, `Data` нет (`Addl/*/Data`) |
-| `…/Self/personal.example/Back` | обычный проект `personal.example`: `Data` есть, `Back` нет (`Self/*/Back`) |
+| Путь                                              | Почему попал в отчёт                                                            |
+|---------------------------------------------------|---------------------------------------------------------------------------------|
+| `Activities/3D/Resources`                         | у занятия `3D` есть `Projects`, но нет `Resources` (`/Activities/*/Resources`)  |
+| `…/Addl/safegrid.example/Data`                    | обычный проект `safegrid.example`: `Back` есть, `Data` нет (`Addl/*/Data`)      |
+| `…/Self/personal.example/Back`                    | обычный проект `personal.example`: `Data` есть, `Back` нет (`Self/*/Back`)      |
 | `…/Work/Fabrikam/widgets.example/Data/project.md` | проект есть, `Data` есть, но обязательного файла `project.md` нет (мандат-файл) |
 
 Чего в отчёте **нет** (и это правильно):
