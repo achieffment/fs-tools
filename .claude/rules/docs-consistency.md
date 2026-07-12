@@ -30,7 +30,10 @@
 
 - `shared/` — общий код режимов: выбор каталога (`picker.py` +
  `pick_folder.ps1`), version-shim фабрики gitignore-паттернов
- (`pathspec_compat.py`, `_FACTORY`), доступ к единому `.env` (`env.py`: `load_env`
+ (`pathspec_compat.py`, `_FACTORY`), общие утилиты pathspec-мэтчинга путей
+ (`pathspec_match.py`: `build_spec`/`path_text` — единый формат входа
+ (относительный posix-путь, завершающий `/` для каталогов) для normalizer
+ и checker), доступ к единому `.env` (`env.py`: `load_env`
  однократно грузит `.env` в `os.environ` через `load_dotenv(override=False)` — процесс
  важнее файла; плюс путь и `chmod 600`, ленивый `dotenv`), единый журнал
  `.fs-log` (`log.py`, `append_log` — заголовок с датой/инструментом/режимом и
