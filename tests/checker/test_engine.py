@@ -1,4 +1,5 @@
 """Тесты разворачивания правил и сбора нарушений (engine)."""
+import os
 from collections.abc import Callable, Iterable
 from pathlib import Path
 
@@ -76,6 +77,24 @@ def test_double_star_hidden_branch_ignored(make_tree: Callable[[Iterable[str]], 
     )
     missing = _check(root, "/P/**/_Archive/*/Back\n")
     assert missing == ["P/Visible/_Archive/proj2/Back"]
+
+
+@pytest.mark.skipif(os.name != "posix", reason="права каталога проверяются только на POSIX")
+def test_double_star_scan_failure_reported_as_errlist(
+    make_tree: Callable[[Iterable[str]], Path],
+) -> None:
+    """OSError при scandir в **-обходе -> errlist, а не тихое «нет якорей»."""
+    root = make_tree(["P/Blocked/_Archive/proj/Back/"])
+    blocked = root / "P" / "Blocked"
+    blocked.chmod(0o000)
+    try:
+        (root / ".fs-chk").write_text("/P/**/_Archive/*/Back\n", encoding="utf-8")
+        result = FsChecker(load_fs_rule(root)).check(root)
+    finally:
+        blocked.chmod(0o755)  # иначе tmp_path не сможет удалить дерево при уборке
+    assert not result.missing  # обход не долез до Back — но это не «якорь не найден»
+    assert len(result.errlist) == 1
+    assert result.errlist[0].startswith("P/Blocked:")
 
 
 def test_dedup_identical_violations(make_tree: Callable[[Iterable[str]], Path]) -> None:

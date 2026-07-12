@@ -67,7 +67,7 @@ bin/check.bat        # Windows
   Activities/Web/Projects/Self/personal.example/Back
   Activities/Web/Projects/Work/Fabrikam/widgets.example/Data/project.md
 Статус: warn. Найдены отсутствующие пути.
-Сводка: проверено правил: 17; найдено каталогов-кандидатов: 22; отсутствует: 4.
+Сводка: проверено правил: 17; найдено каталогов-кандидатов: 22; отсутствует: 4; ошибок чтения: 0.
 ```
 
 Как читать результат:

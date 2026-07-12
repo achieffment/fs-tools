@@ -9,7 +9,7 @@ from __future__ import annotations
 import importlib
 from typing import TYPE_CHECKING, Any
 
-from .ignore import FsIgnore, load_fs_ignore
+from .ignore import FsIgnore, FsIgnoreError, load_fs_ignore
 from .log import FS_LOG, write_fs_log
 from .report import format_report
 from .runner import main
@@ -48,6 +48,7 @@ __all__ = [
     "main",
     "FsNormalizer",
     "FsIgnore",
+    "FsIgnoreError",
     "load_fs_ignore",
     "FS_LOG",
     "write_fs_log",

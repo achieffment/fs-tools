@@ -29,7 +29,7 @@ _MAIN_SPEC = ModeMainSpec(
 
 
 def run(root: Path) -> int:
-    """0 — нарушений нет; 1 — нет/нечитаем .fs-chk; 2 — найдены отсутствующие пути.
+    """0 — нарушений нет; 1 — нет/нечитаем .fs-chk; 2 — отсутствующие пути и/или ошибки чтения.
 
     Единственная запись на диск — `.fs-log` (структура проверяемого каталога не
     меняется). Веб-хук о нарушениях — fire-and-forget, на код возврата не влияет.
@@ -41,18 +41,20 @@ def run(root: Path) -> int:
         return 1
     fsch = FsChecker(fs_rule).check(root)
     print(format_report(root, fsch))
+    # Ошибки сканирования — приоритетнее в журнале (сбой обхода важнее для диагностики).
+    log_lines = [f"(ОШИБКА) {entry}" for entry in fsch.errlist] + fsch.missing
     # Журнал — вторичный артефакт: проверка уже выполнена, поэтому сбой записи
     # не роняем трейсбеком, а лишь предупреждаем (на код возврата не влияет).
     try:
-        lpath = write_fs_log(root, fsch.missing, tool="checker", mode="production")
+        lpath = write_fs_log(root, log_lines, tool="checker", mode="production")
         print(f"Журнал: {lpath}")
     except OSError as exc:
         sys.stderr.write(f"Не удалось записать журнал .fs-log: {exc}\n")
-    if fsch.missing:
+    if fsch.missing or fsch.errlist:
         # Уведомление о невалидной структуре: текст лишь сигнализирует о проблеме,
         # детали — в .fs-log. Fire-and-forget, ошибки/таймаут не влияют на прогон.
         send_webhook("fs-checker - выполнен с ошибкой.")
-    return 2 if fsch.missing else 0
+    return 2 if (fsch.missing or fsch.errlist) else 0
 
 
 def main(argv: list[str] | None = None) -> int:

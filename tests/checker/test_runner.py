@@ -1,4 +1,5 @@
 """Тесты CLI режима проверки: коды возврата и сообщения (runner)."""
+import os
 from collections.abc import Callable, Iterable
 from pathlib import Path
 
@@ -89,7 +90,7 @@ def test_violations_return_two(
     assert "Activities/Web/Projects" in out
     assert "Статус: warn. Найдены отсутствующие пути." in out
     assert "Сводка: проверено правил: 1;" in out
-    assert "отсутствует: 1." in out
+    assert "отсутствует: 1; ошибок чтения: 0." in out
 
 
 def test_argument_bypasses_picker(
@@ -128,6 +129,33 @@ def test_missing_writes_log_and_sends_webhook(
     assert "Activities/Web/Projects" in log
     assert len(sent) == 1
     assert sent[0] == "fs-checker - выполнен с ошибкой."
+
+
+@pytest.mark.skipif(os.name != "posix", reason="права каталога проверяются только на POSIX")
+def test_scan_failure_writes_error_log_and_sends_webhook(
+    monkeypatch: pytest.MonkeyPatch,
+    make_tree: Callable[[Iterable[str]], Path],
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Сбой scandir в **-обходе -> код 2, (ОШИБКА) в .fs-log, веб-хук отправлен."""
+    root = make_tree(["P/Blocked/_Archive/proj/Back/"])
+    (root / ".fs-chk").write_text("/P/**/_Archive/*/Back\n", encoding="utf-8")
+    blocked = root / "P" / "Blocked"
+    blocked.chmod(0o000)
+    sent: list[str] = []
+    monkeypatch.setattr("fs_tools.shared.cli.pick_directory", lambda *a, **k: str(root))
+    monkeypatch.setattr(runner, "send_webhook", lambda text: bool(sent.append(text)) or True)
+    try:
+        code = runner.main([])
+        out = capsys.readouterr().out
+    finally:
+        blocked.chmod(0o755)  # иначе tmp_path не сможет удалить дерево при уборке
+    assert code == 2
+    assert "Ошибки чтения (1):" in out
+    assert "Статус: error. Не удалось просканировать часть каталогов." in out
+    log = (root / FS_LOG).read_text(encoding="utf-8")
+    assert "(ОШИБКА) P/Blocked:" in log
+    assert len(sent) == 1
 
 
 def test_no_violations_logs_empty_result_no_webhook(

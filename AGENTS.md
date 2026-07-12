@@ -92,7 +92,7 @@ pip install -e ".[normalizer,checker,syncher,schemer,dev]"             # editabl
 - **Dry-run и журналы (оба режима)**: `normalizer` и `syncher` в `--dry-run`
   дописывают `.fs-log` с режимом `dry-run` и планом действий.
 - **Формат `.fs-log`**: заголовок каждого блока включает дату, строки
-  `Инструмент: normalizer|checker|syncher`, `Режим: production|dry-run`,
+  `Инструмент: normalizer|checker|syncher|schemer`, `Режим: production|dry-run`,
   `Результат:` и далее список строк в исходном порядке событий.
 - **Стиль runner-парсера**: если у режима есть свои флаги, используй
   `_build_parser()` (как в `syncher` и `normalizer`) и не выноси одноразовый

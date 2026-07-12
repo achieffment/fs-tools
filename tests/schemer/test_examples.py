@@ -16,10 +16,14 @@ def test_examples_matches_readme(capsys: pytest.CaptureFixture[str]) -> None:
     assert code == 2
     assert "Нарушения" not in out
     assert "Статус: error. Найдены нарушения структуры/контента." in out
-    assert "Сводка: проверено групп: 4; проверено файлов: 6; нарушений: 4." in out
+    assert "Сводка: проверено групп: 5; проверено файлов: 6; нарушений: 5." in out
 
     log = (EXAMPLES / FS_LOG).read_text(encoding="utf-8")
     assert "заголовок не совпадает: Code/_Blueprints/_devs.md" in log
     assert "отсутствует обязательный файл: Code/_Commands/_main.md" in log
-    assert "пустая группа: Code/_Resources" in log
+    assert "пустая группа: Code/_Archive" in log
     assert "файл вне групповой папки: Code/loose.md" in log
+    # strict=true у _Commands: вложенный Old/legacy.md заново классифицируется -> loose_file.
+    assert "файл вне групповой папки: Code/_Commands/Old/legacy.md" in log
+    # strict не задан (false) у _Resources: вложенный Library/Sub/asset.bin не даёт loose_file.
+    assert "Library" not in log

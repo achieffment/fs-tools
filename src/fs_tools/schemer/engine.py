@@ -9,6 +9,10 @@
 сам `.fs-sch.toml` под неё не попадает — он скрытый и отсеян общим фильтром).
 `group.file`/`default_rule` применяются только к файлам, лежащим НЕПОСРЕДСТВЕННО в
 групповой папке (не рекурсивно) — рекурсивный обход зарезервирован только для F14.
+По умолчанию (`strict=False`) обход не спускается в подпапки группы вовсе: их
+содержимое не классифицируется ни группой, ни тематическим узлом, F15 на них не
+срабатывает — вложенность внутри группы разрешена. `strict=True` включает прежнее
+поведение: подпапки группы заново классифицируются наравне с остальным деревом.
 
 Обход — `os.walk` от корня без `followlinks` (симлинки не разыменовываются); скрытые
 (на `.`) каталоги и файлы пропускаются — как у normalizer/checker.
@@ -63,11 +67,16 @@ def _has_any_visible_file(curr: Path) -> bool:
 
 
 def _check_content(target: Path, rel: str, rule: ContentRule) -> Violation | None:
-    """Проверить `line`/`text` файла: `missing_line` короче, `bad_header` не совпал."""
+    """Проверить `line`/`text` файла: `missing_line` короче, `bad_header` не совпал.
+
+    Файл не удалось прочитать (нет прав, гонка удаления, не-UTF-8 содержимое) —
+    отдельная категория `read_error`, а не `missing_line`: это техническая ошибка
+    чтения, а не содержательное несовпадение, и текст исключения важен для диагностики.
+    """
     try:
         text = target.read_text(encoding="utf-8-sig")
-    except (OSError, UnicodeDecodeError):
-        return Violation(path=rel, kind="missing_line", expected=rule.text)
+    except (OSError, UnicodeDecodeError) as exc:
+        return Violation(path=rel, kind="read_error", actual=str(exc))
     lines = text.splitlines()
     if len(lines) < rule.line:
         return Violation(path=rel, kind="missing_line", expected=rule.text)
@@ -98,6 +107,8 @@ class FsSchemer:
                 groups_checked = groups_checked + 1
                 found = self._check_group(root, curr, group, visible_files, violations)
                 files_checked = files_checked + found
+                if not group.strict:
+                    dirnames[:] = []
             else:
                 self._check_loose(root, curr, visible_files, violations)
         return SchemerResult(

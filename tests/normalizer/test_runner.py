@@ -2,6 +2,8 @@
 import os
 from pathlib import Path
 
+import pytest
+
 from fs_tools.normalizer import main
 
 
@@ -68,6 +70,25 @@ def test_main_missing_directory_returns_one(tmp_path, monkeypatch):
     missing = tmp_path / "нет-такого"
     monkeypatch.setattr("fs_tools.shared.cli.pick_directory", lambda *a, **k: str(missing))
     assert main([]) == 1
+
+
+@pytest.mark.skipif(os.name != "posix", reason="права файла проверяются только на POSIX")
+def test_main_unreadable_fs_nrm_returns_one(tmp_path, monkeypatch, capsys):
+    # .fs-nrm ЕСТЬ, но не удалось прочитать -> код 1, а не молчаливое отключение
+    # фильтра и переименование того, что должно было остаться нетронутым.
+    """Проверяет сценарий: main unreadable fs nrm returns one."""
+    (tmp_path / "Отчёт.txt").write_text("x")
+    ignore_file = tmp_path / ".fs-nrm"
+    ignore_file.write_text("Отчёт*\n")
+    ignore_file.chmod(0o000)
+    monkeypatch.setattr("fs_tools.shared.cli.pick_directory", lambda *a, **k: str(tmp_path))
+    try:
+        code = main([])
+    finally:
+        ignore_file.chmod(0o644)  # иначе tmp_path не сможет удалить дерево при уборке
+    assert code == 1
+    assert "Ошибка" in capsys.readouterr().err
+    assert (tmp_path / "Отчёт.txt").exists()  # прогон остановлен ДО переименований
 
 
 def test_argument_bypasses_picker(tmp_path, monkeypatch):

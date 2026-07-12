@@ -22,6 +22,30 @@ def test_minimal_group_without_files(write_scheme_toml: Callable[[str], Path]) -
     assert group is not None
     assert group.default_rule is None
     assert group.files == ()
+    assert group.strict is False
+
+
+def test_strict_defaults_false(write_scheme_toml: Callable[[str], Path]) -> None:
+    """strict не задан -> False (вложенность внутри группы разрешена по умолчанию)."""
+    root = write_scheme_toml('[[group]]\nname = "G"\n')
+    group = load_scheme_config(root).group_by_name("G")
+    assert group is not None
+    assert group.strict is False
+
+
+def test_strict_true_parsed(write_scheme_toml: Callable[[str], Path]) -> None:
+    """strict = true разбирается в Group.strict."""
+    root = write_scheme_toml('[[group]]\nname = "_Commands"\nstrict = true\n')
+    group = load_scheme_config(root).group_by_name("_Commands")
+    assert group is not None
+    assert group.strict is True
+
+
+def test_strict_non_bool_raises(write_scheme_toml: Callable[[str], Path]) -> None:
+    """strict не bool -> SchemeConfigError."""
+    root = write_scheme_toml('[[group]]\nname = "G"\nstrict = "yes"\n')
+    with pytest.raises(SchemeConfigError):
+        load_scheme_config(root)
 
 
 def test_default_exclude_prefix(write_scheme_toml: Callable[[str], Path]) -> None:

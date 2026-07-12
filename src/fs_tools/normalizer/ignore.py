@@ -38,6 +38,15 @@ from pathspec import RegexPattern
 from ..shared.pathspec_match import build_spec, path_text
 
 
+class FsIgnoreError(Exception):
+    """`.fs-nrm` существует, но не удалось прочитать (код возврата 1).
+
+    Отдельная категория от «файла нет» (легитимный случай — фильтр выключен):
+    нечитаемый файл — сбой, о котором нужно сообщить, а не молча отключать
+    фильтр (иначе исключённые пользователем файлы тихо попадут под переименование).
+    """
+
+
 def _case_insensitive(spec: pathspec.PathSpec[Any]) -> pathspec.PathSpec[Any]:
     """Пересобирает паттерны с флагом re.IGNORECASE, сохраняя include и порядок.
 
@@ -90,14 +99,17 @@ def load_fs_ignore(root: Path) -> FsIgnore | None:
     `root` — корень нормализации (выбранный каталог): паттерны и якорь `/` будут
     отсчитываться от него же. Пустой файл (или из комментариев/пустых строк) даёт
     FsIgnore без правил — ничего не исключает. Файл не изменяется (чтение `utf-8-sig`).
+    Файл ЕСТЬ, но не удалось прочитать (нет прав, гонка удаления) -> `FsIgnoreError`,
+    а не молчаливое отключение фильтра — иначе исключения пользователя тихо не
+    сработают, и нормализатор переименует то, что должно было остаться нетронутым.
     """
     path = root / ".fs-nrm"
     if not path.is_file():
         return None
     try:
         bare = path.read_text(encoding="utf-8-sig")
-    except OSError:
-        return None
+    except OSError as exc:
+        raise FsIgnoreError(f"не удалось прочитать .fs-nrm: {exc}") from exc
     spec = build_spec(bare.splitlines())
     incl = any(p.include is False for p in spec.patterns)
     return FsIgnore(spec, incl)

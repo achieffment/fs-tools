@@ -112,7 +112,8 @@
   - syncher: `fs-syncher - выполнен с ошибкой.`;
   - schemer: `fs-schemer - выполнен с ошибкой.`.
 - Отправка webhook остаётся fire-and-forget и не влияет на код возврата.
-- checker отправляет webhook только при наличии нарушений (`missing` не пуст).
+- checker отправляет webhook при наличии нарушений (`missing` не пуст) или ошибок
+  сканирования (`errlist` не пуст).
 - syncher отправляет webhook только в production-прогоне и только при
   наихудшем коде `2` или `3`.
 - schemer отправляет webhook только при наличии нарушений (симметрично checker).

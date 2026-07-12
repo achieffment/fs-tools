@@ -15,7 +15,10 @@ def test_examples_matches_readme(capsys: pytest.CaptureFixture[str]) -> None:
     assert code == 2
     assert "Отсутствуют пути (4):" in out
     assert "Статус: warn. Найдены отсутствующие пути." in out
-    assert "Сводка: проверено правил: 17; найдено каталогов-кандидатов: 22; отсутствует: 4." in out
+    assert (
+        "Сводка: проверено правил: 17; найдено каталогов-кандидатов: 22; "
+        "отсутствует: 4; ошибок чтения: 0." in out
+    )
     assert "Activities/3D/Resources" in out
     assert "Activities/Web/Projects/Addl/safegrid.example/Data" in out
     assert "Activities/Web/Projects/Self/personal.example/Back" in out

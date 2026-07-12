@@ -36,19 +36,27 @@ def _build_parser() -> argparse.ArgumentParser:
 
 def run(root: Path, *, dry_run: bool = False) -> int:
     """Нормализует содержимое каталога. 0 — без реальных ошибок (безопасные конфликты
-    входят сюда); 2 — часть os.rename упала с OSError. 1 — если режим недоступен
-    (нет `Unidecode`): печатается понятное сообщение, а не трассировка.
+    входят сюда); 1 — режим недоступен (нет `Unidecode`) либо `.fs-nrm` есть, но не
+    удалось прочитать (фильтр не отключаем молча — прогон останавливается); 2 — часть
+    os.rename упала с OSError.
     """
     try:
+        ignore_mod = importlib.import_module(".ignore", __package__)
+        load_fs_ignore = ignore_mod.load_fs_ignore
+        FsIgnoreError = ignore_mod.FsIgnoreError
         FsNormalizer = importlib.import_module(".engine", __package__).FsNormalizer
         build_normalizer = importlib.import_module(".name", __package__).build_normalizer
-        load_fs_ignore = importlib.import_module(".ignore", __package__).load_fs_ignore
         format_report = importlib.import_module(".report", __package__).format_report
         write_fs_log = importlib.import_module(".log", __package__).write_fs_log
     except ImportError as exc:
         sys.stderr.write(f"{exc}\n")
         return 1
-    fsnm = FsNormalizer(build_normalizer(), load_fs_ignore(root))
+    try:
+        fs_ignore = load_fs_ignore(root)
+    except FsIgnoreError as exc:
+        sys.stderr.write(f"Ошибка: {exc}\n")
+        return 1
+    fsnm = FsNormalizer(build_normalizer(), fs_ignore)
     renamed, skipped = fsnm.apply(root, dry_run=dry_run)
     print(format_report(root, fsnm, renamed, skipped, dry_run=dry_run))
     mode = "dry-run" if dry_run else "production"
@@ -64,7 +72,8 @@ def run(root: Path, *, dry_run: bool = False) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     """0 — прогон без реальных ошибок; 1 — каталог не выбран/не найден/не каталог
-    (или режим недоступен без `Unidecode`); 2 — часть os.rename упала с OSError.
+    (либо режим недоступен без `Unidecode`, либо `.fs-nrm` не удалось прочитать);
+    2 — часть os.rename упала с OSError.
     """
     args = _build_parser().parse_args(argv)
     root = choose_root(args.path, header=_HEADER, prompt=_PROMPT)

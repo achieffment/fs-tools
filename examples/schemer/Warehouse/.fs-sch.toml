@@ -45,6 +45,7 @@ default_rule = { line = 1, text = "# Заметки" }
 [[group]]
 name = "_Commands"
 default_rule = { line = 1, text = "# Команды" }
+strict = true                   # вложенность внутри этой группы — ошибка, а не норма
 
   [[group.file]]
   name = "_main.md"
@@ -62,4 +63,7 @@ default_rule = { line = 1, text = "# Шаблоны" }
   text = "# Наработки"
 
 [[group]]
-name = "_Resources"
+name = "_Resources"             # strict не задан (false по умолчанию) — свалка произвольного вложенного контента
+
+[[group]]
+name = "_Archive"

@@ -43,11 +43,20 @@ class GroupFile:
 
 @dataclass(frozen=True)
 class Group:
-    """Групповая папка: имя (basename, матчится на любой глубине) и её правила."""
+    """Групповая папка: имя (basename, матчится на любой глубине) и её правила.
+
+    По умолчанию поддерево группы непрозрачно для движка: `group.file`/
+    `default_rule` по-прежнему проверяются для прямых детей папки, но обход не
+    спускается в подпапки (F15 `loose_file` на них не срабатывает) — вложенность
+    внутри группы (сторонние библиотеки, произвольная организация) — норма, а не
+    нарушение. `strict=True` включает прежнее строгое поведение: подпапки группы
+    заново классифицируются и подпадают под F15, как обычные тематические узлы.
+    """
 
     name: str
     default_rule: ContentRule | None
     files: tuple[GroupFile, ...]
+    strict: bool = False
 
     def file_by_name(self, name: str) -> GroupFile | None:
         """Найти запись `[[group.file]]` по имени или вернуть None."""
@@ -119,6 +128,10 @@ def _build_group(bare: dict[str, Any]) -> Group:
     if "/" in name:
         raise SchemeConfigError(f"группа «{name}»: «name» не может содержать «/»")
 
+    strict = False
+    if (val := bare.get("strict")) is not None:
+        strict = _as_bool(val, f"группа «{name}»", "strict")
+
     default_rule: ContentRule | None = None
     if (val := bare.get("default_rule")) is not None:
         if not isinstance(val, dict):
@@ -140,7 +153,7 @@ def _build_group(bare: dict[str, Any]) -> Group:
         seen.add(gfile.name)
         files.append(gfile)
 
-    return Group(name=name, default_rule=default_rule, files=tuple(files))
+    return Group(name=name, default_rule=default_rule, files=tuple(files), strict=strict)
 
 
 def parse_scheme_config(text: str) -> SchemeConfig:

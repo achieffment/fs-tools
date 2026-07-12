@@ -3,6 +3,7 @@
 Матчинг в стиле .gitignore (движок pathspec) относительно корня нормализации,
 чтение `load_fs_ignore` и интеграция фильтра с FsNormalizer (e2e на временной папке).
 """
+import os
 from pathlib import PurePosixPath
 
 import pathspec
@@ -10,6 +11,7 @@ import pytest
 
 from fs_tools.normalizer import (
     FsIgnore,
+    FsIgnoreError,
     FsNormalizer,
     build_normalizer,
     load_fs_ignore,
@@ -203,6 +205,21 @@ def test_load_fs_ignore_utf8_bom(tmp_path):
     ign = load_fs_ignore(tmp_path)
     assert ign is not None
     assert ign.matches(PurePosixPath("Archive"), True) is True
+
+
+@pytest.mark.skipif(os.name != "posix", reason="права файла проверяются только на POSIX")
+def test_load_fs_ignore_unreadable_raises(tmp_path):
+    # Файл ЕСТЬ, но не удалось прочитать -> FsIgnoreError, а не молчаливое None
+    # (иначе исключения пользователя тихо не сработают).
+    """Проверяет сценарий: load fs ignore unreadable raises."""
+    target = tmp_path / ".fs-nrm"
+    target.write_text("Archive\n")
+    target.chmod(0o000)
+    try:
+        with pytest.raises(FsIgnoreError):
+            load_fs_ignore(tmp_path)
+    finally:
+        target.chmod(0o644)  # иначе tmp_path не сможет удалить дерево при уборке
 
 
 # --------------------------------------------------------------------------- #

@@ -8,7 +8,10 @@ scandir-обходом (`_expand_anchors_recursive`, не разыменовыв
 каталоги `Path.glob` тоже находит, но `_check_group` отбрасывает их через
 `_is_hidden` до проверки мандата. Нарушение — отсутствие мандата в найденном
 якоре. Если префикс не дал якорей (литерал отсутствует, `*`/`**` ничего не
-нашли) — это не нарушение.
+нашли) — это не нарушение. Но если `**`-обход не смог просканировать каталог
+(`OSError`: нет прав, гонка удаления) — это техническая ошибка, а не «нет
+совпадений»: фиксируется отдельно в `CheckResult.errlist`, не смешивается с
+`missing` и не проглатывается молча.
 
 Негативы (`!`) применяются единым ordered pathspec-каналом к относительным путям
 якорей и мандатов (`anchor/require`). В checker это всегда исключение из проверки:
@@ -27,11 +30,32 @@ from .rule import FsRule, Rule
 
 @dataclass
 class CheckResult:
-    """Итог проверки: отсортированные отсутствующие пути и счётчики для сводки."""
+    """Итог проверки: отсортированные отсутствующие пути, ошибки чтения и счётчики.
+
+    `errlist` — каталоги, которые не удалось просканировать (`OSError`: нет прав,
+    гонка удаления и т.п.) при разворачивании префиксов с `**`. Такой сбой —
+    техническая ошибка, а не «якорь не найден» (последнее — штатный, не-нарушающий
+    случай по документированной семантике `.fs-chk`), поэтому не смешивается с
+    `missing` и не проглатывается молча.
+    """
 
     missing: list[str]
     rules_checked: int
     anchors_found: int
+    errlist: list[str]
+
+
+@dataclass
+class _ScanState:
+    """Мутируемое состояние одного прогона `check()`: кэш якорей + сырые ошибки сканирования.
+
+    `errlist` хранит пары (абсолютный путь, текст исключения) — релятивизация к `root`
+    откладывается до `check()`, чтобы не тащить `root` через весь рекурсивный обход
+    только ради форматирования сообщения об ошибке (лишний параметр в горячем пути).
+    """
+
+    cache: dict[tuple[str, ...], tuple[Path, ...]]
+    errlist: set[tuple[Path, str]]
 
 
 def _is_hidden(rel: Path) -> bool:
@@ -49,15 +73,19 @@ class FsChecker:
     def check(self, root: Path) -> CheckResult:
         """Разворачивает все правила от `root`, собирает отсутствующие пути (дедуп+сорт)."""
         missing: set[str] = set()
+        state = _ScanState(cache={}, errlist=set())
         anchors = 0
         groups = self._group_rules_by_anchors()
-        cache: dict[tuple[str, ...], tuple[Path, ...]] = {}
         for anchor_key, rules in groups.items():
-            anchors = anchors + self._check_group(root, anchor_key, rules, missing, cache)
+            anchors = anchors + self._check_group(root, anchor_key, rules, missing, state)
+        errlist = sorted(
+            f"{path.relative_to(root).as_posix()}: {msg}" for path, msg in state.errlist
+        )
         return CheckResult(
             missing=sorted(missing),
             rules_checked=len(self._rules),
             anchors_found=anchors,
+            errlist=errlist,
         )
 
     def _group_rules_by_anchors(self) -> dict[tuple[str, ...], tuple[Rule, ...]]:
@@ -76,10 +104,10 @@ class FsChecker:
         self,
         root: Path,
         anchor_key: tuple[str, ...],
-        cache: dict[tuple[str, ...], tuple[Path, ...]],
+        state: _ScanState,
     ) -> tuple[Path, ...]:
         """Разворачивает каталог-якоря один раз на группу правил (с кэшем по префиксу)."""
-        cached = cache.get(anchor_key)
+        cached = state.cache.get(anchor_key)
         if cached is not None:
             return cached
         # Пустой префикс (правило из одного сегмента) => единственный якорь — сам root.
@@ -88,21 +116,22 @@ class FsChecker:
         if not anchor_key:
             anchrs = [root]
         elif "**" in anchor_key and anchor_key.count("**") == 1:
-            anchrs = self._expand_anchors_recursive(root, anchor_key)
+            anchrs = self._expand_anchors_recursive(root, anchor_key, state.errlist)
         else:
             anchrs = root.glob("/".join(anchor_key))
         expnd = tuple(anchrs)
-        cache[anchor_key] = expnd
+        state.cache[anchor_key] = expnd
         return expnd
 
     def _expand_anchors_recursive(
         self,
         root: Path,
         anchor_key: tuple[str, ...],
+        errlist: set[tuple[Path, str]],
     ) -> tuple[Path, ...]:
         """Разворачивает префикс с `**` через scandir (быстрее на больших деревьях)."""
         found: list[Path] = []
-        self._walk_recursive(root, anchor_key, 0, found)
+        self._walk_recursive(root, anchor_key, 0, found, errlist)
         return tuple(found)
 
     def _walk_recursive(
@@ -111,6 +140,7 @@ class FsChecker:
         anchor_key: tuple[str, ...],
         ix: int,
         found: list[Path],
+        errlist: set[tuple[Path, str]],
     ) -> None:
         """Рекурсивно сопоставляет сегменты anchors с каталогами на диске."""
         if ix >= len(anchor_key):
@@ -118,16 +148,21 @@ class FsChecker:
             return
         seg = anchor_key[ix]
         if seg == "**":
-            self._walk_recursive(curr, anchor_key, ix + 1, found)
-            for child in self._iter_child_dirs(curr):
-                self._walk_recursive(child, anchor_key, ix, found)
+            self._walk_recursive(curr, anchor_key, ix + 1, found, errlist)
+            for child in self._iter_child_dirs(curr, errlist):
+                self._walk_recursive(child, anchor_key, ix, found, errlist)
             return
-        for child in self._iter_child_dirs(curr):
+        for child in self._iter_child_dirs(curr, errlist):
             if fnmatch.fnmatch(child.name, seg):
-                self._walk_recursive(child, anchor_key, ix + 1, found)
+                self._walk_recursive(child, anchor_key, ix + 1, found, errlist)
 
-    def _iter_child_dirs(self, curr: Path) -> tuple[Path, ...]:
-        """Возвращает только дочерние каталоги (без скрытых и без разыменования symlink)."""
+    def _iter_child_dirs(self, curr: Path, errlist: set[tuple[Path, str]]) -> tuple[Path, ...]:
+        """Дочерние каталоги (без скрытых, без разыменования symlink).
+
+        `OSError` (нет прав, гонка удаления) — не «нет совпадений», а сбой сканирования:
+        фиксируется в `errlist` (абсолютный путь + текст исключения), а не проглатывается
+        вместе со штатным пустым случаем.
+        """
         dirs: list[Path] = []
         try:
             with os.scandir(curr) as ents:
@@ -138,7 +173,8 @@ class FsChecker:
                     if not ent.is_dir(follow_symlinks=False):
                         continue
                     dirs.append(Path(ent.path))
-        except OSError:
+        except OSError as exc:
+            errlist.add((curr, str(exc)))
             return ()
         return tuple(dirs)
 
@@ -148,10 +184,10 @@ class FsChecker:
         anchor_key: tuple[str, ...],
         rules: tuple[Rule, ...],
         missing: set[str],
-        cache: dict[tuple[str, ...], tuple[Path, ...]],
+        state: _ScanState,
     ) -> int:
         """Проверяет группу правил с одинаковым префиксом. Возвращает число якорей-кандидатов."""
-        anchrs = self._expand_anchors(root, anchor_key, cache)
+        anchrs = self._expand_anchors(root, anchor_key, state)
         anccnt = 0
         for adir in anchrs:
             if not adir.is_dir():

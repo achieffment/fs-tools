@@ -26,6 +26,14 @@ def test_format_violation_missing_line() -> None:
     assert "ожидается строка с текстом «## Правила»" in format_violation(vio)
 
 
+def test_format_violation_read_error() -> None:
+    """read_error помечается (ОШИБКА) и включает текст исключения."""
+    vio = Violation(path="a.md", kind="read_error", actual="[Errno 13] Permission denied")
+    text = format_violation(vio)
+    expected = "(ОШИБКА) не удалось прочитать файл: a.md ([Errno 13] Permission denied)"
+    assert text == expected
+
+
 def test_format_report_ok_status(tmp_path: Path) -> None:
     """Без нарушений — статус ok и без блока «Нарушения»."""
     result = SchemerResult(violations=[], groups_checked=1, files_checked=1)
