@@ -1,4 +1,4 @@
-"""Чтение и валидация fs-schm.toml: декларативные группы и контент-правила.
+"""Чтение и валидация .fs-sch.toml: декларативные группы и контент-правила.
 
 TOML разбирается стандартным `tomllib`. Модель — типизированные `dataclass`
 (`SchemeConfig`/`Group`/`GroupFile`/`ContentRule`); любое нарушение формата/валидации
@@ -11,13 +11,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-CONFIG_NAME = "fs-schm.toml"
+CONFIG_NAME = ".fs-sch.toml"
 
 _DEFAULT_EXCLUDE_PREFIX = "_"
 
 
 class SchemeConfigError(Exception):
-    """Файл fs-schm.toml отсутствует или не проходит валидацию (код возврата 1)."""
+    """Файл .fs-sch.toml отсутствует или не проходит валидацию (код возврата 1)."""
 
 
 @dataclass(frozen=True)
@@ -59,7 +59,7 @@ class Group:
 
 @dataclass(frozen=True)
 class SchemeConfig:
-    """Разобранный fs-schm.toml: префикс служебных файлов и упорядоченные группы."""
+    """Разобранный .fs-sch.toml: префикс служебных файлов и упорядоченные группы."""
 
     exclude_prefix: str
     groups: tuple[Group, ...]
@@ -144,7 +144,7 @@ def _build_group(bare: dict[str, Any]) -> Group:
 
 
 def parse_scheme_config(text: str) -> SchemeConfig:
-    """Разобрать содержимое fs-schm.toml в модель групп (без чтения файла)."""
+    """Разобрать содержимое .fs-sch.toml в модель групп (без чтения файла)."""
     try:
         data = tomllib.loads(text)
     except tomllib.TOMLDecodeError as exc:
@@ -175,7 +175,7 @@ def parse_scheme_config(text: str) -> SchemeConfig:
 
 
 def load_scheme_config(root: Path) -> SchemeConfig:
-    """Прочитать root/fs-schm.toml и разобрать его. Нет файла → SchemeConfigError."""
+    """Прочитать root/.fs-sch.toml и разобрать его. Нет файла → SchemeConfigError."""
     path = root / CONFIG_NAME
     if not path.is_file():
         raise SchemeConfigError(f"в каталоге {root} нет файла {CONFIG_NAME}")

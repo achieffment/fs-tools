@@ -59,7 +59,7 @@ def test_missing_scheme_config(
     """Проверяет сценарий: missing scheme config."""
     code = _run(monkeypatch, str(tmp_path))
     assert code == 1
-    assert "fs-schm.toml" in capsys.readouterr().err
+    assert ".fs-sch.toml" in capsys.readouterr().err
 
 
 def test_no_violations_returns_zero(
@@ -69,7 +69,7 @@ def test_no_violations_returns_zero(
 ) -> None:
     """Проверяет сценарий: no violations returns zero."""
     root = make_tree(["Topic/_Resources/note.md"])
-    (root / "fs-schm.toml").write_text(_CONFIG, encoding="utf-8")
+    (root / ".fs-sch.toml").write_text(_CONFIG, encoding="utf-8")
     code = _run(monkeypatch, str(root))
     out = capsys.readouterr().out
     assert code == 0
@@ -83,7 +83,7 @@ def test_violations_return_two(
 ) -> None:
     """Проверяет сценарий: violations return two."""
     root = make_tree(["Topic/_Resources/"])
-    (root / "fs-schm.toml").write_text(_CONFIG, encoding="utf-8")
+    (root / ".fs-sch.toml").write_text(_CONFIG, encoding="utf-8")
     code = _run(monkeypatch, str(root))
     out = capsys.readouterr().out
     assert code == 2
@@ -100,7 +100,7 @@ def test_argument_bypasses_picker(
 ) -> None:
     """Проверяет сценарий: argument bypasses picker."""
     root = make_tree(["Topic/_Resources/note.md"])
-    (root / "fs-schm.toml").write_text(_CONFIG, encoding="utf-8")
+    (root / ".fs-sch.toml").write_text(_CONFIG, encoding="utf-8")
 
     def _boom(*a: object, **k: object) -> str:
         """Вспомогательная функция для теста."""
@@ -119,7 +119,7 @@ def test_violations_writes_log_and_sends_webhook(
 ) -> None:
     """Проверяет сценарий: violations writes log and sends webhook."""
     root = make_tree(["Topic/_Resources/"])
-    (root / "fs-schm.toml").write_text(_CONFIG, encoding="utf-8")
+    (root / ".fs-sch.toml").write_text(_CONFIG, encoding="utf-8")
     sent: list[str] = []
     monkeypatch.setattr("fs_tools.shared.cli.pick_directory", lambda *a, **k: str(root))
     monkeypatch.setattr(runner, "send_webhook", lambda text: bool(sent.append(text)) or True)
@@ -137,7 +137,7 @@ def test_no_violations_logs_empty_result_no_webhook(
 ) -> None:
     """Проверяет сценарий: no violations logs empty result no webhook."""
     root = make_tree(["Topic/_Resources/note.md"])
-    (root / "fs-schm.toml").write_text(_CONFIG, encoding="utf-8")
+    (root / ".fs-sch.toml").write_text(_CONFIG, encoding="utf-8")
     sent: list[str] = []
     monkeypatch.setattr("fs_tools.shared.cli.pick_directory", lambda *a, **k: str(root))
     monkeypatch.setattr(runner, "send_webhook", lambda text: bool(sent.append(text)) or True)

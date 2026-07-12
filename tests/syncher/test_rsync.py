@@ -226,13 +226,13 @@ def test_real_artifacts_excluded(tmp_path: Path) -> None:
     src.mkdir()
     dst.mkdir()
     (src / "a.txt").write_text("a", encoding="utf-8")
-    (src / ".fs-sync.toml").write_text("x", encoding="utf-8")
+    (src / ".fs-syn.toml").write_text("x", encoding="utf-8")
     (src / ".fs-log").write_text("x", encoding="utf-8")
     (src / ".env").write_text("secret", encoding="utf-8")
     profile = _profile(src, target_path=str(dst), delete=True)
     rsync_mod.run_rsync(build_command(profile, dry_run=False, delete=True))
     assert (dst / "a.txt").exists()
-    assert not (dst / ".fs-sync.toml").exists()
+    assert not (dst / ".fs-syn.toml").exists()
     assert not (dst / ".fs-log").exists()
     assert not (dst / ".env").exists()
 
@@ -245,7 +245,7 @@ def test_real_source_files_respects_filters(tmp_path: Path) -> None:
     (src / "a.txt").write_text("a", encoding="utf-8")
     (src / "sub" / "b.bin").write_text("b", encoding="utf-8")
     (src / "skip.tmp").write_text("t", encoding="utf-8")
-    (src / ".fs-sync.toml").write_text("x", encoding="utf-8")   # артефакт исключается
+    (src / ".fs-syn.toml").write_text("x", encoding="utf-8")   # артефакт исключается
     profile = _profile(src, target_path=str(tmp_path / "dst"), exclude=["*.tmp"])
     assert source_files(profile) == ["a.txt", "sub/b.bin"]
 

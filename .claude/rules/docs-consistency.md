@@ -17,12 +17,12 @@
 | Формат записи `.fs-log`                             | `shared/log.py`, режимные `*/log.py`                                                              | `tests/shared/test_log.py`, `tests/*/test_log.py`, [`cross-platform-safety.md`](cross-platform-safety.md) |
 | Новый CLI-флаг режима                               | `*/cli_args.py`, `_build_parser()` в `runner.py`                                                  | раздел «Локальный шаблон runner-парсеров»                                                                |
 | Симметрия normalizer/checker (`engine.py`, `Fs*`)   | `normalizer/engine.py`, `checker/engine.py`                                                       | раздел «Распределение по пакетам», [`naming-symmetry.md`](naming-symmetry.md)                            |
-| Фильтр `.fs-ignore`                                 | `normalizer/ignore.py`                                                                            | [`path-matching.md`](path-matching.md), `tests/normalizer/test_ignore.py`                                |
-| Семантика `.fs-check`                               | `checker/rule.py`, `checker/engine.py`                                                            | [`rule-matching.md`](rule-matching.md)                                                                   |
-| Формат `.fs-sync.toml`                              | `syncher/config.py`                                                                               | [`config-format.md`](config-format.md)                                                                   |
+| Фильтр `.fs-nrm`                                 | `normalizer/ignore.py`                                                                            | [`path-matching.md`](path-matching.md), `tests/normalizer/test_ignore.py`                                |
+| Семантика `.fs-chk`                               | `checker/rule.py`, `checker/engine.py`                                                            | [`rule-matching.md`](rule-matching.md)                                                                   |
+| Формат `.fs-syn.toml`                              | `syncher/config.py`                                                                               | [`config-format.md`](config-format.md)                                                                   |
 | Трансляция include/exclude → rsync                  | `syncher/ignore.py`                                                                               | [`rsync-mapping.md`](rsync-mapping.md)                                                                   |
 | Логика offload (`[[backup]]`)                       | `syncher/offload.py`                                                                              | [`offload-safety.md`](offload-safety.md)                                                                 |
-| Формат `fs-schm.toml` / модель групп                 | `schemer/config.py`                                                                                | [`scheme-format.md`](scheme-format.md)                                                                   |
+| Формат `.fs-sch.toml` / модель групп                 | `schemer/config.py`                                                                                | [`scheme-format.md`](scheme-format.md)                                                                   |
 | Модель движка `schemer` (F1–F15)                     | `schemer/engine.py`                                                                                | [`scheme-format.md`](scheme-format.md)                                                                   |
 | Новое/удалённое правило Cursor/Claude               | —                                                                                                  | [`rules-sync.md`](rules-sync.md) — карта соответствия (обе версии)                                       |
 
@@ -46,21 +46,21 @@
   переименовывает.
 - `normalizer/` — единое объявление CLI-флагов normalizer (`cli_args.py`), правила
   (`rules/`), конвейер (`name.py`, `build_normalizer`), обход и переименование
-  (`engine.py`, класс `FsNormalizer`), фильтр `.fs-ignore` (`ignore.py`), обёртка
+  (`engine.py`, класс `FsNormalizer`), фильтр `.fs-nrm` (`ignore.py`), обёртка
   журнала (`log.py`, `write_fs_log`), точка входа (`runner.py`). Новое правило
   регистрируется в `build_normalizer()` и
   ре-экспортируется в `rules/__init__.py` и `normalizer/__init__.py` (`__all__`).
-- `checker/` — разбор `.fs-check` (`rule.py`), разворачивание и сбор нарушений
+- `checker/` — разбор `.fs-chk` (`rule.py`), разворачивание и сбор нарушений
   (`engine.py`, класс `FsChecker`), отчёт (`report.py`), веб-хук (`notify.py`,
   обёртка над `shared.notify` с ключами `FSCHK_*`),
   обёртка журнала (`log.py`), точка входа (`runner.py`).
 - `syncher/` — единое объявление CLI-флагов sync (`cli_args.py`), чтение/валидация
-  `.fs-sync.toml` (`config.py`, `tomllib`), трансляция include/exclude в фильтры rsync
+  `.fs-syn.toml` (`config.py`, `tomllib`), трансляция include/exclude в фильтры rsync
   (`ignore.py`), сборка/запуск rsync и delete-guard (`rsync.py`), offload
   (`offload.py`), отчёт (`report.py`), веб-хук (`notify.py`, обёртка над
   `shared.notify` с ключами `FSSYN_*`), обёртка журнала (`log.py`), точка входа
   (`runner.py`).
-- `schemer/` — чтение/валидация `fs-schm.toml` (`config.py`, `tomllib`), read-only
+- `schemer/` — чтение/валидация `.fs-sch.toml` (`config.py`, `tomllib`), read-only
   обход и сбор нарушений (`engine.py`, класс `FsSchemer`), отчёт (`report.py`),
   веб-хук (`notify.py`, обёртка над `shared.notify` с ключами `FSSCH_*`), обёртка
   журнала (`log.py`), точка входа (`runner.py`). Флагов режима, кроме `path`, нет —

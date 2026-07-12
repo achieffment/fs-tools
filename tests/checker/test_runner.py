@@ -57,7 +57,7 @@ def test_missing_fs_rule(
     """Проверяет сценарий: missing fs rule."""
     code = _run(monkeypatch, str(tmp_path))
     assert code == 1
-    assert ".fs-check" in capsys.readouterr().err
+    assert ".fs-chk" in capsys.readouterr().err
 
 
 def test_no_violations_returns_zero(
@@ -67,7 +67,7 @@ def test_no_violations_returns_zero(
 ) -> None:
     """Проверяет сценарий: no violations returns zero."""
     root = make_tree(["Activities/Web/Projects/"])
-    (root / ".fs-check").write_text("/Activities/Web/Projects\n", encoding="utf-8")
+    (root / ".fs-chk").write_text("/Activities/Web/Projects\n", encoding="utf-8")
     code = _run(monkeypatch, str(root))
     out = capsys.readouterr().out
     assert code == 0
@@ -81,7 +81,7 @@ def test_violations_return_two(
 ) -> None:
     """Проверяет сценарий: violations return two."""
     root = make_tree(["Activities/Web/"])
-    (root / ".fs-check").write_text("/Activities/Web/Projects\n", encoding="utf-8")
+    (root / ".fs-chk").write_text("/Activities/Web/Projects\n", encoding="utf-8")
     code = _run(monkeypatch, str(root))
     out = capsys.readouterr().out
     assert code == 2
@@ -99,7 +99,7 @@ def test_argument_bypasses_picker(
 ) -> None:
     """Проверяет сценарий: argument bypasses picker."""
     root = make_tree(["Activities/Web/Projects/"])
-    (root / ".fs-check").write_text("/Activities/Web/Projects\n", encoding="utf-8")
+    (root / ".fs-chk").write_text("/Activities/Web/Projects\n", encoding="utf-8")
 
     def _boom(*a: object, **k: object) -> str:
         """Вспомогательная функция для теста."""
@@ -118,7 +118,7 @@ def test_missing_writes_log_and_sends_webhook(
 ) -> None:
     """Проверяет сценарий: missing writes log and sends webhook."""
     root = make_tree(["Activities/Web/"])
-    (root / ".fs-check").write_text("/Activities/Web/Projects\n", encoding="utf-8")
+    (root / ".fs-chk").write_text("/Activities/Web/Projects\n", encoding="utf-8")
     sent: list[str] = []
     monkeypatch.setattr("fs_tools.shared.cli.pick_directory", lambda *a, **k: str(root))
     monkeypatch.setattr(runner, "send_webhook", lambda text: bool(sent.append(text)) or True)
@@ -136,7 +136,7 @@ def test_no_violations_logs_empty_result_no_webhook(
 ) -> None:
     """Проверяет сценарий: no violations logs empty result no webhook."""
     root = make_tree(["Activities/Web/Projects/"])
-    (root / ".fs-check").write_text("/Activities/Web/Projects\n", encoding="utf-8")
+    (root / ".fs-chk").write_text("/Activities/Web/Projects\n", encoding="utf-8")
     sent: list[str] = []
     monkeypatch.setattr("fs_tools.shared.cli.pick_directory", lambda *a, **k: str(root))
     monkeypatch.setattr(runner, "send_webhook", lambda text: bool(sent.append(text)) or True)

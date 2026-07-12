@@ -1,6 +1,6 @@
-"""Чтение и классификация правил из файла .fs-check.
+"""Чтение и классификация правил из файла .fs-chk.
 
-`.fs-check` оформляется в стиле .gitignore, но с инвертированным смыслом: строки
+`.fs-chk` оформляется в стиле .gitignore, но с инвертированным смыслом: строки
 описывают пути, которые ОБЯЗАНЫ существовать. Файл делится на два класса строк:
 
 - положительные правила -> разбираются на префикс (якори) и последний сегмент
@@ -27,7 +27,7 @@ from ..shared.pathspec_match import build_spec, path_text
 
 
 class FsRuleError(Exception):
-    """Файл .fs-check отсутствует или не читается (некорректный запуск)."""
+    """Файл .fs-chk отсутствует или не читается (некорректный запуск)."""
 
 
 def _rstrip_rule(line: str) -> str:
@@ -91,7 +91,7 @@ class Rule:
 
 
 class Negation:
-    """Негативы `.fs-check`: единый ordered pathspec-канал.
+    """Негативы `.fs-chk`: единый ordered pathspec-канал.
 
     Шаблоны из строк `!...` (без ведущих `!`) компилируются в `pathspec.PathSpec`.
     Матч идёт по относительным путям якорей/мандатов. Порядок строк учитывается
@@ -109,26 +109,26 @@ class Negation:
 
 @dataclass(frozen=True)
 class FsRule:
-    """Результат разбора .fs-check: положительные правила + спека негативов."""
+    """Результат разбора .fs-chk: положительные правила + спека негативов."""
 
     rules: tuple[Rule, ...]
     negation: Negation
 
 
 def load_fs_rule(root: Path) -> FsRule:
-    """Читает .fs-check из корня проверки (`utf-8-sig` — BOM проглатывается).
+    """Читает .fs-chk из корня проверки (`utf-8-sig` — BOM проглатывается).
 
     Нет файла -> FsRuleError (некорректный запуск). Пропуск
     комментариев (ведущий `#`) и пустых строк делает сам этот разбор для ВСЕГО файла
     (до классификации) — в pathspec уходят `!`-шаблоны без ведущих `!`.
     """
-    path = root / ".fs-check"
+    path = root / ".fs-chk"
     if not path.is_file():
-        raise FsRuleError(f"в выбранном каталоге нет файла .fs-check: {path}")
+        raise FsRuleError(f"в выбранном каталоге нет файла .fs-chk: {path}")
     try:
         bare = path.read_text(encoding="utf-8-sig")
     except OSError as exc:
-        raise FsRuleError(f"не удалось прочитать .fs-check: {exc}") from exc
+        raise FsRuleError(f"не удалось прочитать .fs-chk: {exc}") from exc
 
     rules: list[Rule] = []
     negatives: list[str] = []

@@ -40,7 +40,7 @@ def _is_hidden(rel: Path) -> bool:
 
 
 class FsChecker:
-    """Проверка структуры по правилам `.fs-check` (read-only)."""
+    """Проверка структуры по правилам `.fs-chk` (read-only)."""
 
     def __init__(self, fs_rule: FsRule):
         self._rules = fs_rule.rules

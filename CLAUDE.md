@@ -16,13 +16,13 @@
 - [`.claude/rules/comments-style.md`](.claude/rules/comments-style.md) — стиль комментариев в коде и выравнивание inline-комментариев в документации;
 - [`.claude/rules/imports.md`](.claude/rules/imports.md) — порядок импортов (PEP 8 / isort);
 - [`.claude/rules/lazy-import-order.md`](.claude/rules/lazy-import-order.md) — порядок последовательных блоков `importlib.import_module`;
-- [`.claude/rules/config-format.md`](.claude/rules/config-format.md) — формат и валидация `.fs-sync.toml` (`syncher`);
+- [`.claude/rules/config-format.md`](.claude/rules/config-format.md) — формат и валидация `.fs-syn.toml` (`syncher`);
 - [`.claude/rules/offload-safety.md`](.claude/rules/offload-safety.md) — безопасность offload, профиль `[[backup]]` (`syncher`);
 - [`.claude/rules/rsync-mapping.md`](.claude/rules/rsync-mapping.md) — трансляция include/exclude в фильтры rsync (`syncher`);
 - [`.claude/rules/date-rule.md`](.claude/rules/date-rule.md) — осознанные допущения `DateRule` (`normalizer`);
-- [`.claude/rules/path-matching.md`](.claude/rules/path-matching.md) — фильтр `.fs-ignore`, gitignore-семантика (`normalizer`);
-- [`.claude/rules/rule-matching.md`](.claude/rules/rule-matching.md) — семантика `.fs-check`, разворачивание и негативы (`checker`);
-- [`.claude/rules/scheme-format.md`](.claude/rules/scheme-format.md) — формат `fs-schm.toml` и модель движка `schemer`;
+- [`.claude/rules/path-matching.md`](.claude/rules/path-matching.md) — фильтр `.fs-nrm`, gitignore-семантика (`normalizer`);
+- [`.claude/rules/rule-matching.md`](.claude/rules/rule-matching.md) — семантика `.fs-chk`, разворачивание и негативы (`checker`);
+- [`.claude/rules/scheme-format.md`](.claude/rules/scheme-format.md) — формат `.fs-sch.toml` и модель движка `schemer`;
 - [`.claude/rules/examples.md`](.claude/rules/examples.md) — формирование примеров-фикстур по режимам;
 - [`.claude/rules/rules-sync.md`](.claude/rules/rules-sync.md) — двусторонняя синхронизация правил Cursor (`.mdc`) и Claude (`.md`).
 

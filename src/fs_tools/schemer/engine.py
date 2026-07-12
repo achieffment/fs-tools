@@ -5,8 +5,8 @@
 Групповые узлы проверяются по F1/F4 (обязательный файл), F7/F9–F13 (опциональный
 файл с контент-правилом), F2/F3/F5/F6/F8 (контент — литеральное совпадение
 `line`/`text`) и F14 (не должна существовать пустой — рекурсивно, в т.ч. вложенные
-подпапки). Тематические узлы проверяются по F15 (файлы напрямую в узле запрещены,
-кроме самого fs-schm.toml в корне проверки — исключается литерально по имени).
+подпапки). Тематические узлы проверяются по F15 (файлы напрямую в узле запрещены;
+сам `.fs-sch.toml` под неё не попадает — он скрытый и отсеян общим фильтром).
 `group.file`/`default_rule` применяются только к файлам, лежащим НЕПОСРЕДСТВЕННО в
 групповой папке (не рекурсивно) — рекурсивный обход зарезервирован только для F14.
 
@@ -19,7 +19,7 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-from .config import CONFIG_NAME, ContentRule, Group, SchemeConfig
+from .config import ContentRule, Group, SchemeConfig
 
 
 @dataclass(frozen=True)
@@ -113,10 +113,8 @@ class FsSchemer:
         visible_files: list[str],
         violations: set[Violation],
     ) -> None:
-        """F15: файлы напрямую в тематическом узле запрещены (кроме fs-schm.toml в корне)."""
+        """F15: файлы напрямую в тематическом узле запрещены."""
         for name in visible_files:
-            if curr == root and name == CONFIG_NAME:
-                continue
             rel = (curr.relative_to(root) / name).as_posix()
             violations.add(Violation(path=rel, kind="loose_file"))
 

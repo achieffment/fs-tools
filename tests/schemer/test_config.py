@@ -1,4 +1,4 @@
-"""Тесты разбора/валидации fs-schm.toml (config)."""
+"""Тесты разбора/валидации .fs-sch.toml (config)."""
 from collections.abc import Callable
 from pathlib import Path
 
@@ -8,7 +8,7 @@ from fs_tools.schemer import SchemeConfigError, load_scheme_config, parse_scheme
 
 
 def test_missing_file_raises(tmp_path: Path) -> None:
-    """Проверяет ошибку при отсутствии fs-schm.toml."""
+    """Проверяет ошибку при отсутствии .fs-sch.toml."""
     with pytest.raises(SchemeConfigError):
         load_scheme_config(tmp_path)
 

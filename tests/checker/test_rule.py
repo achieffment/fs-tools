@@ -1,4 +1,4 @@
-"""Тесты разбора .fs-check (rule)."""
+"""Тесты разбора .fs-chk (rule)."""
 from collections.abc import Callable
 from pathlib import Path
 
@@ -8,7 +8,7 @@ from fs_tools.checker import FsRuleError, Rule, load_fs_rule
 
 
 def test_missing_file_raises(tmp_path: Path) -> None:
-    """Проверяет ошибку при отсутствии `.fs-check`."""
+    """Проверяет ошибку при отсутствии `.fs-chk`."""
     with pytest.raises(FsRuleError):
         load_fs_rule(tmp_path)
 
@@ -162,7 +162,7 @@ def test_negation_triple_bang_equals_single_bang(write_rule: Callable[[str], Pat
 
 def test_utf8_sig_bom_does_not_break_first_line(tmp_path: Path) -> None:
     """Проверяет сценарий: utf8 sig bom does not break first line."""
-    (tmp_path / ".fs-check").write_text("/Activities\n", encoding="utf-8-sig")
+    (tmp_path / ".fs-chk").write_text("/Activities\n", encoding="utf-8-sig")
     rule = load_fs_rule(tmp_path).rules[0]
     assert rule.require == "Activities"  # BOM не прилип к первому сегменту
 

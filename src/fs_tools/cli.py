@@ -32,7 +32,7 @@ def main(argv: list[str] | None = None) -> int:
             "Кросс-платформенные операции с файловой системой: нормализация имён "
             "(normalize), проверка наличия путей по правилам (check), односторонняя "
             "синхронизация каталога с сервером через rsync (sync) и проверка "
-            "структуры/контента базы знаний по fs-schm.toml (scheme)."
+            "структуры/контента базы знаний по .fs-sch.toml (scheme)."
         ),
     )
     sub = pars.add_subparsers(
@@ -43,14 +43,14 @@ def main(argv: list[str] | None = None) -> int:
     add_path_argument(p_fsnm)
     add_norm_argument(p_fsnm)
 
-    p_fsch = sub.add_parser("check", help="проверить наличие путей по .fs-check")
+    p_fsch = sub.add_parser("check", help="проверить наличие путей по .fs-chk")
     add_path_argument(p_fsch)
 
     p_fssy = sub.add_parser("sync", help="синхронизировать каталог с сервером (rsync)")
     add_path_argument(p_fssy)
     add_sync_argument(p_fssy)
 
-    p_fssm = sub.add_parser("scheme", help="проверить структуру/контент по fs-schm.toml")
+    p_fssm = sub.add_parser("scheme", help="проверить структуру/контент по .fs-sch.toml")
     add_path_argument(p_fssm)
 
     # Ленивый импорт режима: тянем только то, что нужно выбранной подкоманде.

@@ -25,10 +25,10 @@
 - Корневой `tests/conftest.py` — только по-настоящему общие фикстуры: дерево
   `make_tree` (фабрика из списка путей в `tmp_path`). Мод-специфичные держатся в
   `conftest.py` подпапок: фабрика нормализатора `nn` (`build_normalizer`) —
-  `tests/normalizer/conftest.py`; запись `.fs-check` `write_rule` —
+  `tests/normalizer/conftest.py`; запись `.fs-chk` `write_rule` —
   `tests/checker/conftest.py`; `make_tree(base, paths)` (переопределяет общий под
   деревья источника/приёмника) + `write_config` — `tests/syncher/conftest.py`; запись
-  `fs-schm.toml` `write_scheme_toml` — `tests/schemer/conftest.py`. Маркер
+  `.fs-sch.toml` `write_scheme_toml` — `tests/schemer/conftest.py`. Маркер
   `requires_rsync` (skip без бинаря rsync) определяется локально в нуждающихся
   тест-файлах `syncher`.
 - `tests/shared/test_picker.py` — один общий файл: выбор каталога не дублируется.
@@ -49,16 +49,16 @@
 
 - **normalizer**: юнит-правила (`tests/normalizer/rules/test_<rule>.py`), пайплайн
   `name.py`, идемпотентность (`normalize(normalize(x)) == normalize(x)`),
-  безопасность имени (`enforce_safe_component`), фильтр `.fs-ignore`,
+  безопасность имени (`enforce_safe_component`), фильтр `.fs-nrm`,
   `FsNormalizer`, коды возврата `runner.main`.
-- **checker**: парсинг `.fs-check`, разворачивание правил, коды возврата, picker,
+- **checker**: парсинг `.fs-chk`, разворачивание правил, коды возврата, picker,
   веб-хук (мок сети).
-- **schemer**: парсинг/валидация `fs-schm.toml` (`SchemeConfigError`), классификация
+- **schemer**: парсинг/валидация `.fs-sch.toml` (`SchemeConfigError`), классификация
   групповых/тематических узлов, все категории нарушений (F1–F15: обязательный файл,
   опциональный с контентом, пустая группа, файл вне групповой папки, контент-правило
-  `line`/`text`), исключение `fs-schm.toml` из loose-проверки, коды возврата,
+  `line`/`text`), исключение `.fs-sch.toml` из loose-проверки, коды возврата,
   веб-хук (мок сети).
-- **syncher**: парсинг/валидация `.fs-sync.toml` и коды `ConfigError`; трансляция
+- **syncher**: парсинг/валидация `.fs-syn.toml` и коды `ConfigError`; трансляция
   include/exclude в фильтры rsync; разбор `--itemize-changes`/`--list-only`;
   delete-guard (пороги по количеству/доле, код 3); offload (verify → `after_push`,
   частичный успех); коды возврата `0/1/2/3` и «наихудший среди профилей»; «нет
@@ -92,7 +92,7 @@
 Всё должно быть зелёным. Идемпотентность дополнительно проверяй на копии
 `examples/normalizer/` (исходник под git не трогаем):
 
-    cp -r examples/normalizer /tmp/ex && rm -f /tmp/ex/.fs-ignore
+    cp -r examples/normalizer /tmp/ex && rm -f /tmp/ex/.fs-nrm
     .venv/bin/python -c "from pathlib import Path; from fs_tools.normalizer import \
     build_normalizer, FsNormalizer as F; r=Path('/tmp/ex'); \
     n=F(build_normalizer()); n.apply(r); print(n.apply(r))"

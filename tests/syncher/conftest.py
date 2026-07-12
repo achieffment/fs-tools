@@ -2,7 +2,7 @@
 
 `make_tree` здесь переопределяет общую фикстуру: режиму нужны деревья источника и
 приёмника под разными базами (а не одно дерево в `tmp_path`). `write_config` — фабрика
-`.fs-sync.toml`. Маркер `requires_rsync` (пропуск интеграционных тестов без бинаря
+`.fs-syn.toml`. Маркер `requires_rsync` (пропуск интеграционных тестов без бинаря
 rsync) определяется локально в нуждающихся тест-файлах.
 """
 from collections.abc import Callable, Iterable
@@ -35,11 +35,11 @@ def make_tree() -> Callable[[Path, Iterable[str]], Path]:
 
 @pytest.fixture()
 def write_config() -> Callable[[Path, str], Path]:
-    """Записать текст в base/.fs-sync.toml и вернуть base."""
+    """Записать текст в base/.fs-syn.toml и вернуть base."""
 
     def _write(base: Path, text: str) -> Path:
         """Вспомогательная функция для теста."""
-        (base / ".fs-sync.toml").write_text(text, encoding="utf-8")
+        (base / ".fs-syn.toml").write_text(text, encoding="utf-8")
         return base
 
     return _write

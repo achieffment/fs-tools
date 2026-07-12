@@ -176,14 +176,14 @@ def test_f15_file_inside_group_not_loose(make_tree: Callable[[Iterable[str]], Pa
     assert "Topic/_Resources/x.pdf" not in _kinds(root)
 
 
-def test_fs_schm_toml_in_root_excluded_from_f15(
+def test_fs_sch_toml_in_root_excluded_from_f15(
     make_tree: Callable[[Iterable[str]], Path],
 ) -> None:
-    """Обязательный кейс: fs-schm.toml в корне НЕ даёт ложный loose_file."""
+    """.fs-sch.toml в корне не даёт ложный loose_file — он скрытый (ведущая точка)."""
     root = make_tree(["_Resources/"])
-    (root / "fs-schm.toml").write_text('[[group]]\nname = "_Resources"\n', encoding="utf-8")
+    (root / ".fs-sch.toml").write_text('[[group]]\nname = "_Resources"\n', encoding="utf-8")
     result = FsSchemer(parse_scheme_config(_CONFIG)).check(root)
-    assert "fs-schm.toml" not in {vio.path for vio in result.violations}
+    assert ".fs-sch.toml" not in {vio.path for vio in result.violations}
 
 
 def test_hidden_group_not_visited(make_tree: Callable[[Iterable[str]], Path]) -> None:

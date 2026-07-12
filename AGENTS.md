@@ -21,19 +21,19 @@ src/fs_tools/
 │   ├── cli_args.py           # единое объявление normalizer-флагов и проброс argv для диспетчера/runner
 │   ├── name.py               # конвейер (build_normalizer, NameNormalizer)
 │   ├── engine.py             # обход и переименование (FsNormalizer, deepest-first)
-│   ├── ignore.py             # фильтр .fs-ignore
+│   ├── ignore.py             # фильтр .fs-nrm
 │   ├── safety.py             # enforce_safe_component (имя — один компонент пути)
 │   ├── log.py                # write_fs_log (обёртка над shared.log)
 │   └── runner.py             # main/run
 ├── checker/                  # режим проверки
-│   ├── rule.py               # разбор .fs-check
+│   ├── rule.py               # разбор .fs-chk
 │   ├── engine.py             # разворачивание правил, сбор нарушений
 │   ├── report.py             # формат отчёта
 │   ├── notify.py             # веб-хук (ленивый requests; .env грузит shared.env, читает os.environ)
 │   ├── log.py                # write_fs_log (обёртка)
 │   └── runner.py             # main/run
 ├── syncher/                  # режим синхронизации (ПК → сервер через rsync)
-│   ├── config.py             # чтение/валидация .fs-sync.toml (tomllib)
+│   ├── config.py             # чтение/валидация .fs-syn.toml (tomllib)
 │   ├── cli_args.py           # единое объявление sync-флагов и проброс argv для диспетчера/runner
 │   ├── ignore.py             # трансляция include/exclude в фильтры rsync
 │   ├── rsync.py              # сборка/запуск rsync, листинг, delete-guard
@@ -43,7 +43,7 @@ src/fs_tools/
 │   ├── log.py                # write_fs_log (обёртка)
 │   └── runner.py             # main(argv) + run(root, args)
 ├── schemer/                  # режим проверки схемы базы знаний (read-only)
-│   ├── config.py             # чтение/валидация fs-schm.toml (tomllib): группы, group.file
+│   ├── config.py             # чтение/валидация .fs-sch.toml (tomllib): группы, group.file
 │   ├── engine.py             # обход и сбор нарушений (FsSchemer, F1-F15)
 │   ├── report.py             # формат отчёта и строк нарушений
 │   ├── notify.py             # веб-хук (FSSCH_*, ленивый requests, через shared.env)
@@ -105,11 +105,11 @@ pip install -e ".[normalizer,checker,syncher,schemer,dev]"             # editabl
 - **Синхронизация (`syncher`)**: однонаправленность ПК → сервер; единый источник истины
   сопоставления — сам `rsync` (своего матчера нет); offload удаляет/архивирует только
   подтверждённо переданное; delete-guard блокирует массовые удаления (код 3); артефакты
-  (`.fs-sync.toml`, `.fs-log`, `.env`) не передаются никогда; коды возврата `0/1/2/3`
+  (`.fs-syn.toml`, `.fs-log`, `.env`) не передаются никогда; коды возврата `0/1/2/3`
   (наихудший среди профилей). Внешние бинарники: `rsync` (обязателен), `ssh` (SSH-цели).
   Журнал пишется в `production` и `dry-run` (с соответствующей меткой режима).
-- **Проверка схемы (`schemer`)**: конфиг `fs-schm.toml` (без ведущей точки) читается из
-  того же каталога, что и весь режим; read-only, дерево не мутирует. Групповая папка
+- **Проверка схемы (`schemer`)**: конфиг `.fs-sch.toml` читается из того же
+  каталога, что и весь режим; read-only, дерево не мутирует. Групповая папка
   матчится по basename на любой глубине, регистрозависимо. Единый механизм
   `[[group.file]]` (`optional`) выражает и обязательность, и опциональный
   контент-контроль. Коды возврата `0/1/2` (без «предупреждения» — статус только

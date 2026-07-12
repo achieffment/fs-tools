@@ -37,7 +37,7 @@ bin/check.bat        # Windows
 
 ## Файл правил
 
-[`examples/checker/.fs-check`](.fs-check) демонстрирует все возможности формата:
+[`examples/checker/.fs-chk`](.fs-chk) демонстрирует все возможности формата:
 
 - **корневая цепочка** литералов `/Activities`, `/Activities/Web`,
   `/Activities/Web/Projects` — фиксированные каталоги, обязательные сами по себе

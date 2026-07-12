@@ -3,7 +3,7 @@
 Два режима над общим внутренним пакетом `fs_tools.shared`:
 
 - `fs_tools.normalizer` — рекурсивная нормализация имён файлов и папок;
-- `fs_tools.checker` — проверка наличия путей по правилам `.fs-check`.
+- `fs_tools.checker` — проверка наличия путей по правилам `.fs-chk`.
 
 Точки входа: команды `fs-normalizer`/`fs-checker` и диспетчер `fs-tools <normalize|check>`.
 """

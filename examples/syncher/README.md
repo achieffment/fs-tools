@@ -9,7 +9,7 @@
 ## Состав
 
     examples/syncher/
-    ├── .fs-sync.toml              профили [[sync]] «site» и [[backup]] «vault»
+    ├── .fs-syn.toml              профили [[sync]] «site» и [[backup]] «vault»
     ├── source/                    источник профиля «site»
     │   ├── projects/alpha/        идентичен server/ → не передаётся (checksum)
     │   │   ├── main.py
@@ -52,7 +52,7 @@ bin/sync.bat examples/syncher --dry-run        # Windows (через WSL/cwrsync
 Такой запуск использует единый Linux-стек `rsync`/`ssh` и избегает смешивания
 Windows OpenSSH и chocolatey/cwrsync runtime.
 
-## Что демонстрирует `.fs-sync.toml`
+## Что демонстрирует `.fs-syn.toml`
 
 - **`[defaults]`** — общие пороги delete-guard для всех профилей;
 - **`[[sync]]` «site»** — зеркалирование с `delete = true` (удаления, в т.ч. целых

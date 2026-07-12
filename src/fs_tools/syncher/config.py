@@ -1,4 +1,4 @@
-"""Чтение и валидация .fs-sync.toml: модель профилей [[sync]] и [[backup]].
+"""Чтение и валидация .fs-syn.toml: модель профилей [[sync]] и [[backup]].
 
 TOML разбирается стандартным `tomllib` (есть в stdlib на Python 3.11+). Значения из
 секции [defaults] применяются к каждому профилю, поля профиля их переопределяют. Любое
@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-CONFIG_NAME = ".fs-sync.toml"
+CONFIG_NAME = ".fs-syn.toml"
 
 _AFTER_PUSH = ("delete", "archive", "nothing")
 
@@ -21,7 +21,7 @@ _DEFAULT_DELETE_THRESHOLD_PCT = 25.0
 
 
 class ConfigError(Exception):
-    """Ошибка чтения или валидации .fs-sync.toml (код возврата 1)."""
+    """Ошибка чтения или валидации .fs-syn.toml (код возврата 1)."""
 
 
 @dataclass
@@ -57,7 +57,7 @@ class Profile:
 
 @dataclass
 class Config:
-    """Разобранный .fs-sync.toml: каталог-корень и упорядоченный список профилей."""
+    """Разобранный .fs-syn.toml: каталог-корень и упорядоченный список профилей."""
 
     root: Path
     roll: list[Profile]
@@ -225,7 +225,7 @@ def _build_profile(
 
 
 def parse_config(text: str, root: Path) -> Config:
-    """Разобрать содержимое .fs-sync.toml в модель профилей (без чтения файла)."""
+    """Разобрать содержимое .fs-syn.toml в модель профилей (без чтения файла)."""
     try:
         data = tomllib.loads(text)
     except tomllib.TOMLDecodeError as exc:
@@ -258,7 +258,7 @@ def parse_config(text: str, root: Path) -> Config:
 
 
 def load_config(root: Path) -> Config:
-    """Прочитать root/.fs-sync.toml и разобрать его. Нет файла → ConfigError."""
+    """Прочитать root/.fs-syn.toml и разобрать его. Нет файла → ConfigError."""
     path = root / CONFIG_NAME
     if not path.is_file():
         raise ConfigError(f"в каталоге {root} нет файла {CONFIG_NAME}")

@@ -1,10 +1,10 @@
 ---
-description: Формат и валидация .fs-sync.toml (режим syncher)
+description: Формат и валидация .fs-syn.toml (режим syncher)
 globs: src/fs_tools/syncher/*
 alwaysApply: false
 ---
 
-# Формат `.fs-sync.toml`
+# Формат `.fs-syn.toml`
 
 Конфиг лежит в корне синхронизируемого каталога (путь — позиционный аргумент CLI).
 Разбор — стандартный `tomllib` (Python 3.11+). Модель — `syncher/config.py`.

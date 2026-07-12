@@ -176,7 +176,7 @@ def test_load_config_missing_file(tmp_path: Path) -> None:
 
 def test_load_config_reads_file(tmp_path: Path) -> None:
     """Проверяет сценарий: load config reads file."""
-    (tmp_path / ".fs-sync.toml").write_text(_toml(), encoding="utf-8")
+    (tmp_path / ".fs-syn.toml").write_text(_toml(), encoding="utf-8")
     config = load_config(tmp_path)
     assert config.roll[0].name == "main"
 

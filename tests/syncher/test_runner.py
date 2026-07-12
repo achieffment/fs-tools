@@ -44,7 +44,7 @@ def test_missing_config(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> N
 def test_no_arg_uses_picker(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    # Без аргумента вызывается picker (нет .fs-sync.toml → код 1).
+    # Без аргумента вызывается picker (нет .fs-syn.toml → код 1).
     """Проверяет сценарий: no arg uses picker."""
     monkeypatch.setattr(runner, "rsync_available", lambda: True)
     monkeypatch.setattr(runner, "pick_directory", lambda _h, _p: str(tmp_path))
@@ -71,7 +71,7 @@ def test_path_arg_skips_picker(
 def test_missing_rsync(tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
                        capsys: pytest.CaptureFixture[str]) -> None:
     """Проверяет сценарий: missing rsync."""
-    (tmp_path / ".fs-sync.toml").write_text(
+    (tmp_path / ".fs-syn.toml").write_text(
         _sync_config(tmp_path, tmp_path / "dst"), encoding="utf-8"
     )
     monkeypatch.setattr(runner, "rsync_available", lambda: False)
@@ -82,7 +82,7 @@ def test_missing_rsync(tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 def test_missing_ssh_for_ssh_target(tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
                                     capsys: pytest.CaptureFixture[str]) -> None:
     """Проверяет сценарий: missing ssh for ssh target."""
-    (tmp_path / ".fs-sync.toml").write_text(
+    (tmp_path / ".fs-syn.toml").write_text(
         "[[sync]]\nname = \"m\"\nlocal_root = \".\"\nremote_root = \"host:/srv\"\n",
         encoding="utf-8",
     )
@@ -95,7 +95,7 @@ def test_missing_ssh_for_ssh_target(tmp_path: Path, monkeypatch: pytest.MonkeyPa
 def test_unknown_profile(tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
                          capsys: pytest.CaptureFixture[str]) -> None:
     """Проверяет сценарий: unknown profile."""
-    (tmp_path / ".fs-sync.toml").write_text(
+    (tmp_path / ".fs-syn.toml").write_text(
         _sync_config(tmp_path, tmp_path / "dst"), encoding="utf-8"
     )
     monkeypatch.setattr(runner, "rsync_available", lambda: True)
@@ -110,7 +110,7 @@ def test_success_and_log(tmp_path: Path, make_tree: Callable[..., Path]) -> None
     dst = tmp_path / "dst"
     make_tree(src, ["a.txt", "sub/b.txt"])
     dst.mkdir()
-    (src / ".fs-sync.toml").write_text(_sync_config(src, dst), encoding="utf-8")
+    (src / ".fs-syn.toml").write_text(_sync_config(src, dst), encoding="utf-8")
     assert main([str(src)]) == 0
     assert (dst / "a.txt").exists()
     log = (src / ".fs-log").read_text(encoding="utf-8")
@@ -125,7 +125,7 @@ def test_dry_run_no_transfer_no_log(tmp_path: Path, make_tree: Callable[..., Pat
     dst = tmp_path / "dst"
     make_tree(src, ["a.txt"])
     dst.mkdir()
-    (src / ".fs-sync.toml").write_text(_sync_config(src, dst), encoding="utf-8")
+    (src / ".fs-syn.toml").write_text(_sync_config(src, dst), encoding="utf-8")
     assert main([str(src), "--dry-run"]) == 0
     assert not (dst / "a.txt").exists()          # dry-run ничего не передаёт
     text = (src / ".fs-log").read_text(encoding="utf-8")
@@ -142,7 +142,7 @@ def test_delete_guard_blocks_returns_3(tmp_path: Path, make_tree: Callable[..., 
     dst = tmp_path / "dst"
     make_tree(src, [f"f{i}.txt" for i in range(6)])
     dst.mkdir()
-    (src / ".fs-sync.toml").write_text(
+    (src / ".fs-syn.toml").write_text(
         _sync_config(src, dst, delete="true", delete_threshold="2"), encoding="utf-8"
     )
     assert main([str(src)]) == 0                 # первый прогон — наполнение
@@ -175,7 +175,7 @@ def test_profile_selection(tmp_path: Path, make_tree: Callable[..., Path]) -> No
         f'local_root = "{src.as_posix()}"\n'
         f'remote_root = "{d2.as_posix()}"\n'
     )
-    (src / ".fs-sync.toml").write_text(text, encoding="utf-8")
+    (src / ".fs-syn.toml").write_text(text, encoding="utf-8")
     assert main([str(src), "--profile", "one"]) == 0
     assert (d1 / "a.txt").exists()
     assert not (d2 / "a.txt").exists()           # второй профиль не запускался
@@ -192,7 +192,7 @@ def test_profile_dry_run_no_log(
     dst = tmp_path / "dst"
     make_tree(src, ["a.txt"])
     dst.mkdir()
-    (src / ".fs-sync.toml").write_text(
+    (src / ".fs-syn.toml").write_text(
         _sync_config(src, dst, dry_run="true"), encoding="utf-8"
     )
     assert main([str(src)]) == 0
@@ -213,7 +213,7 @@ def test_errors_are_written_to_log_in_order(
     dst = tmp_path / "dst"
     src.mkdir()
     dst.mkdir()
-    (src / ".fs-sync.toml").write_text(_sync_config(src, dst), encoding="utf-8")
+    (src / ".fs-syn.toml").write_text(_sync_config(src, dst), encoding="utf-8")
     monkeypatch.setattr(runner, "rsync_available", lambda: True)
     monkeypatch.setattr(runner, "ssh_available", lambda: True)
     sent: list[str] = []

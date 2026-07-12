@@ -1,4 +1,4 @@
-"""Тесты фильтра .fs-ignore (ignore.py).
+"""Тесты фильтра .fs-nrm (ignore.py).
 
 Матчинг в стиле .gitignore (движок pathspec) относительно корня нормализации,
 чтение `load_fs_ignore` и интеграция фильтра с FsNormalizer (e2e на временной папке).
@@ -153,7 +153,7 @@ def test_fsignore_activities_projects_data(rel, ignored):
 
 
 # --------------------------------------------------------------------------- #
-# load_fs_ignore — чтение .fs-ignore из выбранного каталога (корня нормализации)
+# load_fs_ignore — чтение .fs-nrm из выбранного каталога (корня нормализации)
 # --------------------------------------------------------------------------- #
 def test_load_fs_ignore_missing_file(tmp_path):
     # Нет файла -> None (фильтр выключен).
@@ -164,7 +164,7 @@ def test_load_fs_ignore_missing_file(tmp_path):
 def test_load_fs_ignore_empty_file(tmp_path):
     # Пустой файл -> FsIgnore без правил (ничего не исключает).
     """Проверяет сценарий: load fs ignore empty file."""
-    (tmp_path / ".fs-ignore").write_text("")
+    (tmp_path / ".fs-nrm").write_text("")
     ign = load_fs_ignore(tmp_path)
     assert ign is not None
     assert ign.matches(PurePosixPath("home/user/Archive"), True) is False
@@ -173,7 +173,7 @@ def test_load_fs_ignore_empty_file(tmp_path):
 
 def test_load_fs_ignore_patterns_comments_negation(tmp_path):
     """Проверяет сценарий: load fs ignore patterns comments negation."""
-    (tmp_path / ".fs-ignore").write_text(
+    (tmp_path / ".fs-nrm").write_text(
         "# комментарий\nArchive\n\n*.bak\n!important.bak\n"
     )
     ign = load_fs_ignore(tmp_path)
@@ -188,7 +188,7 @@ def test_load_fs_ignore_does_not_modify_file(tmp_path):
     # Файл при сопоставлении не изменяется: содержимое читается как есть.
     """Проверяет сценарий: load fs ignore does not modify file."""
     cont = "Archive\n*.bak\n"
-    f = tmp_path / ".fs-ignore"
+    f = tmp_path / ".fs-nrm"
     f.write_text(cont)
     ign = load_fs_ignore(tmp_path)
     assert ign is not None
@@ -199,14 +199,14 @@ def test_load_fs_ignore_does_not_modify_file(tmp_path):
 def test_load_fs_ignore_utf8_bom(tmp_path):
     # BOM в начале файла не ломает первый паттерн (чтение utf-8-sig).
     """Проверяет сценарий: load fs ignore utf8 bom."""
-    (tmp_path / ".fs-ignore").write_text("Archive\n", encoding="utf-8-sig")
+    (tmp_path / ".fs-nrm").write_text("Archive\n", encoding="utf-8-sig")
     ign = load_fs_ignore(tmp_path)
     assert ign is not None
     assert ign.matches(PurePosixPath("Archive"), True) is True
 
 
 # --------------------------------------------------------------------------- #
-# FsNormalizer + .fs-ignore (e2e на временной папке)
+# FsNormalizer + .fs-nrm (e2e на временной папке)
 # --------------------------------------------------------------------------- #
 def test_fs_ignored_dir_not_renamed_or_descended(tmp_path):
     # Исключённый каталог не переименовывается, внутрь не заходим (содержимое
@@ -322,7 +322,7 @@ def test_fs_ignore_idempotent_across_runs_with_capitalized_parent(tmp_path):
     inner = tmp_path / "box" / "inner"
     inner.mkdir(parents=True)
     (inner / "Секрет.bak").write_text("x")           # был бы нормализован -> sekret.bak
-    (tmp_path / ".fs-ignore").write_text("/box/inner/*.bak\n")
+    (tmp_path / ".fs-nrm").write_text("/box/inner/*.bak\n")
 
     ign1 = load_fs_ignore(tmp_path)
     assert ign1 is not None
@@ -330,7 +330,7 @@ def test_fs_ignore_idempotent_across_runs_with_capitalized_parent(tmp_path):
     # После первого прогона родители капитализированы, файл исключён и не тронут:
     assert (tmp_path / "Box" / "Inner" / "Секрет.bak").exists()
 
-    # Второй прогон поверх результата (фильтр перечитывается из того же .fs-ignore):
+    # Второй прогон поверх результата (фильтр перечитывается из того же .fs-nrm):
     ign2 = load_fs_ignore(tmp_path)
     assert ign2 is not None
     renamed, _ = FsNormalizer(build_normalizer(), ign2).apply(tmp_path)
@@ -413,7 +413,7 @@ def test_fs_activities_projects_data_reincluded(tmp_path):
     nodata = addl / "example.com"
     nodata.mkdir(parents=True)
     (nodata / "Резервная копия").write_text("r")   # под Projects, не Data -> исключён
-    (tmp_path / ".fs-ignore").write_text(
+    (tmp_path / ".fs-nrm").write_text(
         "Archive\n/Activities/*/Projects\n!/Activities/*/Projects/**/Data\n"
     )
 
@@ -478,11 +478,11 @@ def test_fs_ignore_literal_bracket_escaped(tmp_path):
 
 
 def test_fs_ignore_read_from_normalized_dir(tmp_path):
-    # .fs-ignore лежит ВНУТРИ нормализуемого каталога и читается из него
+    # .fs-nrm лежит ВНУТРИ нормализуемого каталога и читается из него
     # (load_fs_ignore(root)); якорь '/' отсчитывается от этой же папки, а сам файл
-    # .fs-ignore (имя на '.') обходом пропускается и не переименовывается.
+    # .fs-nrm (имя на '.') обходом пропускается и не переименовывается.
     """Проверяет сценарий: fs ignore read from normalized dir."""
-    (tmp_path / ".fs-ignore").write_text("/Sub\n")
+    (tmp_path / ".fs-nrm").write_text("/Sub\n")
     (tmp_path / "Sub").mkdir()
     (tmp_path / "Other").mkdir()
     (tmp_path / "Sub" / "Отчёт 2020").write_text("x")    # исключён якорем /Sub
@@ -493,7 +493,7 @@ def test_fs_ignore_read_from_normalized_dir(tmp_path):
     renamed, skipped = fsnm.apply(tmp_path)
     assert (tmp_path / "Sub" / "Отчёт 2020").exists()            # исключён
     assert (tmp_path / "Other" / "otchiot_2020-00-00").exists()  # нормализован
-    assert (tmp_path / ".fs-ignore").is_file()                   # сам файл уцелел
-    # Посчитан только переименованный сосед: .fs-ignore не попал в счётчики.
+    assert (tmp_path / ".fs-nrm").is_file()                   # сам файл уцелел
+    # Посчитан только переименованный сосед: .fs-nrm не попал в счётчики.
     assert renamed == 1
     assert skipped == 0

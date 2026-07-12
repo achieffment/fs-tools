@@ -8,8 +8,8 @@ from fs_tools.checker import FsChecker, load_fs_rule
 
 
 def _check(root: Path, rule_text: str) -> list[str]:
-    """Записывает .fs-check в корень, прогоняет проверку, возвращает отсутствующие пути."""
-    (root / ".fs-check").write_text(rule_text, encoding="utf-8")
+    """Записывает .fs-chk в корень, прогоняет проверку, возвращает отсутствующие пути."""
+    (root / ".fs-chk").write_text(rule_text, encoding="utf-8")
     return FsChecker(load_fs_rule(root)).check(root).missing
 
 
@@ -280,7 +280,7 @@ def test_path_negation_mask_excludes_branch(
     assert missing == ["Code/Python/Projects"]
 
 
-# Канонический .fs-check (источник истины для оракула ниже).
+# Канонический .fs-chk (источник истины для оракула ниже).
 _CANONICAL_RULE = (
     "/Activities\n"
     "/Activities/Web\n"
@@ -342,7 +342,7 @@ def test_canonical_oracle_archive_excluded(
 def test_anchors_and_rules_counters(make_tree: Callable[[Iterable[str]], Path]) -> None:
     """Проверяет сценарий: anchors and rules counters."""
     root = make_tree(["Activities/3D/Projects/", "Activities/Web/Projects/"])
-    (root / ".fs-check").write_text("/Activities/*/Projects\n/Activities\n", encoding="utf-8")
+    (root / ".fs-chk").write_text("/Activities/*/Projects\n/Activities\n", encoding="utf-8")
     result = FsChecker(load_fs_rule(root)).check(root)
     assert result.rules_checked == 2
     # Якори: два занятия (3D, Web) для первого правила + сам root для второго.
@@ -359,7 +359,7 @@ def test_grouped_rules_preserve_anchor_counter(make_tree: Callable[[Iterable[str
             "Activities/Web/Projects/",
         ]
     )
-    (root / ".fs-check").write_text(
+    (root / ".fs-chk").write_text(
         "/Activities/*/Projects\n/Activities/*/Resources\n",
         encoding="utf-8",
     )
