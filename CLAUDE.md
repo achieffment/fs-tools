@@ -9,7 +9,7 @@
 содержание синхронизировано):
 
 - [`.claude/rules/audit-governor.md`](.claude/rules/audit-governor.md) — единый контракт аудита правок и всего проекта; практический запуск — skill [`audit-governor`](.claude/skills/audit-governor/SKILL.md);
-- [`.claude/rules/consistency.md`](.claude/rules/consistency.md) — консистентность кода, тестов, examples и документации; точки входа и коды возврата;
+- [`.claude/rules/docs-consistency.md`](.claude/rules/docs-consistency.md) — консистентность кода, тестов, examples и документации; матрица изменений; точки входа и коды возврата;
 - [`.claude/rules/cross-platform-safety.md`](.claude/rules/cross-platform-safety.md) — кроссплатформенность и безопасность файловых операций (Windows/WSL/macOS/Linux);
 - [`.claude/rules/naming-symmetry.md`](.claude/rules/naming-symmetry.md) — словарь замен и симметрия локальных имён переменных;
 - [`.claude/rules/testing.md`](.claude/rules/testing.md) — тесты режимов, обязательные проверки, демо-инварианты;

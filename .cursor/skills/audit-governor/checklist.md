@@ -11,7 +11,7 @@
 - `pyproject.toml`
 - `.cursor/rules/audit-governor.mdc`
 - `.cursor/rules/naming-symmetry.mdc`
-- `.cursor/rules/consistency.mdc`
+- `.cursor/rules/docs-consistency.mdc`
 - `.cursor/rules/cross-platform-safety.mdc`
 - `.cursor/rules/testing.mdc`
 - `.cursor/rules/comments-style.mdc`
@@ -24,6 +24,7 @@
 - `.cursor/rules/offload-safety.mdc`
 - `.cursor/rules/config-format.mdc`
 - `.cursor/rules/date-rule.mdc`
+- `.cursor/rules/rules-sync.mdc`
 
 ## Область аудита
 

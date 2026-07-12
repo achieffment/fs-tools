@@ -1,12 +1,28 @@
----
-description: Консистентность кода, тестов, примеров и документации
-alwaysApply: true
----
-
 # Консистентность всегда
+
+> Claude-эквивалент [`.cursor/rules/docs-consistency.mdc`](../../.cursor/rules/docs-consistency.mdc). Применяется всегда.
 
 Код, тесты, примеры и документация — единое целое и не должны расходиться. Любое
 изменение поведения синхронизирует все четыре пласта.
+
+## Матрица изменений
+
+| Тип изменения                                    | Код / тесты                                                                                   | Правила и docs                                                                                       |
+|-----------------------------------------------------|--------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
+| Новое правило normalizer                            | `rules/`, `build_normalizer()`, `rules/__init__.py`/`normalizer/__init__.py` (`__all__`), `tests/normalizer/rules/test_<rule>.py`, `examples/normalizer/<NN-rule>/` | [`examples.md`](examples.md) (нумерация фикстур), README normalizer-секция                              |
+| Изменение состава пакета `shared/`/`normalizer/`/`checker/`/`syncher/` | соответствующий модуль                                                                            | этот файл — раздел «Распределение по пакетам»                                                            |
+| Точка входа / код возврата (`runner.main`/`run`)    | `*/runner.py`, `*/cli_args.py`                                                                    | раздел «Точки входа и коды возврата», `tests/*/test_runner.py`                                           |
+| Контракт терминального вывода (`Статус:`/`Сводка:`) | `*/report.py`                                                                                     | раздел «Контракт терминального вывода», `tests/*/test_report.py`, `tests/*/test_runner.py`, `tests/*/test_examples.py`, README, `examples/*/README.md` |
+| Текст/условия отправки веб-хука                     | `*/notify.py`, `runner.py`                                                                        | раздел «Контракт текста веб-хуков», `tests/checker/test_runner.py`, `tests/syncher/test_runner.py`       |
+| Формат записи `.fs-log`                             | `shared/log.py`, режимные `*/log.py`                                                              | `tests/shared/test_log.py`, `tests/*/test_log.py`, [`cross-platform-safety.md`](cross-platform-safety.md) |
+| Новый CLI-флаг режима                               | `*/cli_args.py`, `_build_parser()` в `runner.py`                                                  | раздел «Локальный шаблон runner-парсеров»                                                                |
+| Симметрия normalizer/checker (`engine.py`, `Fs*`)   | `normalizer/engine.py`, `checker/engine.py`                                                       | раздел «Распределение по пакетам», [`naming-symmetry.md`](naming-symmetry.md)                            |
+| Фильтр `.fs-ignore`                                 | `normalizer/ignore.py`                                                                            | [`path-matching.md`](path-matching.md), `tests/normalizer/test_ignore.py`                                |
+| Семантика `.fs-check`                               | `checker/rule.py`, `checker/engine.py`                                                            | [`rule-matching.md`](rule-matching.md)                                                                   |
+| Формат `.fs-sync.toml`                              | `syncher/config.py`                                                                               | [`config-format.md`](config-format.md)                                                                   |
+| Трансляция include/exclude → rsync                  | `syncher/ignore.py`                                                                               | [`rsync-mapping.md`](rsync-mapping.md)                                                                   |
+| Логика offload (`[[backup]]`)                       | `syncher/offload.py`                                                                              | [`offload-safety.md`](offload-safety.md)                                                                 |
+| Новое/удалённое правило Cursor/Claude               | —                                                                                                  | [`rules-sync.md`](rules-sync.md) — карта соответствия (обе версии)                                       |
 
 Распределение по пакетам (`src/fs_tools/`):
 
@@ -104,3 +120,15 @@ alwaysApply: true
 
 Документация: единый `README.md` (три секции), `examples/README.md` (+ секции
 режимов). Перед завершением убедись, что ни один пласт не отстал.
+
+## Антипаттерны
+
+- Изменить поведение и не прогнать полный цикл проверок из
+  [`audit-governor.md`](audit-governor.md) перед фиксацией «готово».
+- Развести расхождение между кодом и парой `.claude/rules/*.md` /
+  `.cursor/rules/*.mdc` — см. [`rules-sync.md`](rules-sync.md).
+- Дублировать детальные политики режимных правил (`path-matching.md`,
+  `rule-matching.md`, `config-format.md` и т.д.) в README или `AGENTS.md`
+  вместо ссылки на них.
+- Обновить только один пласт (например, код) из «Матрицы изменений», оставив
+  тесты/примеры/документацию отставшими.

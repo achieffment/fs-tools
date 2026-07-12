@@ -13,8 +13,8 @@
   `@`-импорт `AGENTS.md`)
 - `.claude/rules/*.md` (16 файлов — адаптация `.cursor/rules/*.mdc`,
   1:1 плюс `rules-sync.md`): `audit-governor.md`, `comments-style.md`,
-  `config-format.md`, `consistency.md`, `cross-platform-safety.md`,
-  `date-rule.md`, `examples.md`, `imports.md`, `lazy-import-order.md`,
+  `config-format.md`, `cross-platform-safety.md`, `date-rule.md`,
+  `docs-consistency.md`, `examples.md`, `imports.md`, `lazy-import-order.md`,
   `naming-symmetry.md`, `offload-safety.md`, `path-matching.md`,
   `rsync-mapping.md`, `rule-matching.md`, `testing.md`, `rules-sync.md`
 
