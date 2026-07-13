@@ -16,7 +16,7 @@ alwaysApply: true
 | Cursor (`.cursor/rules/`)   | Claude (`.claude/rules/`)  | Тема                                                            |
 |-----------------------------|----------------------------|-----------------------------------------------------------------|
 | `audit-governor.mdc`        | `audit-governor.md`        | Контракт аудита правок и проекта                                |
-| `comments-style.mdc`        | `comments-style.md`        | Стиль комментариев в коде и документации                        |
+| `comments-style.mdc`        | `comments-style.md`        | Стиль комментариев в коде, документации и `*.toml`              |
 | `config-format.mdc`         | `config-format.md`         | Формат и валидация `.fs-syn.toml`                               |
 | `cross-platform-safety.mdc` | `cross-platform-safety.md` | Кроссплатформенность и безопасность ФС                          |
 | `date-rule.mdc`             | `date-rule.md`             | Осознанные допущения `DateRule`                                 |

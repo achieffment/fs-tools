@@ -1,3 +1,9 @@
+---
+description: Порядок последовательных блоков importlib.import_module
+globs: **/*.py
+alwaysApply: false
+---
+
 # Порядок lazy-import (`importlib.import_module`)
 
 В блоке последовательных загрузок через `importlib.import_module` порядок строк
