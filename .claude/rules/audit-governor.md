@@ -54,6 +54,13 @@
 
     .venv/bin/python -m pylint --persistent=n tests/path/to/file.py
 
+`pylint` ожидаемо сообщает `R0801` (duplicate-code) между
+`tests/checker/test_runner.py`, `tests/schemer/test_runner.py` и
+`tests/syncher/test_offload.py` — это следствие намеренной параллельной
+раскладки тестов режимов (см. [`testing.md`](testing.md),
+[`naming-symmetry.md`](naming-symmetry.md)), не повод к рефакторингу «до
+green» по этому конкретному предупреждению.
+
 ## Гибкость правил
 
 Если для прохождения проверок требуется корректировка `.claude/rules/*.md` /

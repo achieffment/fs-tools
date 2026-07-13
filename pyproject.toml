@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fs-tools"
-version = "0.1.0"
+version = "1.1.0"
 description = "Кросс-платформенные CLI-утилиты работы с файловой системой: нормализация имён, проверка структуры, синхронизация с сервером и проверка схемы"
 requires-python = ">=3.11"
 dependencies = ["pathspec>=0.12"]
