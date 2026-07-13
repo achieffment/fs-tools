@@ -33,10 +33,10 @@ def run(root: Path) -> int:
 
     `root` — каталог, где лежит `.fs-sch.toml`. Если конфиг задаёт
     `[defaults].apply_root`, реально обходится и проверяется он вместо `root`
-    (единственный механизм разнести конфиг и проверяемое дерево); `.fs-log`
+    (единственный механизм разнести конфиг и проверяемое дерево); `.fs-log.log`
     при этом остаётся рядом с конфигом (`root`), а не в `apply_root` — чтобы
     журналы всех режимов можно было держать в одном общем каталоге. Единственная
-    запись на диск — `.fs-log` (проверяемое дерево не мутируется). Веб-хук о
+    запись на диск — `.fs-log.log` (проверяемое дерево не мутируется). Веб-хук о
     нарушениях — fire-and-forget, на код возврата не влияет.
     """
     try:
@@ -62,10 +62,10 @@ def run(root: Path) -> int:
         lpath = write_fs_log(root, lines, tool="schemer", mode="production")
         print(f"Журнал: {lpath}")
     except OSError as exc:
-        sys.stderr.write(f"Не удалось записать журнал .fs-log: {exc}\n")
+        sys.stderr.write(f"Не удалось записать журнал .fs-log.log: {exc}\n")
     if fssm.violations:
         # Уведомление о невалидной структуре: текст лишь сигнализирует о проблеме,
-        # детали — в .fs-log. Fire-and-forget, ошибки/таймаут не влияют на прогон.
+        # детали — в .fs-log.log. Fire-and-forget, ошибки/таймаут не влияют на прогон.
         send_webhook("fs-schemer - выполнен с ошибкой.")
     return 2 if fssm.violations else 0
 

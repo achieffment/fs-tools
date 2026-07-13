@@ -18,7 +18,7 @@ def test_main_clean_run_returns_zero(tmp_path, monkeypatch, capsys):
     assert "Статус: ok. Нормализация завершена успешно." in out
     assert "Сводка: переименовано: 1; пропущено: 0; конфликты: 0; ошибки: 0." in out
     assert (tmp_path / "otchiot.txt").exists()
-    log = (tmp_path / ".fs-log").read_text(encoding="utf-8")
+    log = (tmp_path / ".fs-log.log").read_text(encoding="utf-8")
     assert "Инструмент: normalizer" in log
     assert "Режим: production" in log
     assert "Результат:" in log
@@ -118,7 +118,7 @@ def test_main_dry_run_returns_zero_without_changes(tmp_path, monkeypatch, capsys
     assert "Журнал:" in out
     assert (tmp_path / "Отчёт.txt").exists()
     assert (tmp_path / "otchiot.txt").exists() is False
-    text = (tmp_path / ".fs-log").read_text(encoding="utf-8")
+    text = (tmp_path / ".fs-log.log").read_text(encoding="utf-8")
     assert "Инструмент: normalizer" in text
     assert "Режим: dry-run" in text
     assert "Результат:" in text

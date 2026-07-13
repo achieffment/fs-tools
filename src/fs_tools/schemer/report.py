@@ -32,7 +32,7 @@ def format_violation(vio: Violation) -> str:
 
 
 def format_report(root: Path, result: SchemerResult) -> str:
-    """Заголовок с каталогом, статус и сводка. Список нарушений — только в `.fs-log`."""
+    """Заголовок с каталогом, статус и сводка. Список нарушений — только в `.fs-log.log`."""
     status = (
         "error. Найдены нарушения структуры/контента."
         if result.violations

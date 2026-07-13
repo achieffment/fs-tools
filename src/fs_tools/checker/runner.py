@@ -31,7 +31,7 @@ _MAIN_SPEC = ModeMainSpec(
 def run(root: Path) -> int:
     """0 — нарушений нет; 1 — нет/нечитаем .fs-chk; 2 — отсутствующие пути и/или ошибки чтения.
 
-    Единственная запись на диск — `.fs-log` (структура проверяемого каталога не
+    Единственная запись на диск — `.fs-log.log` (структура проверяемого каталога не
     меняется). Веб-хук о нарушениях — fire-and-forget, на код возврата не влияет.
     """
     try:
@@ -49,10 +49,10 @@ def run(root: Path) -> int:
         lpath = write_fs_log(root, log_lines, tool="checker", mode="production")
         print(f"Журнал: {lpath}")
     except OSError as exc:
-        sys.stderr.write(f"Не удалось записать журнал .fs-log: {exc}\n")
+        sys.stderr.write(f"Не удалось записать журнал .fs-log.log: {exc}\n")
     if fsch.missing or fsch.errlist:
         # Уведомление о невалидной структуре: текст лишь сигнализирует о проблеме,
-        # детали — в .fs-log. Fire-and-forget, ошибки/таймаут не влияют на прогон.
+        # детали — в .fs-log.log. Fire-and-forget, ошибки/таймаут не влияют на прогон.
         send_webhook("fs-checker - выполнен с ошибкой.")
     return 2 if (fsch.missing or fsch.errlist) else 0
 

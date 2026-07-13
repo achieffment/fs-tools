@@ -44,7 +44,7 @@ def test_format_report_ok_status(tmp_path: Path) -> None:
 
 
 def test_format_report_error_status_no_item_list(tmp_path: Path) -> None:
-    """С нарушениями — только статус error и сводка; список — задача `.fs-log`."""
+    """С нарушениями — только статус error и сводка; список — задача `.fs-log.log`."""
     result = SchemerResult(
         violations=[Violation(path="Topic/_Resources", kind="empty_group")],
         groups_checked=1,

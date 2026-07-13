@@ -11,11 +11,11 @@ WAREHOUSE = EXAMPLES / "Warehouse"
 
 
 def test_examples_matches_readme(capsys: pytest.CaptureFixture[str]) -> None:
-    """Проверяет сценарий: examples matches readme (терминал — сводка, детали — .fs-log).
+    """Проверяет сценарий: examples matches readme (терминал — сводка, детали — .fs-log.log).
 
     Конфиг лежит в `examples/schemer` (`EXAMPLES`), а `apply_root = "Warehouse"`
     перенаправляет обход на `WAREHOUSE` — демонстрация разнесения конфига и
-    проверяемого дерева; `.fs-log` при этом пишется рядом с конфигом (`EXAMPLES`).
+    проверяемого дерева; `.fs-log.log` при этом пишется рядом с конфигом (`EXAMPLES`).
     """
     code = run(EXAMPLES)
     out = capsys.readouterr().out

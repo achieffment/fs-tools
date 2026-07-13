@@ -13,7 +13,7 @@ src/fs_tools/
 │   ├── pick_folder.ps1       # нативный диалог Windows (IFileOpenDialog), грузится через importlib.resources
 │   ├── pathspec_compat.py    # _FACTORY: version-shim фабрики gitignore-паттернов
 │   ├── env.py                # единый .env: load_env (load_dotenv, override=False), путь, chmod 600
-│   ├── log.py                # единый журнал .fs-log (append_log)
+│   ├── log.py                # единый журнал .fs-log.log (append_log)
 │   ├── notify.py             # общая отправка веб-хуков (URL/tok по ключам, https-only, lazy requests)
 │   └── cli.py                # общий разбор аргументов, resolve_root, run_mode_main
 ├── normalizer/               # режим нормализации
@@ -84,14 +84,14 @@ pip install -e ".[normalizer,checker,syncher,schemer,dev]"             # editabl
   `importlib.resources.files("fs_tools.shared")`; путь к `.env` (`shared.env`) — через
   `FS_TOOLS_HOME`/CWD. Иначе не найдётся в установленном wheel.
 - **Безопасность ФС**: имя — один компонент пути (`enforce_safe_component`); без
-  перезаписи `dest`; deepest-first; case-only через временное имя; `.fs-log` только
+  перезаписи `dest`; deepest-first; case-only через временное имя; `.fs-log.log` только
   append. Скрытые (на `.`) и корень не трогаем.
 - **Нормализация (`normalizer`)**: `--dry-run` строит план без переименований;
-  журнал `.fs-log` пишется и в `dry-run`, и в `production` как последовательность
+  журнал `.fs-log.log` пишется и в `dry-run`, и в `production` как последовательность
   событий (`old -> new`, `(КОНФЛИКТ) ...`, `(ОШИБКА) ...`).
 - **Dry-run и журналы (оба режима)**: `normalizer` и `syncher` в `--dry-run`
-  дописывают `.fs-log` с режимом `dry-run` и планом действий.
-- **Формат `.fs-log`**: заголовок каждого блока включает дату, строки
+  дописывают `.fs-log.log` с режимом `dry-run` и планом действий.
+- **Формат `.fs-log.log`**: заголовок каждого блока включает дату, строки
   `Инструмент: normalizer|checker|syncher|schemer`, `Режим: production|dry-run`,
   `Результат:` и далее список строк в исходном порядке событий.
 - **Стиль runner-парсера**: если у режима есть свои флаги, используй
@@ -105,7 +105,7 @@ pip install -e ".[normalizer,checker,syncher,schemer,dev]"             # editabl
 - **Синхронизация (`syncher`)**: однонаправленность ПК → сервер; единый источник истины
   сопоставления — сам `rsync` (своего матчера нет); offload удаляет/архивирует только
   подтверждённо переданное; delete-guard блокирует массовые удаления (код 3); артефакты
-  (`.fs-syn.toml`, `.fs-log`, `.env`) не передаются никогда; коды возврата `0/1/2/3`
+  (`.fs-syn.toml`, `.fs-log.log`, `.env`) не передаются никогда; коды возврата `0/1/2/3`
   (наихудший среди профилей). Внешние бинарники: `rsync` (обязателен), `ssh` (SSH-цели).
   Журнал пишется в `production` и `dry-run` (с соответствующей меткой режима).
 - **Проверка схемы (`schemer`)**: конфиг `.fs-sch.toml` читается из того же
@@ -161,7 +161,7 @@ pip install -e ".[normalizer,checker,syncher,schemer,dev]"             # editabl
 ## Ограничения
 
 - Не коммить в ветку `master`.
-- `.env`, `.venv`, `.fs-log`, `dist/`, `build/` — в `.gitignore`, не коммить.
+- `.env`, `.venv`, `.fs-log.log`, `dist/`, `build/` — в `.gitignore`, не коммить.
 
 ## Аудит изменений и проекта
 

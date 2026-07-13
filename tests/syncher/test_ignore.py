@@ -5,13 +5,13 @@ from fs_tools.syncher.ignore import auto_exclude_filters
 
 def test_artifacts_constant() -> None:
     """Проверяет сценарий: artifacts constant."""
-    assert ARTIFACTS == (".fs-syn.toml", ".fs-log", ".env")
+    assert ARTIFACTS == (".fs-syn.toml", ".fs-log.log", ".env")
 
 
 def test_auto_exclude_filters_content() -> None:
     """Проверяет сценарий: auto exclude filters content."""
     rules = auto_exclude_filters()
-    assert rules == ["- /.fs-syn.toml", "- /.fs-log", "- .env"]
+    assert rules == ["- /.fs-syn.toml", "- /.fs-log.log", "- .env"]
 
 
 def test_build_filters_order() -> None:

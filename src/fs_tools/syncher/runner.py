@@ -112,7 +112,7 @@ def run(root: Path, args: argparse.Namespace) -> int:
 
     Загружает .fs-syn.toml, отбирает профили, проверяет наличие ssh для SSH-целей
     (ошибки запуска → 1), прогоняет профили последовательно, печатает отчёт, дописывает
-    .fs-log и в production-прогоне шлёт веб-хук при наихудшем коде 2/3.
+    .fs-log.log и в production-прогоне шлёт веб-хук при наихудшем коде 2/3.
     """
     try:
         cfg = load_config(root)
@@ -156,7 +156,7 @@ def run(root: Path, args: argparse.Namespace) -> int:
     try:
         write_fs_log(root, actions, tool="syncher", mode=mode)
     except OSError as exc:
-        sys.stderr.write(f"Не удалось записать журнал .fs-log: {exc}\n")
+        sys.stderr.write(f"Не удалось записать журнал .fs-log.log: {exc}\n")
     if (not is_dry) and worst in (2, 3):
         send_webhook("fs-syncher - выполнен с ошибкой.")
 

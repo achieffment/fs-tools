@@ -137,7 +137,7 @@ def test_scan_failure_writes_error_log_and_sends_webhook(
     make_tree: Callable[[Iterable[str]], Path],
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    """Сбой scandir в **-обходе -> код 2, (ОШИБКА) в .fs-log, веб-хук отправлен."""
+    """Сбой scandir в **-обходе -> код 2, (ОШИБКА) в .fs-log.log, веб-хук отправлен."""
     root = make_tree(["P/Blocked/_Archive/proj/Back/"])
     (root / ".fs-chk").write_text("/P/**/_Archive/*/Back\n", encoding="utf-8")
     blocked = root / "P" / "Blocked"

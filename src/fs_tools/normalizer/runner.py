@@ -66,7 +66,7 @@ def run(root: Path, *, dry_run: bool = False) -> int:
         lpath = write_fs_log(root, fsnm.actions, tool="normalizer", mode=mode)
         print(f"Журнал: {lpath}")
     except OSError as exc:
-        sys.stderr.write(f"Не удалось записать журнал .fs-log: {exc}\n")
+        sys.stderr.write(f"Не удалось записать журнал .fs-log.log: {exc}\n")
     return 2 if fsnm.errlist else 0
 
 

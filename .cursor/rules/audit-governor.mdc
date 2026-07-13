@@ -32,7 +32,7 @@ alwaysApply: true
 
 ## Обязательные точечные проверки (spot-checks)
 
-- dry-run контракт: `normalizer` и `syncher` при `--dry-run` пишут `.fs-log`
+- dry-run контракт: `normalizer` и `syncher` при `--dry-run` пишут `.fs-log.log`
   с пометкой `Режим: dry-run` и последовательностью dry-run-событий;
 - runner-паттерн: режимы с собственными флагами используют `_build_parser()`;
 - одноразовый `path_help` не выносится в отдельную константу без повторного

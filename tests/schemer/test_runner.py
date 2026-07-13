@@ -138,7 +138,7 @@ def test_apply_root_checks_separate_directory_logs_next_to_config(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    """apply_root перенаправляет обход/отчёт в другой каталог; .fs-log — рядом с конфигом."""
+    """apply_root перенаправляет обход/отчёт в другой каталог; .fs-log.log — рядом с конфигом."""
     cfg_root = tmp_path / "Config"
     cfg_root.mkdir()
     target = tmp_path / "Warehouse"

@@ -14,7 +14,7 @@
 | Точка входа / код возврата (`runner.main`/`run`)                                  | `*/runner.py`, `*/cli_args.py`                                                                                                                                      | раздел «Точки входа и коды возврата», `tests/*/test_runner.py`                                                                                         |
 | Контракт терминального вывода (`Статус:`/`Сводка:`)                               | `*/report.py`                                                                                                                                                       | раздел «Контракт терминального вывода», `tests/*/test_report.py`, `tests/*/test_runner.py`, `tests/*/test_examples.py`, README, `examples/*/README.md` |
 | Текст/условия отправки веб-хука                                                   | `*/notify.py`, `runner.py`                                                                                                                                          | раздел «Контракт текста веб-хуков», `tests/checker/test_runner.py`, `tests/syncher/test_runner.py`                                                     |
-| Формат записи `.fs-log`                                                           | `shared/log.py`, режимные `*/log.py`                                                                                                                                | `tests/shared/test_log.py`, `tests/*/test_log.py`, [`cross-platform-safety.md`](cross-platform-safety.md)                                              |
+| Формат записи `.fs-log.log`                                                       | `shared/log.py`, режимные `*/log.py`                                                                                                                                | `tests/shared/test_log.py`, `tests/*/test_log.py`, [`cross-platform-safety.md`](cross-platform-safety.md)                                              |
 | Новый CLI-флаг режима                                                             | `*/cli_args.py`, `_build_parser()` в `runner.py`                                                                                                                    | раздел «Локальный шаблон runner-парсеров»                                                                                                              |
 | Симметрия normalizer/checker (`engine.py`, `Fs*`)                                 | `normalizer/engine.py`, `checker/engine.py`                                                                                                                         | раздел «Распределение по пакетам», [`naming-symmetry.md`](naming-symmetry.md)                                                                          |
 | Фильтр `.fs-nrm`                                                                  | `normalizer/ignore.py`                                                                                                                                              | [`path-matching.md`](path-matching.md), `tests/normalizer/test_ignore.py`                                                                              |
@@ -36,7 +36,7 @@
  и checker), доступ к единому `.env` (`env.py`: `load_env`
  однократно грузит `.env` в `os.environ` через `load_dotenv(override=False)` — процесс
  важнее файла; плюс путь и `chmod 600`, ленивый `dotenv`), единый журнал
- `.fs-log` (`log.py`, `append_log` — заголовок с датой/инструментом/режимом и
+ `.fs-log.log` (`log.py`, `append_log` — заголовок с датой/инструментом/режимом и
  `Результат:`, содержимое строк и текст пустого блока задаются параметрами), общая отправка веб-хуков (`notify.py`: URL/tok по ключам,
  https-only, lazy `requests`), общий разбор аргументов, `resolve_root` и шаблон
  `run_mode_main` (`cli.py`).
@@ -121,7 +121,7 @@
   режимными тестами (`tests/checker/test_runner.py`,
   `tests/syncher/test_runner.py`, `tests/schemer/test_runner.py`) и документацией.
 
-Журнал `.fs-log` — намеренное исключение из идемпотентности (дополняется на каждом
+Журнал `.fs-log.log` — намеренное исключение из идемпотентности (дополняется на каждом
 запуске), он в `.gitignore`, а `reset.*` (только у normalizer) убирают его явным
 `rm`/`del`. Все режимы пишут журнал в `production` и `dry-run` (у `checker`/`schemer`
 режим всегда `production` — своих флагов dry-run нет); в `dry-run` фиксируется

@@ -1,4 +1,4 @@
-"""Общий append-журнал `.fs-log`: дата, инструмент, режим и строки.
+"""Общий append-журнал `.fs-log.log`: дата, инструмент, режим и строки.
 
 Формат один на все режимы: метка времени `YYYY-MM-DD HH:MM:SS`, строки
 `Инструмент: ...` и `Режим: ...`, строки тела с отступом, пустая строка-разделитель
@@ -12,7 +12,7 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 
-FS_LOG = ".fs-log"
+FS_LOG = ".fs-log.log"
 
 
 def append_log(
@@ -22,7 +22,7 @@ def append_log(
     meta: tuple[str, str] = ("unknown", "production"),
     when: datetime | None = None,
 ) -> Path:
-    """Дописать в root/.fs-log блок прогона: дата, инструмент, режим и строки.
+    """Дописать в root/.fs-log.log блок прогона: дата, инструмент, режим и строки.
 
     Создаёт файл, если его нет; иначе дополняет (append). Каждая строка `lines`
     пишется с отступом; пустой список фиксируется пометкой `empty_marker`. Параметр

@@ -104,7 +104,7 @@ Production-прогон (без `--dry-run`) **изменяет** песочни
 
 ```bash
 git restore examples/syncher
-git clean -fd examples/syncher    # уберёт _fs-backup/, .fs-log и прочие следы прогона
+git clean -fd examples/syncher    # уберёт _fs-backup/, .fs-log.log и прочие следы прогона
 ```
 
 > Пустые каталоги git не хранит, поэтому в `server-archive/` лежит файл-заглушка

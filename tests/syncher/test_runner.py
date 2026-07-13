@@ -113,7 +113,7 @@ def test_success_and_log(tmp_path: Path, make_tree: Callable[..., Path]) -> None
     (src / ".fs-syn.toml").write_text(_sync_config(src, dst), encoding="utf-8")
     assert main([str(src)]) == 0
     assert (dst / "a.txt").exists()
-    log = (src / ".fs-log").read_text(encoding="utf-8")
+    log = (src / ".fs-log.log").read_text(encoding="utf-8")
     assert "Результат:" in log
     assert "+ a.txt" in log
 
@@ -128,7 +128,7 @@ def test_dry_run_no_transfer_no_log(tmp_path: Path, make_tree: Callable[..., Pat
     (src / ".fs-syn.toml").write_text(_sync_config(src, dst), encoding="utf-8")
     assert main([str(src), "--dry-run"]) == 0
     assert not (dst / "a.txt").exists()          # dry-run ничего не передаёт
-    text = (src / ".fs-log").read_text(encoding="utf-8")
+    text = (src / ".fs-log.log").read_text(encoding="utf-8")
     assert "Инструмент: syncher" in text
     assert "Режим: dry-run" in text
     assert "Результат:" in text
@@ -150,7 +150,7 @@ def test_delete_guard_blocks_returns_3(tmp_path: Path, make_tree: Callable[..., 
         (src / f"f{i}.txt").unlink()
     assert main([str(src)]) == 3                 # массовое удаление заблокировано
     assert len(list(dst.iterdir())) == 6         # на сервере всё на месте
-    blocked_log = (src / ".fs-log").read_text(encoding="utf-8")
+    blocked_log = (src / ".fs-log.log").read_text(encoding="utf-8")
     assert "- f0.txt" not in blocked_log         # preflight-план не логируется как факт
     assert main([str(src), "--force-delete"]) == 0
     assert not list(dst.iterdir())             # после подтверждения — удалено
@@ -199,7 +199,7 @@ def test_profile_dry_run_no_log(
     out = capsys.readouterr().out
     assert "Режим: dry-run" in out
     assert not (dst / "a.txt").exists()
-    log = (src / ".fs-log").read_text(encoding="utf-8")
+    log = (src / ".fs-log.log").read_text(encoding="utf-8")
     assert "Инструмент: syncher" in log
     assert "Режим: dry-run" in log
     assert "Результат:" in log
@@ -232,7 +232,7 @@ def test_errors_are_written_to_log_in_order(
     assert main([str(src)]) == 2
     assert sent == ["fs-syncher - выполнен с ошибкой."]
     assert "[main] sync failed" not in capsys.readouterr().err
-    log = (src / ".fs-log").read_text(encoding="utf-8")
+    log = (src / ".fs-log.log").read_text(encoding="utf-8")
     op_ix = log.index("  + sent.txt")
     err_ix = log.index("  (ОШИБКА) [main] sync failed")
     assert op_ix < err_ix

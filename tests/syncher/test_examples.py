@@ -1,7 +1,7 @@
 """Регрессия песочницы: --dry-run на examples/syncher совпадает с зафиксированным итогом.
 
 Прогон детерминирован (локальные каталоги-приёмники, без сети): dry-run ничего не
-передаёт и не удаляет, но дописывает план в .fs-log.
+передаёт и не удаляет, но дописывает план в .fs-log.log.
 """
 import shutil
 from pathlib import Path
@@ -29,7 +29,7 @@ def test_examples_dry_run_matches_readme(capsys: pytest.CaptureFixture[str]) -> 
         "Сводка: профилей: 2; передано: 6; удалено: 2; выгружено: 0; "
         "ошибок: 0; блокировок: 0."
     ) in out
-    lpath = EXAMPLES / ".fs-log"
+    lpath = EXAMPLES / ".fs-log.log"
     assert lpath.exists()
     log = lpath.read_text(encoding="utf-8")
     assert "Инструмент: syncher" in log

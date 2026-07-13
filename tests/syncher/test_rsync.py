@@ -227,13 +227,13 @@ def test_real_artifacts_excluded(tmp_path: Path) -> None:
     dst.mkdir()
     (src / "a.txt").write_text("a", encoding="utf-8")
     (src / ".fs-syn.toml").write_text("x", encoding="utf-8")
-    (src / ".fs-log").write_text("x", encoding="utf-8")
+    (src / ".fs-log.log").write_text("x", encoding="utf-8")
     (src / ".env").write_text("secret", encoding="utf-8")
     profile = _profile(src, target_path=str(dst), delete=True)
     rsync_mod.run_rsync(build_command(profile, dry_run=False, delete=True))
     assert (dst / "a.txt").exists()
     assert not (dst / ".fs-syn.toml").exists()
-    assert not (dst / ".fs-log").exists()
+    assert not (dst / ".fs-log.log").exists()
     assert not (dst / ".env").exists()
 
 

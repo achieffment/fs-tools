@@ -1,4 +1,4 @@
-"""Тесты журнала .fs-log нормализатора (write_fs_log + сбор renames в FsNormalizer).
+"""Тесты журнала .fs-log.log нормализатора (write_fs_log + сбор renames в FsNormalizer).
 
 Общие механики журнала — в tests/shared/test_log.py. Фикстура `make_tree` — в conftest.py.
 """
@@ -134,7 +134,7 @@ def test_fs_log_keeps_success_conflict_error_order(tmp_path, monkeypatch):
 
 
 def test_fs_log_file_itself_not_normalized(tmp_path):
-    # .fs-log скрыт (на '.') — обходом пропускается, не переименовывается.
+    # .fs-log.log скрыт (на '.') — обходом пропускается, не переименовывается.
     """Проверяет сценарий: fs log file itself not normalized."""
     (tmp_path / FS_LOG).write_text("2026-06-11 13:00:00\n  (изменений нет)\n\n")
     fsnm = FsNormalizer(build_normalizer())

@@ -20,7 +20,7 @@ class ProfileReport:
     dry_run: bool = False
 
     def actions(self) -> list[str]:
-        """Маркированные строки операций для журнала .fs-log (только выполненное)."""
+        """Маркированные строки операций для журнала .fs-log.log (только выполненное)."""
         if self.blocked:
             return []
         ops = [f"+ {path}" for path in self.sent]
