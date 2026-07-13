@@ -46,11 +46,12 @@
 - Кроссплатформенность и безопасность.
 - Комментарии: минимум, актуальность, выравнивание по
   `.claude/rules/comments-style.md`.
-- Проверить автоконтроль Markdown-выравнивания:
-  `tests/shared/test_markdown_comments.py` проходит в составе `pytest`; для
-  командных fenced-блоков выравнивание считается по локальным подблокам
-  (между пустыми строками), опорная колонка — по самой длинной строке
-  подблока.
+- Проверить автоконтроль выравнивания inline-комментариев:
+  `tests/shared/test_markdown_comments.py` (командные fenced-блоки Markdown) и
+  `tests/shared/test_toml_comments.py` (файлы `*.toml`) проходят в составе
+  `pytest`; оба считают по локальным подблокам (между пустыми строками), но с
+  разными профилями опорной колонки — точные параметры в
+  `.claude/rules/comments-style.md`.
 - Проверить локальные naming-пары:
   - `src_rel/dst_rel` в `normalizer/engine.py`;
   - `map_norm_argument/add_norm_argument/norm_argv_from_namespace` в

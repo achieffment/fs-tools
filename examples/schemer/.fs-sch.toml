@@ -1,7 +1,10 @@
-# .fs-sch.toml — лежит в корне проверяемого дерева (здесь — Warehouse)
+# .fs-sch.toml — лежит рядом с examples/schemer/README.md, а не в проверяемом
+# дереве (apply_root указывает на него) — демонстрирует разнесение конфига и
+# проверяемого каталога (см. .claude/rules/scheme-format.md)
 
 [defaults]
-exclude_prefix = "_"            # префикс "служебных" файлов группы
+apply_root = "Warehouse"  # проверяется Warehouse/, а не каталог конфига
+exclude_prefix = "_"      # префикс "служебных" файлов группы
 
 [[group]]
 name = "_Knowledges"
@@ -45,7 +48,7 @@ default_rule = { line = 1, text = "# Заметки" }
 [[group]]
 name = "_Commands"
 default_rule = { line = 1, text = "# Команды" }
-strict = true                   # вложенность внутри этой группы — ошибка, а не норма
+strict = true  # вложенность внутри этой группы — ошибка, а не норма
 
   [[group.file]]
   name = "_main.md"
@@ -63,7 +66,7 @@ default_rule = { line = 1, text = "# Шаблоны" }
   text = "# Наработки"
 
 [[group]]
-name = "_Resources"             # strict не задан (false по умолчанию) — свалка произвольного вложенного контента
+name = "_Resources"  # strict не задан (false по умолчанию) — свалка произвольного вложенного контента
 
 [[group]]
 name = "_Archive"

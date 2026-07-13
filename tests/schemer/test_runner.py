@@ -176,6 +176,27 @@ def test_apply_root_relative_resolved_against_config_dir(
     assert (cfg_root / FS_LOG).is_file()
 
 
+def test_apply_root_nested_relative_path(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """apply_root допускает многосегментный путь (Workspace/Warehouse), не только имя."""
+    cfg_root = tmp_path / "Home"
+    target = tmp_path / "Home" / "Workspace" / "Warehouse"
+    (target / "Topic" / "_Resources").mkdir(parents=True)
+    (target / "Topic" / "_Resources" / "note.md").write_text("x", encoding="utf-8")
+    (cfg_root / ".fs-sch.toml").write_text(
+        f'[defaults]\napply_root = "Workspace/Warehouse"\n\n{_CONFIG}',
+        encoding="utf-8",
+    )
+    code = _run(monkeypatch, str(cfg_root))
+    out = capsys.readouterr().out
+    assert code == 0
+    assert f"Каталог: {target}" in out
+    assert (cfg_root / FS_LOG).is_file()
+
+
 def test_apply_root_missing_directory_returns_one(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

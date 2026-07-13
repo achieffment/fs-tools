@@ -4,6 +4,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from tests.shared.comment_align import AlignmentGroup
+
 _INLINE = re.compile(r"^(?P<base>.*\S)(?P<spaces>\s+)#\s.*$")
 _LANGS = {"bash", "sh", "shell", "powershell", "pwsh", "bat", "cmd"}
 
@@ -22,22 +24,11 @@ def _block_errors(path: Path) -> list[str]:
     errlist: list[str] = []
 
     def check_block(block_lines: list[str], start_line: int) -> None:
-        rows: list[tuple[int, int, int, str]] = []
-        base_len: list[int] = []
+        group = AlignmentGroup()
 
         def flush_group() -> None:
-            if len(rows) < 2:
-                rows.clear()
-                base_len.clear()
-                return
-            target = max(base_len) + 4
-            for ix, _base_size, hash_pos, text in rows:
-                if hash_pos != target:
-                    errlist.append(
-                        f"{path}:L{ix}: '#' at {hash_pos}, expected {target}: {text}"
-                    )
-            rows.clear()
-            base_len.clear()
+            for lineno, hash_pos, target, text in group.flush():
+                errlist.append(f"{path}:L{lineno}: '#' at {hash_pos}, expected {target}: {text}")
 
         for ix, text in enumerate(block_lines, start_line):
             bare = text.rstrip()
@@ -49,11 +40,9 @@ def _block_errors(path: Path) -> list[str]:
 
             match = _INLINE.match(text)
             if match is None:
-                base_len.append(len(bare))
+                group.add_plain(len(bare))
                 continue
-            curr_len = len(match.group("base"))
-            base_len.append(curr_len)
-            rows.append((ix, curr_len, text.index("#"), text))
+            group.add_commented(ix, text.index("#"), len(match.group("base")), text)
         flush_group()
 
     for ix, text in enumerate(lines, 1):

@@ -13,14 +13,14 @@ name = "site"
 local_root = "source"
 remote_root = "server"
 delete = true
-checksum = true                          # сверка по содержимому: одинаковые папки не передаются
+checksum = true                     # сверка по содержимому: одинаковые папки не передаются
 exclude = ["node_modules/", "cache/", "build/"]
-include = ["projects/keep/build/"]       # override: вернуть один build/ внутри проекта keep
+include = ["projects/keep/build/"]  # override: вернуть один build/ внутри проекта keep
 
 # Профиль выгрузки (offload): накопительный архив на "сервере".
 [[backup]]
 name = "vault"
 local_root = "archive"
 remote_root = "server-archive"
-after_push = "archive"                   # в режиме production перенос подтверждённого в _fs-backup
+after_push = "archive"  # в режиме production перенос подтверждённого в _fs-backup
 verify = true

@@ -154,8 +154,9 @@ pip install -e ".[normalizer,checker,syncher,schemer,dev]"             # editabl
 `tests/schemer/conftest.py`. Интеграционные тесты `syncher`
 помечены skip при отсутствии `rsync`. Идемпотентность нормализатора проверяй на копии
 `examples/normalizer/` (исходник под git не трогаем); демо-инвариант `syncher` —
-`examples/syncher/` `--dry-run`; демо-инвариант `schemer` —
-`examples/schemer/Warehouse/`.
+`examples/syncher/` `--dry-run`; демо-инвариант `schemer` — `examples/schemer/`
+(конфиг с `apply_root = "Warehouse"` перенаправляет обход в
+`examples/schemer/Warehouse/`).
 
 ## Ограничения
 

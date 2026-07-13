@@ -108,5 +108,6 @@
 Демо-инвариант syncher: `--dry-run` на `examples/syncher/` даёт зафиксированный итог
 (см. `examples/syncher/README.md`; проверяется `test_examples.py`, skip без rsync).
 
-Демо-инвариант schemer: прогон на `examples/schemer/Warehouse/` даёт ровно ожидаемое
-число нарушений (см. `examples/schemer/README.md`).
+Демо-инвариант schemer: прогон на `examples/schemer/` (конфиг с
+`apply_root = "Warehouse"` перенаправляет обход в `examples/schemer/Warehouse/`)
+даёт ровно ожидаемое число нарушений (см. `examples/schemer/README.md`).
