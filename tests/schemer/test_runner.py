@@ -133,6 +133,66 @@ def test_violations_writes_log_and_sends_webhook(
     assert sent[0] == "fs-schemer - выполнен с ошибкой."
 
 
+def test_apply_root_checks_separate_directory_logs_next_to_config(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """apply_root перенаправляет обход/отчёт в другой каталог; .fs-log — рядом с конфигом."""
+    cfg_root = tmp_path / "Config"
+    cfg_root.mkdir()
+    target = tmp_path / "Warehouse"
+    (target / "Topic" / "_Resources").mkdir(parents=True)
+    (target / "Topic" / "_Resources" / "note.md").write_text("x", encoding="utf-8")
+    (cfg_root / ".fs-sch.toml").write_text(
+        f'[defaults]\napply_root = "{target.as_posix()}"\n\n{_CONFIG}',
+        encoding="utf-8",
+    )
+    code = _run(monkeypatch, str(cfg_root))
+    out = capsys.readouterr().out
+    assert code == 0
+    assert f"Каталог: {target}" in out
+    assert (cfg_root / FS_LOG).is_file()
+    assert not (target / FS_LOG).exists()
+
+
+def test_apply_root_relative_resolved_against_config_dir(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Относительный apply_root резолвится от каталога конфига, не от CWD."""
+    cfg_root = tmp_path / "Config"
+    cfg_root.mkdir()
+    target = tmp_path / "Warehouse"
+    target.mkdir()
+    (target / "Topic" / "_Resources").mkdir(parents=True)
+    (target / "Topic" / "_Resources" / "note.md").write_text("x", encoding="utf-8")
+    (cfg_root / ".fs-sch.toml").write_text(
+        f'[defaults]\napply_root = "../Warehouse"\n\n{_CONFIG}',
+        encoding="utf-8",
+    )
+    code = _run(monkeypatch, str(cfg_root))
+    assert code == 0
+    assert (cfg_root / FS_LOG).is_file()
+
+
+def test_apply_root_missing_directory_returns_one(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """apply_root указывает на несуществующий каталог -> код 1."""
+    cfg_root = tmp_path / "Config"
+    cfg_root.mkdir()
+    (cfg_root / ".fs-sch.toml").write_text(
+        '[defaults]\napply_root = "missing"\n\n' + _CONFIG,
+        encoding="utf-8",
+    )
+    code = _run(monkeypatch, str(cfg_root))
+    assert code == 1
+    assert "каталог не найден" in capsys.readouterr().err
+
+
 def test_no_violations_logs_empty_result_no_webhook(
     monkeypatch: pytest.MonkeyPatch,
     make_tree: Callable[[Iterable[str]], Path],

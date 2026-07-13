@@ -4,7 +4,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from ..shared.cli import ModeMainSpec, run_mode_main
+from ..shared.cli import ModeMainSpec, resolve_root, run_mode_main
 from .config import SchemeConfigError, load_scheme_config
 from .engine import FsSchemer
 from .log import write_fs_log
@@ -31,16 +31,30 @@ _MAIN_SPEC = ModeMainSpec(
 def run(root: Path) -> int:
     """0 — нарушений нет; 1 — нет/невалиден .fs-sch.toml; 2 — найдены нарушения.
 
-    Единственная запись на диск — `.fs-log` (проверяемое дерево не мутируется).
-    Веб-хук о нарушениях — fire-and-forget, на код возврата не влияет.
+    `root` — каталог, где лежит `.fs-sch.toml`. Если конфиг задаёт
+    `[defaults].apply_root`, реально обходится и проверяется он вместо `root`
+    (единственный механизм разнести конфиг и проверяемое дерево); `.fs-log`
+    при этом остаётся рядом с конфигом (`root`), а не в `apply_root` — чтобы
+    журналы всех режимов можно было держать в одном общем каталоге. Единственная
+    запись на диск — `.fs-log` (проверяемое дерево не мутируется). Веб-хук о
+    нарушениях — fire-and-forget, на код возврата не влияет.
     """
     try:
         config = load_scheme_config(root)
     except SchemeConfigError as exc:
         sys.stderr.write(f"Ошибка: {exc}\n")
         return 1
-    fssm = FsSchemer(config).check(root)
-    print(format_report(root, fssm))
+    check_root = root
+    if config.apply_root is not None:
+        candidate = Path(config.apply_root).expanduser()
+        if not candidate.is_absolute():
+            candidate = root / candidate
+        resolved = resolve_root(str(candidate))
+        if resolved is None:
+            return 1
+        check_root = resolved
+    fssm = FsSchemer(config).check(check_root)
+    print(format_report(check_root, fssm))
     lines = [format_violation(vio) for vio in fssm.violations]
     # Журнал — вторичный артефакт: проверка уже выполнена, поэтому сбой записи
     # не роняем трейсбеком, а лишь предупреждаем (на код возврата не влияет).

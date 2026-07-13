@@ -68,10 +68,18 @@ class Group:
 
 @dataclass(frozen=True)
 class SchemeConfig:
-    """Разобранный .fs-sch.toml: префикс служебных файлов и упорядоченные группы."""
+    """Разобранный .fs-sch.toml: префикс служебных файлов и упорядоченные группы.
+
+    `apply_root` — сырое (неразрешённое) значение поля `[defaults].apply_root`:
+    путь каталога, который реально обходится и проверяется, если он отличается от
+    каталога, где лежит сам конфиг. `None` — поле не задано, каталог проверки =
+    каталог конфига (текущее поведение). Разрешение (абсолютный/относительный,
+    существование) — забота вызывающего кода (`runner.py`), не парсера.
+    """
 
     exclude_prefix: str
     groups: tuple[Group, ...]
+    apply_root: str | None = None
 
     def group_by_name(self, name: str) -> Group | None:
         """Найти группу по имени (регистрозависимо) или вернуть None."""
@@ -170,6 +178,12 @@ def parse_scheme_config(text: str) -> SchemeConfig:
     if (val := defaults.get("exclude_prefix")) is not None:
         exclude_prefix = _as_str(val, "[defaults]", "exclude_prefix")
 
+    apply_root: str | None = None
+    if (val := defaults.get("apply_root")) is not None:
+        apply_root = _as_str(val, "[defaults]", "apply_root")
+        if not apply_root:
+            raise SchemeConfigError("[defaults]: поле «apply_root» не может быть пустым")
+
     groups_bare = data.get("group", [])
     if not isinstance(groups_bare, list):
         raise SchemeConfigError("секция [[group]] должна быть массивом таблиц")
@@ -184,7 +198,7 @@ def parse_scheme_config(text: str) -> SchemeConfig:
         seen.add(group.name)
         groups.append(group)
 
-    return SchemeConfig(exclude_prefix=exclude_prefix, groups=tuple(groups))
+    return SchemeConfig(exclude_prefix=exclude_prefix, groups=tuple(groups), apply_root=apply_root)
 
 
 def load_scheme_config(root: Path) -> SchemeConfig:

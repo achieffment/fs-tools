@@ -175,3 +175,31 @@ def test_parse_scheme_config_without_reading_file() -> None:
     """parse_scheme_config работает над текстом напрямую (без чтения файла)."""
     config = parse_scheme_config('[[group]]\nname = "G"\n')
     assert [group.name for group in config.groups] == ["G"]
+
+
+def test_apply_root_default_none(write_scheme_toml: Callable[[str], Path]) -> None:
+    """apply_root не задан -> None (каталог проверки = каталог конфига)."""
+    root = write_scheme_toml('[[group]]\nname = "G"\n')
+    assert load_scheme_config(root).apply_root is None
+
+
+def test_apply_root_parsed(write_scheme_toml: Callable[[str], Path]) -> None:
+    """[defaults].apply_root разбирается как сырая строка (без резолвинга пути)."""
+    root = write_scheme_toml(
+        '[defaults]\napply_root = "../Warehouse"\n\n[[group]]\nname = "G"\n'
+    )
+    assert load_scheme_config(root).apply_root == "../Warehouse"
+
+
+def test_apply_root_empty_raises(write_scheme_toml: Callable[[str], Path]) -> None:
+    """Пустая строка apply_root -> SchemeConfigError."""
+    root = write_scheme_toml('[defaults]\napply_root = ""\n\n[[group]]\nname = "G"\n')
+    with pytest.raises(SchemeConfigError):
+        load_scheme_config(root)
+
+
+def test_apply_root_non_str_raises(write_scheme_toml: Callable[[str], Path]) -> None:
+    """apply_root не строка -> SchemeConfigError."""
+    root = write_scheme_toml('[defaults]\napply_root = 1\n\n[[group]]\nname = "G"\n')
+    with pytest.raises(SchemeConfigError):
+        load_scheme_config(root)
