@@ -1,8 +1,18 @@
-# AGENTS
+# AGENTS.md
+
+## Обзор
 
 Памятка для агентов по репозиторию `fs-tools` — единый пакет четырёх CLI-утилит
 (нормализация имён, проверка структуры, синхронизация с сервером, проверка схемы
 базы знаний) с общим ядром.
+
+## Роль
+
+Эксперт по кроссплатформенным Python CLI-утилитам работы с файловой системой
+(Windows/WSL/macOS/Linux): точные правки с сохранением контрактов
+(коды возврата, терминальный отчёт, текст веб-хука, формат `.fs-log.log`),
+минимальный diff, следование локальным соглашениям (`.claude/rules/`).
+Не переписывай модули «с нуля» и не навязывай архитектуру без запроса.
 
 ## Раскладка (src-layout)
 
@@ -61,6 +71,60 @@ CLI-флагов нет (`_build_parser()` не заводится).
 
 Точки входа (`pyproject.toml [project.scripts]`): `fs-normalizer`, `fs-checker`,
 `fs-syncher`, `fs-schemer`, `fs-tools` (диспетчер `<normalize|check|sync|scheme>`).
+
+## Правила проекта
+
+Правила продублированы для двух редакторов: Cursor (`.cursor/rules/*.mdc`) и
+Claude Code (`.claude/rules/*.md`, точка входа — [`CLAUDE.md`](CLAUDE.md)).
+Содержание синхронно (карта поддерживается синхронно с
+[`rules-sync.md`](.claude/rules/rules-sync.md)).
+
+| Cursor                                                                     | Claude                                                                   | Тема                                                           |
+|----------------------------------------------------------------------------|--------------------------------------------------------------------------|----------------------------------------------------------------|
+| [agents-format.mdc](.cursor/rules/agents-format.mdc)                       | [agents-format.md](.claude/rules/agents-format.md)                       | **Формат:** канонический скелет AGENTS/CLAUDE и файла-правила  |
+| [audit-governor.mdc](.cursor/rules/audit-governor.mdc)                     | [audit-governor.md](.claude/rules/audit-governor.md)                     | **Аудит:** единый контракт аудита правок и проекта             |
+| [collaboration-boundaries.mdc](.cursor/rules/collaboration-boundaries.mdc) | [collaboration-boundaries.md](.claude/rules/collaboration-boundaries.md) | **Границы:** поведение агента и стиль коммуникации             |
+| [comments-style.mdc](.cursor/rules/comments-style.mdc)                     | [comments-style.md](.claude/rules/comments-style.md)                     | **Комментарии:** стиль в коде, выравнивание docs/`*.toml`      |
+| [commit-hygiene.mdc](.cursor/rules/commit-hygiene.mdc)                     | [commit-hygiene.md](.claude/rules/commit-hygiene.md)                     | **Коммиты:** секреты перед коммитом, стилистика сообщений      |
+| [config-format.mdc](.cursor/rules/config-format.mdc)                       | [config-format.md](.claude/rules/config-format.md)                       | **Конфиг:** формат и валидация `.fs-syn.toml` (`syncher`)      |
+| [cross-platform-safety.mdc](.cursor/rules/cross-platform-safety.mdc)       | [cross-platform-safety.md](.claude/rules/cross-platform-safety.md)       | **Платформы:** кроссплатформенность и безопасность ФС          |
+| [date-rule.mdc](.cursor/rules/date-rule.mdc)                               | [date-rule.md](.claude/rules/date-rule.md)                               | **DateRule:** осознанные допущения (`normalizer`)              |
+| [docs-consistency.mdc](.cursor/rules/docs-consistency.mdc)                 | [docs-consistency.md](.claude/rules/docs-consistency.md)                 | **Синхронизация:** код ↔ правила ↔ AGENTS/CLAUDE ↔ README      |
+| [examples.mdc](.cursor/rules/examples.mdc)                                 | [examples.md](.claude/rules/examples.md)                                 | **Примеры:** формирование фикстур по режимам                   |
+| [external-references.mdc](.cursor/rules/external-references.mdc)           | [external-references.md](.claude/rules/external-references.md)           | **Самодостаточность:** запрет ссылок на внешние проекты        |
+| [imports.mdc](.cursor/rules/imports.mdc)                                   | [imports.md](.claude/rules/imports.md)                                   | **Импорты:** порядок (PEP 8 / isort)                           |
+| [lazy-import-order.mdc](.cursor/rules/lazy-import-order.mdc)               | [lazy-import-order.md](.claude/rules/lazy-import-order.md)               | **Lazy-import:** порядок `importlib.import_module`-блоков      |
+| [naming-symmetry.mdc](.cursor/rules/naming-symmetry.mdc)                   | [naming-symmetry.md](.claude/rules/naming-symmetry.md)                   | **Именование:** словарь замен и симметрия имён                 |
+| [offload-safety.mdc](.cursor/rules/offload-safety.mdc)                     | [offload-safety.md](.claude/rules/offload-safety.md)                     | **Offload:** безопасность локального удаления (`syncher`)      |
+| [path-matching.mdc](.cursor/rules/path-matching.mdc)                       | [path-matching.md](.claude/rules/path-matching.md)                       | **Фильтр `.fs-nrm`:** gitignore-семантика (`normalizer`)       |
+| [readme-format.mdc](.cursor/rules/readme-format.mdc)                       | [readme-format.md](.claude/rules/readme-format.md)                       | **README:** формат вводной части (секция «Обзор»)              |
+| [release-notes.mdc](.cursor/rules/release-notes.mdc)                       | [release-notes.md](.claude/rules/release-notes.md)                       | **Релизы:** формат названий и описаний релизов GitHub          |
+| [rsync-mapping.mdc](.cursor/rules/rsync-mapping.mdc)                       | [rsync-mapping.md](.claude/rules/rsync-mapping.md)                       | **rsync:** трансляция include/exclude в фильтры (`syncher`)    |
+| [rule-matching.mdc](.cursor/rules/rule-matching.mdc)                       | [rule-matching.md](.claude/rules/rule-matching.md)                       | **Семантика `.fs-chk`:** разворачивание и негативы (`checker`) |
+| [rules-sync.mdc](.cursor/rules/rules-sync.mdc)                             | [rules-sync.md](.claude/rules/rules-sync.md)                             | **Синхронизация правил:** карта `.mdc` ↔ `.md`                 |
+| [scheme-format.mdc](.cursor/rules/scheme-format.mdc)                       | [scheme-format.md](.claude/rules/scheme-format.md)                       | **Схема:** формат `.fs-sch.toml` и модель движка `schemer`     |
+| [testing.mdc](.cursor/rules/testing.mdc)                                   | [testing.md](.claude/rules/testing.md)                                   | **Тесты:** режимов, обязательные проверки, демо-инварианты     |
+
+Перед правками в соответствующей области — прочитать релевантное правило.
+
+## Рабочий процесс
+
+1. **Read first** — релевантное правило в `.claude/rules/`, затрагиваемые тесты
+   и примеры;
+2. **Design check** — SRP/DRY: нет ли уже похожей утилиты/правила, которое
+   можно переиспользовать, вместо нового кода;
+3. **Minimal diff** — без drive-by рефакторинга вне задачи;
+4. **Match conventions** — симметрия имён ([`naming-symmetry.md`](.claude/rules/naming-symmetry.md)),
+   паттерн `engine.py`/`Fs*` у normalizer/checker/schemer;
+5. **Preserve contracts** — коды возврата `runner.main`, формат терминального
+   отчёта (`Статус:`/`Сводка:`), текст веб-хука, формат `.fs-log.log`;
+6. **Register** — новое правило normalizer регистрируется в `build_normalizer()`
+   и ре-экспортируется в `rules/__init__.py`/`normalizer/__init__.py` (аналогичная
+   точка регистрации — для расширений других режимов);
+7. **Test** — полный цикл: `pytest`, `pylint --recursive=y src tests/*`, `ruff check .`,
+   `mypy --strict -p fs_tools`;
+8. **Sync docs** — по матрице [`docs-consistency.md`](.claude/rules/docs-consistency.md):
+   правила (оба каталога) → `AGENTS.md`/`CLAUDE.md` → `README.md`.
 
 ## Команды
 
@@ -162,6 +226,18 @@ pip install -e ".[normalizer,checker,syncher,schemer,dev]"             # editabl
 
 - Не коммить в ветку `master`.
 - `.env`, `.venv`, `.fs-log.log`, `dist/`, `build/` — в `.gitignore`, не коммить.
+
+## Границы
+
+Не угадывать при неясности, не коммитить/push без явной просьбы, не раздувать
+scope, не трогать сторонние пакеты, не переформатировать вне задачи. Детали —
+[`collaboration-boundaries.md`](.claude/rules/collaboration-boundaries.md)
+(Cursor: [`collaboration-boundaries.mdc`](.cursor/rules/collaboration-boundaries.mdc)).
+
+## Коммуникация
+
+Язык пользователя или репозитория; кратко: что сделано, зачем и как проверено.
+Детали — [`collaboration-boundaries.md`](.claude/rules/collaboration-boundaries.md).
 
 ## Аудит изменений и проекта
 

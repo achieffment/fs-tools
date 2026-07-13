@@ -44,6 +44,12 @@
 - `tests/shared/test_notify.py` — общая логика веб-хука (`shared.notify`): чтение
   конфигурации из env, https-only, lazy `requests`, Bearer-заголовок, гашение
   сетевых ошибок.
+- `tests/shared/test_rules_consistency.py` — автоматически проверяет инвариант
+  [`rules-sync.md`](rules-sync.md): симметрия пар `.claude/rules/*.md` ↔
+  `.cursor/rules/*.mdc`, идентичный (алфавитный) порядок правил в `CLAUDE.md`,
+  таблице «Правила проекта» `AGENTS.md` и карте `rules-sync.md`, наличие
+  blockquote-ссылки на парный `.mdc` и frontmatter в каждом `.mdc`. Это
+  постоянный regression-барьер вместо ручной сверки на каждом аудите.
 
 Обязательные виды проверки:
 

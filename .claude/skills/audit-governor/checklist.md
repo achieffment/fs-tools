@@ -12,13 +12,15 @@
 - `pyproject.toml`
 - `CLAUDE.md` (корневой: индекс со ссылками на `.claude/rules/*.md`,
   `@`-импорт `AGENTS.md`)
-- `.claude/rules/*.md` (17 файлов — адаптация `.cursor/rules/*.mdc`,
-  1:1 плюс `rules-sync.md`): `audit-governor.md`, `comments-style.md`,
-  `config-format.md`, `cross-platform-safety.md`, `date-rule.md`,
-  `docs-consistency.md`, `examples.md`, `imports.md`, `lazy-import-order.md`,
-  `naming-symmetry.md`, `offload-safety.md`, `path-matching.md`,
-  `rsync-mapping.md`, `rule-matching.md`, `scheme-format.md`, `testing.md`,
-  `rules-sync.md`
+- `.claude/rules/*.md` (23 файла — 1:1 адаптация `.cursor/rules/*.mdc`):
+  `agents-format.md`, `audit-governor.md`, `collaboration-boundaries.md`,
+  `comments-style.md`, `commit-hygiene.md`, `config-format.md`,
+  `cross-platform-safety.md`, `date-rule.md`, `docs-consistency.md`,
+  `examples.md`, `external-references.md`, `imports.md`,
+  `lazy-import-order.md`, `naming-symmetry.md`, `offload-safety.md`,
+  `path-matching.md`, `readme-format.md`, `release-notes.md`,
+  `rsync-mapping.md`, `rule-matching.md`, `rules-sync.md`,
+  `scheme-format.md`, `testing.md`
 
 ## Область аудита
 
@@ -52,6 +54,13 @@
   `pytest`; оба считают по локальным подблокам (между пустыми строками), но с
   разными профилями опорной колонки — точные параметры в
   `.claude/rules/comments-style.md`.
+- Проверить, что `tests/shared/test_rules_consistency.py` проходит в составе
+  `pytest`: симметрия пар `.claude/rules/*.md` ↔ `.cursor/rules/*.mdc`,
+  идентичный порядок правил в `CLAUDE.md`/`AGENTS.md`/`rules-sync.md`,
+  blockquote-ссылка и frontmatter в каждом файле-правиле (см.
+  `.claude/rules/rules-sync.md`) — это регрессионный барьер именно от того
+  типа расхождений, которые ранее находились только вручную на разных
+  прогонах аудита.
 - Проверить локальные naming-пары:
   - `src_rel/dst_rel` в `normalizer/engine.py`;
   - `map_norm_argument/add_norm_argument/norm_argv_from_namespace` в
