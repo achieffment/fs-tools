@@ -24,7 +24,11 @@
 - [`.claude/rules/rule-matching.md`](.claude/rules/rule-matching.md) — семантика `.fs-chk`, разворачивание и негативы (`checker`);
 - [`.claude/rules/scheme-format.md`](.claude/rules/scheme-format.md) — формат `.fs-sch.toml` и модель движка `schemer`;
 - [`.claude/rules/examples.md`](.claude/rules/examples.md) — формирование примеров-фикстур по режимам;
-- [`.claude/rules/rules-sync.md`](.claude/rules/rules-sync.md) — двусторонняя синхронизация правил Cursor (`.mdc`) и Claude (`.md`).
+- [`.claude/rules/readme-format.md`](.claude/rules/readme-format.md) — формат вводной части `README.md` (секция «Обзор»);
+- [`.claude/rules/rules-sync.md`](.claude/rules/rules-sync.md) — двусторонняя синхронизация правил Cursor (`.mdc`) и Claude (`.md`);
+- [`.claude/rules/commit-hygiene.md`](.claude/rules/commit-hygiene.md) — гигиена коммитов: проверка секретов перед коммитом и стилистика сообщений;
+- [`.claude/rules/release-notes.md`](.claude/rules/release-notes.md) — формат названий и описаний релизов GitHub, правка описаний существующих релизов;
+- [`.claude/rules/external-references.md`](.claude/rules/external-references.md) — запрет ссылок на внешние проекты-источники переиспользования (self-containment).
 
 Перед правками в соответствующей области — прочитать релевантное правило.
 
