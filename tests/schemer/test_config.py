@@ -97,6 +97,73 @@ def test_default_rule_parsed(write_scheme_toml: Callable[[str], Path]) -> None:
     assert (group.default_rule.line, group.default_rule.text) == (1, "# Заметки")
 
 
+def test_default_rule_extensions_parsed(write_scheme_toml: Callable[[str], Path]) -> None:
+    """default_rule.extensions разбирается в frozenset (нормализация в нижний регистр)."""
+    root = write_scheme_toml(
+        '[[group]]\n'
+        'name = "_Blueprints"\n'
+        'default_rule = { line = 1, text = "# Шаблоны", extensions = [".MD", ".txt"] }\n'
+    )
+    group = load_scheme_config(root).group_by_name("_Blueprints")
+    assert group is not None
+    assert group.default_rule is not None
+    assert group.default_rule.extensions == frozenset({".md", ".txt"})
+    assert group.default_rule.exclude_extensions is None
+
+
+def test_default_rule_exclude_extensions_parsed(write_scheme_toml: Callable[[str], Path]) -> None:
+    """default_rule.exclude_extensions разбирается в frozenset."""
+    root = write_scheme_toml(
+        '[[group]]\n'
+        'name = "G"\n'
+        'default_rule = { line = 1, text = "x", exclude_extensions = [".bin"] }\n'
+    )
+    group = load_scheme_config(root).group_by_name("G")
+    assert group is not None
+    assert group.default_rule is not None
+    assert group.default_rule.exclude_extensions == frozenset({".bin"})
+    assert group.default_rule.extensions is None
+
+
+def test_default_rule_extensions_and_exclude_together_parsed(
+    write_scheme_toml: Callable[[str], Path],
+) -> None:
+    """extensions и exclude_extensions можно задать одновременно (комбинируются)."""
+    root = write_scheme_toml(
+        '[[group]]\n'
+        'name = "G"\n'
+        'default_rule = { line = 1, text = "x", extensions = [".md", ".txt"], '
+        'exclude_extensions = [".txt"] }\n'
+    )
+    group = load_scheme_config(root).group_by_name("G")
+    assert group is not None
+    assert group.default_rule is not None
+    assert group.default_rule.extensions == frozenset({".md", ".txt"})
+    assert group.default_rule.exclude_extensions == frozenset({".txt"})
+
+
+def test_default_rule_extensions_empty_list_raises(
+    write_scheme_toml: Callable[[str], Path],
+) -> None:
+    """extensions — пустой список -> ошибка (список без значений бессмысленен)."""
+    root = write_scheme_toml(
+        '[[group]]\nname = "G"\ndefault_rule = { line = 1, text = "x", extensions = [] }\n'
+    )
+    with pytest.raises(SchemeConfigError):
+        load_scheme_config(root)
+
+
+def test_default_rule_extensions_without_dot_raises(
+    write_scheme_toml: Callable[[str], Path],
+) -> None:
+    """Элемент extensions без ведущей точки -> ошибка."""
+    root = write_scheme_toml(
+        '[[group]]\nname = "G"\ndefault_rule = { line = 1, text = "x", extensions = ["md"] }\n'
+    )
+    with pytest.raises(SchemeConfigError):
+        load_scheme_config(root)
+
+
 def test_group_name_not_unique_raises(write_scheme_toml: Callable[[str], Path]) -> None:
     """Дублирующееся имя группы — ошибка."""
     root = write_scheme_toml('[[group]]\nname = "G"\n\n[[group]]\nname = "G"\n')

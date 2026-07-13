@@ -13,6 +13,9 @@
 содержимое не классифицируется ни группой, ни тематическим узлом, F15 на них не
 срабатывает — вложенность внутри группы разрешена. `strict=True` включает прежнее
 поведение: подпапки группы заново классифицируются наравне с остальным деревом.
+`default_rule.extensions`/`exclude_extensions` (см. `config.py`) сужают круг файлов,
+которые вообще читаются под `default_rule` — не подошедшие под фильтр не читаются
+и не попадают в `files_checked` (не нарушение).
 
 Обход — `os.walk` от корня без `followlinks` (симлинки не разыменовываются); скрытые
 (на `.`) каталоги и файлы пропускаются — как у normalizer/checker.
@@ -64,6 +67,22 @@ def _has_any_visible_file(curr: Path) -> bool:
         if _visible_filenames(filenames):
             return True
     return False
+
+
+def _matches_extension_filter(name: str, rule: ContentRule) -> bool:
+    """default_rule: подходит ли `name` под её extensions/exclude_extensions.
+
+    Оба условия независимы и комбинируются через «И»: не заданный `extensions`
+    не сужает набор (стартуем со «всех файлов»), не заданный `exclude_extensions`
+    ничего из набора не убирает. Оба не заданы -> подходит любой файл (прежнее
+    поведение). Расширение сравнивается регистронезависимо (`Path.suffix.lower()`).
+    """
+    suffix = Path(name).suffix.lower()
+    if rule.extensions is not None and suffix not in rule.extensions:
+        return False
+    if rule.exclude_extensions is not None and suffix in rule.exclude_extensions:
+        return False
+    return True
 
 
 def _check_content(target: Path, rel: str, rule: ContentRule) -> Violation | None:
@@ -158,12 +177,15 @@ class FsSchemer:
                 violations.add(content)
 
         if group.default_rule is not None:
+            rule = group.default_rule
             for name in visible_files:
                 if name in handled or name.startswith(self._config.exclude_prefix):
                     continue
+                if not _matches_extension_filter(name, rule):
+                    continue
                 files_checked = files_checked + 1
                 rel = (rel_dir / name).as_posix()
-                content = _check_content(curr / name, rel, group.default_rule)
+                content = _check_content(curr / name, rel, rule)
                 if content is not None:
                     violations.add(content)
 

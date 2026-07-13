@@ -22,10 +22,25 @@ class SchemeConfigError(Exception):
 
 @dataclass(frozen=True)
 class ContentRule:
-    """Контент-правило: 1-based номер строки и её точный ожидаемый текст."""
+    """Контент-правило: 1-based номер строки и её точный ожидаемый текст.
+
+    `extensions`/`exclude_extensions` имеют смысл только у `default_rule` (у
+    `group.file` правило и так адресовано конкретному имени файла) — ограничивают
+    круг «обычных» файлов группы, которые вообще читаются для контент-проверки.
+    Оба независимы и комбинируются через «И»: `extensions` (whitelist) отбирает
+    файлы с перечисленными расширениями, `exclude_extensions` (blacklist) из этого
+    отбора убирает перечисленные. Каждое поле само по себе опционально: не задано
+    `extensions` — стартовый набор «все файлы группы»; не задано
+    `exclude_extensions` — из набора ничего не убирается. Оба не заданы — читаются
+    все файлы группы (прежнее поведение); заданы оба сразу — валидная комбинация
+    («из whitelist убрать эти»). Сравнение регистронезависимое (расширения
+    нормализуются в нижний регистр).
+    """
 
     line: int
     text: str
+    extensions: frozenset[str] | None = None
+    exclude_extensions: frozenset[str] | None = None
 
 
 @dataclass(frozen=True)
@@ -107,6 +122,20 @@ def _as_int(value: Any, where: str, field_name: str) -> int:
     return value
 
 
+def _build_extension_set(value: Any, where: str, field_name: str) -> frozenset[str]:
+    if not isinstance(value, list) or not value:
+        raise SchemeConfigError(f"{where}: поле «{field_name}» должно быть непустым списком строк")
+    result: set[str] = set()
+    for item in value:
+        if not isinstance(item, str) or not item.startswith("."):
+            raise SchemeConfigError(
+                f"{where}: элементы «{field_name}» должны быть строками "
+                "с ведущей точкой (напр. «.md»)"
+            )
+        result.add(item.lower())
+    return frozenset(result)
+
+
 def _build_content_rule(bare: dict[str, Any], where: str) -> ContentRule:
     line = _as_int(bare.get("line"), where, "line")
     if line < 1:
@@ -114,7 +143,15 @@ def _build_content_rule(bare: dict[str, Any], where: str) -> ContentRule:
     text = _as_str(bare.get("text"), where, "text")
     if not text:
         raise SchemeConfigError(f"{where}: поле «text» не может быть пустым")
-    return ContentRule(line=line, text=text)
+    extensions: frozenset[str] | None = None
+    if (val := bare.get("extensions")) is not None:
+        extensions = _build_extension_set(val, where, "extensions")
+    exclude_extensions: frozenset[str] | None = None
+    if (val := bare.get("exclude_extensions")) is not None:
+        exclude_extensions = _build_extension_set(val, where, "exclude_extensions")
+    return ContentRule(
+        line=line, text=text, extensions=extensions, exclude_extensions=exclude_extensions
+    )
 
 
 def _build_group_file(bare: dict[str, Any], group_name: str) -> GroupFile:

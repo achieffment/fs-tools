@@ -67,7 +67,9 @@ bin/scheme.bat        # Windows
 `default_rule` — контент-правило для «обычных» файлов группы, `strict = true` у
 `_Commands` — включает прежнее строгое поведение (вложенность в этой группе —
 ошибка), тогда как `_Resources` оставлена без `strict` (дефолт `false` — вложенность
-разрешена).
+разрешена). `_Blueprints.default_rule` дополнительно задаёт `extensions = [".md"]`
+(whitelist по расширению) — демонстрируется на `Code/_Blueprints/asset.bin`
+(см. ниже).
 
 ## Ожидаемый результат
 
@@ -110,6 +112,11 @@ bin/scheme.bat        # Windows
 - `Code/_Resources/Library/Sub/asset.bin` — лежит на два уровня глубже прямых
   детей `_Resources`; `strict` не задан (`false` по умолчанию) — обход не
   спускается в подпапки этой группы, F15 сюда не заходит;
+- `Code/_Blueprints/asset.bin` — бинарный файл (невалидный UTF-8) лежит прямо в
+  группе, но `default_rule` этой группы задаёт `extensions = [".md"]` — файл не
+  подходит под фильтр, поэтому вообще не читается: без фильтра тот же файл дал бы
+  ложный `read_error` (именно этот сценарий и мотивировал появление
+  `extensions`/`exclude_extensions`, см. [`scheme-format.md`](../../.claude/rules/scheme-format.md));
 - `.fs-sch.toml` — вообще не участвует в обходе: он лежит вне проверяемого
   корня `Warehouse/` (в `examples/schemer/`, рядом с этим `README.md`).
 

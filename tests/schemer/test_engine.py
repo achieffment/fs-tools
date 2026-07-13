@@ -277,3 +277,86 @@ def test_counters_groups_and_files_checked(make_tree: Callable[[Iterable[str]], 
     assert result.groups_checked == 1
     assert result.files_checked == 1  # только _main.md — единственный видимый файл
     assert not result.violations
+
+
+def test_default_rule_extensions_skips_non_matching_binary(
+    make_tree: Callable[[Iterable[str]], Path],
+) -> None:
+    """extensions=[.md]: не-md файл не читается default_rule -> нет read_error."""
+    config = parse_scheme_config(
+        '[[group]]\nname = "_Resources"\n'
+        'default_rule = { line = 1, text = "x", extensions = [".md"] }\n'
+    )
+    root = make_tree(["Topic/_Resources/"])
+    _write(root, "Topic/_Resources/note.md", "x\n")
+    (root / "Topic/_Resources/asset.bin").write_bytes(b"\xb2\xff\x00")
+    result = FsSchemer(config).check(root)
+    assert not result.violations
+    assert result.files_checked == 1  # только note.md; asset.bin отфильтрован
+
+
+def test_default_rule_extensions_still_checks_matching_file(
+    make_tree: Callable[[Iterable[str]], Path],
+) -> None:
+    """extensions=[.md]: файл с подходящим расширением проверяется как обычно."""
+    config = parse_scheme_config(
+        '[[group]]\nname = "_Resources"\n'
+        'default_rule = { line = 1, text = "# X", extensions = [".md"] }\n'
+    )
+    root = make_tree(["Topic/_Resources/"])
+    _write(root, "Topic/_Resources/note.md", "плохо\n")
+    result = FsSchemer(config).check(root)
+    assert {vio.path: vio.kind for vio in result.violations} == {
+        "Topic/_Resources/note.md": "bad_header",
+    }
+
+
+def test_default_rule_exclude_extensions_skips_listed(
+    make_tree: Callable[[Iterable[str]], Path],
+) -> None:
+    """exclude_extensions=[.bin]: файл с этим расширением не читается (blacklist)."""
+    config = parse_scheme_config(
+        '[[group]]\nname = "_Resources"\n'
+        'default_rule = { line = 1, text = "x", exclude_extensions = [".bin"] }\n'
+    )
+    root = make_tree(["Topic/_Resources/"])
+    _write(root, "Topic/_Resources/note.txt", "x\n")
+    (root / "Topic/_Resources/asset.bin").write_bytes(b"\xb2\xff\x00")
+    result = FsSchemer(config).check(root)
+    assert not result.violations
+    assert result.files_checked == 1  # только note.txt; asset.bin в exclude-списке
+
+
+def test_default_rule_extensions_case_insensitive(
+    make_tree: Callable[[Iterable[str]], Path],
+) -> None:
+    """Расширение в имени файла и в конфиге сравнивается регистронезависимо."""
+    config = parse_scheme_config(
+        '[[group]]\nname = "_Resources"\n'
+        'default_rule = { line = 1, text = "# X", extensions = [".MD"] }\n'
+    )
+    root = make_tree(["Topic/_Resources/"])
+    _write(root, "Topic/_Resources/NOTE.Md", "# X\n")
+    result = FsSchemer(config).check(root)
+    assert not result.violations
+    assert result.files_checked == 1
+
+
+def test_default_rule_extensions_and_exclude_combined(
+    make_tree: Callable[[Iterable[str]], Path],
+) -> None:
+    """extensions + exclude_extensions вместе: «И» — whitelist минус blacklist."""
+    config = parse_scheme_config(
+        '[[group]]\nname = "_Resources"\n'
+        'default_rule = { line = 1, text = "# X", extensions = [".md", ".txt"], '
+        'exclude_extensions = [".txt"] }\n'
+    )
+    root = make_tree(["Topic/_Resources/"])
+    _write(root, "Topic/_Resources/note.md", "плохо\n")   # .md, не в exclude -> проверяется
+    _write(root, "Topic/_Resources/skip.txt", "x\n")      # .txt, в exclude -> пропущен
+    (root / "Topic/_Resources/asset.bin").write_bytes(b"\xb2\xff\x00")  # не в extensions
+    result = FsSchemer(config).check(root)
+    assert {vio.path: vio.kind for vio in result.violations} == {
+        "Topic/_Resources/note.md": "bad_header",
+    }
+    assert result.files_checked == 1

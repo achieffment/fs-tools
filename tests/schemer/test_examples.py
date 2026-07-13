@@ -35,3 +35,5 @@ def test_examples_matches_readme(capsys: pytest.CaptureFixture[str]) -> None:
     assert "файл вне групповой папки: Code/_Commands/Old/legacy.md" in log
     # strict не задан (false) у _Resources: вложенный Library/Sub/asset.bin не даёт loose_file.
     assert "Library" not in log
+    # _Blueprints.default_rule.extensions=[".md"]: asset.bin не читается -> нет read_error.
+    assert "asset.bin" not in log
