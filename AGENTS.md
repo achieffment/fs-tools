@@ -107,6 +107,15 @@ Claude Code (`.claude/rules/*.md`, точка входа — [`CLAUDE.md`](CLAUD
 
 Перед правками в соответствующей области — прочитать релевантное правило.
 
+## Синхронизация с Claude
+
+Проект поддерживает оба редактора: `.cursor/rules/*.mdc` (Cursor) и
+`.claude/rules/*.md` (Claude Code, точка входа — [`CLAUDE.md`](CLAUDE.md))
+содержат один и тот же канон. Синхронизация двусторонняя: Cursor → Claude и
+Claude → Cursor — правка, начатая в любом из двух наборов, переносится в
+парный в этом же шаге, не «потом» (см.
+[`.claude/rules/rules-sync.md`](.claude/rules/rules-sync.md)).
+
 ## Рабочий процесс
 
 1. **Read first** — релевантное правило в `.claude/rules/`, затрагиваемые тесты
