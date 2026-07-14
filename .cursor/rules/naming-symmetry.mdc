@@ -1,6 +1,7 @@
 ---
 description: Симметрия имен и словарь замен переменных
-alwaysApply: true
+globs: src/fs_tools/**/*.py,tests/**/*.py
+alwaysApply: false
 ---
 
 # Именование и симметрия переменных

@@ -1,3 +1,8 @@
+---
+paths:
+  - "examples/**"
+---
+
 # Примеры — по режимам и кейсам
 
 > Claude-эквивалент [`.cursor/rules/examples.mdc`](../../.cursor/rules/examples.mdc). Применяется при работе с `examples/**`.

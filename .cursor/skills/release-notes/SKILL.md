@@ -1,6 +1,9 @@
-# Формат релизов GitHub
+---
+name: release-notes
+description: Use when cutting a new GitHub release or editing the description of an existing one — canonical format for the release title and body sections of this project.
+---
 
-> Claude-эквивалент [`.cursor/rules/release-notes.mdc`](../../.cursor/rules/release-notes.mdc). Применяется при выпуске нового релиза GitHub или правке описания существующего.
+# Формат релизов GitHub
 
 Правило зафиксировано по факту фактических релизов проекта (`v1.0.0`, `v1.0.1`,
 `v1.1.0`) — не изобретать новый стиль, а следовать этому канону при выпуске
@@ -102,7 +105,7 @@
 
 ## Примечание
 
-Правило описывает GitHub release notes — не связано с [`commit-hygiene.md`](commit-hygiene.md)
-(стилистика самих commit-сообщений) и не требует правки кода/тестов; при
-изменении канона — обновить и парный Cursor-файл (см.
-[`rules-sync.md`](rules-sync.md)).
+Этот skill описывает GitHub release notes — не связан со skill
+[`commit-hygiene`](../commit-hygiene/SKILL.md) (стилистика самих
+commit-сообщений) и не требует правки кода/тестов; при изменении канона —
+обновить и парный `.cursor/skills/release-notes/SKILL.md`.

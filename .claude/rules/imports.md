@@ -1,3 +1,8 @@
+---
+paths:
+  - "**/*.py"
+---
+
 # Импорты — по PEP 8 (isort), а не по использованию
 
 > Claude-эквивалент [`.cursor/rules/imports.mdc`](../../.cursor/rules/imports.mdc). Применяется при работе с `**/*.py`.

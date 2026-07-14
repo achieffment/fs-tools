@@ -1,6 +1,9 @@
-# Гигиена коммитов: секреты и стилистика сообщений
+---
+name: commit-hygiene
+description: Use before `git commit`/`git push`, or when asked to check for leaked secrets or draft a commit message — verifies the staged diff for credentials and enforces this repository's Conventional Commits message style.
+---
 
-> Claude-эквивалент [`.cursor/rules/commit-hygiene.mdc`](../../.cursor/rules/commit-hygiene.mdc). Применяется всегда.
+# Гигиена коммитов: секреты и стилистика сообщений
 
 Перед `git commit`/`git push` (и по прямому запросу «проверь на секреты» /
 «оформи коммит») выполнять обе проверки ниже — они относятся к одному моменту

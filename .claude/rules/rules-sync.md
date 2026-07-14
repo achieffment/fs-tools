@@ -1,3 +1,11 @@
+---
+paths:
+  - ".claude/rules/**"
+  - ".cursor/rules/**"
+  - "AGENTS.md"
+  - "CLAUDE.md"
+---
+
 # Синхронизация правил Cursor ↔ Claude
 
 Проект поддерживает оба редактора: [`.cursor/rules/*.mdc`](../../.cursor/rules/)
@@ -8,34 +16,36 @@
 
 ## Карта соответствия файлов
 
-| Cursor (`.cursor/rules/`)      | Claude (`.claude/rules/`)     | Тема                                                            |
-|--------------------------------|-------------------------------|-----------------------------------------------------------------|
-| `agents-format.mdc`            | `agents-format.md`            | Канонический скелет AGENTS.md/CLAUDE.md и формат файла-правила  |
-| `audit-governor.mdc`           | `audit-governor.md`           | Контракт аудита правок и проекта                                |
-| `collaboration-boundaries.mdc` | `collaboration-boundaries.md` | Границы работы агента и стиль коммуникации                      |
-| `comments-style.mdc`           | `comments-style.md`           | Стиль комментариев в коде, документации и `*.toml`              |
-| `commit-hygiene.mdc`           | `commit-hygiene.md`           | Секреты перед коммитом и стилистика сообщений коммитов          |
-| `config-format.mdc`            | `config-format.md`            | Формат и валидация `.fs-syn.toml`                               |
-| `cross-platform-safety.mdc`    | `cross-platform-safety.md`    | Кроссплатформенность и безопасность ФС                          |
-| `date-rule.mdc`                | `date-rule.md`                | Осознанные допущения `DateRule`                                 |
-| `docs-consistency.mdc`         | `docs-consistency.md`         | Консистентность кода, тестов, examples, docs; матрица изменений |
-| `examples.mdc`                 | `examples.md`                 | Формирование примеров-фикстур                                   |
-| `external-references.mdc`      | `external-references.md`      | Запрет ссылок на внешние проекты-источники переиспользования    |
-| `imports.mdc`                  | `imports.md`                  | Порядок импортов (PEP 8 / isort)                                |
-| `lazy-import-order.mdc`        | `lazy-import-order.md`        | Порядок `importlib.import_module`-блоков                        |
-| `naming-symmetry.mdc`          | `naming-symmetry.md`          | Симметрия имён и словарь замен                                  |
-| `offload-safety.mdc`           | `offload-safety.md`           | Безопасность offload (`[[backup]]`)                             |
-| `path-matching.mdc`            | `path-matching.md`            | Фильтр `.fs-nrm` (gitignore-семантика)                          |
-| `readme-format.mdc`            | `readme-format.md`            | Формат вводной части `README.md` (секция «Обзор»)               |
-| `release-notes.mdc`            | `release-notes.md`            | Формат названий и описаний релизов GitHub                       |
-| `rsync-mapping.mdc`            | `rsync-mapping.md`            | Трансляция include/exclude в фильтры rsync                      |
-| `rule-matching.mdc`            | `rule-matching.md`            | Семантика `.fs-chk`                                             |
-| `rules-sync.mdc`               | `rules-sync.md`               | Этот файл — синхронизация правил между редакторами              |
-| `scheme-format.mdc`            | `scheme-format.md`            | Формат `.fs-sch.toml` и модель движка `schemer`                 |
-| `testing.mdc`                  | `testing.md`                  | Тесты режимов и проверка изменений                              |
+| Cursor (`.cursor/rules/`)      | Claude (`.claude/rules/`)     | Тема                                                           |
+|--------------------------------|-------------------------------|----------------------------------------------------------------|
+| `agents-format.mdc`            | `agents-format.md`            | Канонический скелет AGENTS.md/CLAUDE.md и формат файла-правила |
+| `audit-governor.mdc`           | `audit-governor.md`           | Контракт аудита правок и проекта                               |
+| `collaboration-boundaries.mdc` | `collaboration-boundaries.md` | Границы работы агента и стиль коммуникации                     |
+| `comments-style.mdc`           | `comments-style.md`           | Стиль комментариев в коде, документации и `*.toml`             |
+| `config-format.mdc`            | `config-format.md`            | Формат и валидация `.fs-syn.toml`                              |
+| `cross-platform-safety.mdc`    | `cross-platform-safety.md`    | Кроссплатформенность и безопасность ФС                         |
+| `date-rule.mdc`                | `date-rule.md`                | Осознанные допущения `DateRule`                                |
+| `docs-consistency.mdc`         | `docs-consistency.md`         | Консистентность кода, тестов, examples, docs; роли артефактов  |
+| `docs-consistency-matrix.mdc`  | `docs-consistency-matrix.md`  | Детальная матрица изменений; распределение по пакетам          |
+| `examples.mdc`                 | `examples.md`                 | Формирование примеров-фикстур                                  |
+| `external-references.mdc`      | `external-references.md`      | Запрет ссылок на внешние проекты-источники переиспользования   |
+| `imports.mdc`                  | `imports.md`                  | Порядок импортов (PEP 8 / isort)                               |
+| `lazy-import-order.mdc`        | `lazy-import-order.md`        | Порядок `importlib.import_module`-блоков                       |
+| `naming-symmetry.mdc`          | `naming-symmetry.md`          | Симметрия имён и словарь замен                                 |
+| `offload-safety.mdc`           | `offload-safety.md`           | Безопасность offload (`[[backup]]`)                            |
+| `path-matching.mdc`            | `path-matching.md`            | Фильтр `.fs-nrm` (gitignore-семантика)                         |
+| `readme-format.mdc`            | `readme-format.md`            | Формат вводной части `README.md` (секция «Обзор»)              |
+| `rsync-mapping.mdc`            | `rsync-mapping.md`            | Трансляция include/exclude в фильтры rsync                     |
+| `rule-matching.mdc`            | `rule-matching.md`            | Семантика `.fs-chk`                                            |
+| `rules-sync.mdc`               | `rules-sync.md`               | Этот файл — синхронизация правил между редакторами             |
+| `scheme-format.mdc`            | `scheme-format.md`            | Формат `.fs-sch.toml` и модель движка `schemer`                |
+| `testing.mdc`                  | `testing.md`                  | Тесты режимов и проверка изменений                             |
 
 Новое правило — добавить пару сразу в обоих каталогах и строку в этой таблице
-(в обеих версиях файла).
+(в обеих версиях файла). Правило, ставшее событийной процедурой без узнаваемого
+файлового паттерна (например `commit-hygiene`, `release-notes`) — переносится в
+skill (`.claude/skills/<name>/SKILL.md` + `.cursor/skills/<name>/SKILL.md`) и
+удаляется из этой карты и из обеих таблиц/списков в `AGENTS.md`/`CLAUDE.md`.
 
 ## Механические различия формата (не считаются расхождением)
 
@@ -43,11 +53,11 @@
 содержание (заголовки, порядок разделов, списки, примеры, формулировки
 политик) должно быть идентично по смыслу.
 
-| Аспект                         | Cursor `.mdc`                                | Claude `.md`                                                                                                                                         |
-|--------------------------------|----------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Frontmatter                    | YAML `description` / `globs` / `alwaysApply` | Отсутствует; вместо него первая строка после `# Заголовок` — `> Claude-эквивалент [.mdc-файл](../../.cursor/rules/<file>.mdc). Применяется <когда>.` |
-| Расширение в кросс-ссылках     | `` `name.mdc` ``                             | `` `name.md` ``                                                                                                                                      |
-| Упоминания расширения в тексте | `.mdc`                                       | `.md` или нейтральное «правила»                                                                                                                      |
+| Аспект                         | Cursor `.mdc`                                | Claude `.md`                                                                                                                                                                                                                                                    |
+|--------------------------------|----------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Frontmatter                    | YAML `description` / `globs` / `alwaysApply` | Только `paths` (список), присутствует ТОЛЬКО когда у парного `.mdc` `alwaysApply: false` (зеркалирует его `globs`); первая строка тела (после frontmatter, если есть) — `> Claude-эквивалент [.mdc-файл](../../.cursor/rules/<file>.mdc). Применяется <когда>.` |
+| Расширение в кросс-ссылках     | `` `name.mdc` ``                             | `` `name.md` ``                                                                                                                                                                                                                                                 |
+| Упоминания расширения в тексте | `.mdc`                                       | `.md` или нейтральное «правила»                                                                                                                                                                                                                                 |
 
 ## Обязательные семантические расхождения
 

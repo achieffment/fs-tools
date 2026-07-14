@@ -1,10 +1,4 @@
 {
   "version": 1,
-  "hooks": {
-    "beforeSubmitPrompt": [
-      {
-        "command": "bash .cursor/hooks/audit-reminder.sh"
-      }
-    ]
-  }
+  "hooks": {}
 }

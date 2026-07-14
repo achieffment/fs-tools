@@ -1,7 +1,7 @@
 ---
 description: Запрет ссылок на внешние проекты-источники переиспользования (self-containment)
-globs:
-alwaysApply: true
+globs: **/*.py,**/*.md,**/*.mdc,examples/**
+alwaysApply: false
 ---
 
 # Самодостаточность: без ссылок на внешние проекты-источники

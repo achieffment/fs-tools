@@ -1,6 +1,14 @@
+---
+paths:
+  - "**/*.py"
+  - "**/*.md"
+  - "**/*.mdc"
+  - "examples/**"
+---
+
 # Самодостаточность: без ссылок на внешние проекты-источники
 
-> Claude-эквивалент [`.cursor/rules/external-references.mdc`](../../.cursor/rules/external-references.mdc). Применяется всегда.
+> Claude-эквивалент [`.cursor/rules/external-references.mdc`](../../.cursor/rules/external-references.mdc). Применяется при работе с `**/*.py`, `**/*.md`, `**/*.mdc`, `examples/**`.
 
 Проект собирался из нескольких самостоятельных репозиториев (в т.ч. проектов,
 которые были источниками переиспускания кода/правил/README-формата на этапе

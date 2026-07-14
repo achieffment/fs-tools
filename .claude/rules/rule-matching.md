@@ -1,3 +1,9 @@
+---
+paths:
+  - "src/fs_tools/checker/rule.py"
+  - "src/fs_tools/checker/engine.py"
+---
+
 # Семантика `.fs-chk` и проверки
 
 > Claude-эквивалент [`.cursor/rules/rule-matching.mdc`](../../.cursor/rules/rule-matching.mdc). Применяется при работе с `src/fs_tools/checker/rule.py`, `src/fs_tools/checker/engine.py`.

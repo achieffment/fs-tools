@@ -1,6 +1,7 @@
 ---
 description: Кросс-платформенность и безопасность файловых операций
-alwaysApply: true
+globs: src/fs_tools/normalizer/**,src/fs_tools/syncher/**,src/fs_tools/shared/picker.py,src/fs_tools/shared/env.py,src/fs_tools/shared/log.py
+alwaysApply: false
 ---
 
 # Кросс-платформенная безопасность

@@ -1,5 +1,14 @@
 # Checklist: audit-governor
 
+## Contents
+
+- Источники истины
+- Область аудита
+- Обязательные проверки качества
+- Обязательные команды
+- Цикл выполнения
+- Definition of Done
+
 ## Источники истины
 
 - `AGENTS.md`
@@ -12,15 +21,17 @@
 - `pyproject.toml`
 - `CLAUDE.md` (корневой: индекс со ссылками на `.claude/rules/*.md`,
   `@`-импорт `AGENTS.md`)
-- `.claude/rules/*.md` (23 файла — 1:1 адаптация `.cursor/rules/*.mdc`):
+- `.claude/rules/*.md` (22 файла — 1:1 адаптация `.cursor/rules/*.mdc`):
   `agents-format.md`, `audit-governor.md`, `collaboration-boundaries.md`,
-  `comments-style.md`, `commit-hygiene.md`, `config-format.md`,
-  `cross-platform-safety.md`, `date-rule.md`, `docs-consistency.md`,
+  `comments-style.md`, `config-format.md`, `cross-platform-safety.md`,
+  `date-rule.md`, `docs-consistency.md`, `docs-consistency-matrix.md`,
   `examples.md`, `external-references.md`, `imports.md`,
   `lazy-import-order.md`, `naming-symmetry.md`, `offload-safety.md`,
-  `path-matching.md`, `readme-format.md`, `release-notes.md`,
-  `rsync-mapping.md`, `rule-matching.md`, `rules-sync.md`,
-  `scheme-format.md`, `testing.md`
+  `path-matching.md`, `readme-format.md`, `rsync-mapping.md`,
+  `rule-matching.md`, `rules-sync.md`, `scheme-format.md`, `testing.md`
+- `.claude/skills/*/SKILL.md` — событийные процедуры вне файлового паттерна:
+  `commit-hygiene` (перед `git commit`/`git push`), `release-notes` (при
+  выпуске релиза GitHub)
 
 ## Область аудита
 

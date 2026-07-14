@@ -1,3 +1,8 @@
+---
+paths:
+  - "src/fs_tools/syncher/*"
+---
+
 # Offload: безопасность локального удаления
 
 > Claude-эквивалент [`.cursor/rules/offload-safety.mdc`](../../.cursor/rules/offload-safety.mdc). Применяется при работе с `src/fs_tools/syncher/*`.

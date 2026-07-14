@@ -1,3 +1,8 @@
+---
+paths:
+  - "src/fs_tools/normalizer/rules/date.py"
+---
+
 # DateRule — осознанные допущения
 
 > Claude-эквивалент [`.cursor/rules/date-rule.mdc`](../../.cursor/rules/date-rule.mdc). Применяется при работе с `src/fs_tools/normalizer/rules/date.py`.

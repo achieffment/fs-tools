@@ -1,3 +1,8 @@
+---
+paths:
+  - "src/fs_tools/syncher/*"
+---
+
 # Правила include/exclude и их трансляция в rsync
 
 > Claude-эквивалент [`.cursor/rules/rsync-mapping.mdc`](../../.cursor/rules/rsync-mapping.mdc). Применяется при работе с `src/fs_tools/syncher/*`.

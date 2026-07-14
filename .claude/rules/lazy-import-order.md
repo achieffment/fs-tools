@@ -1,3 +1,8 @@
+---
+paths:
+  - "**/*.py"
+---
+
 # Порядок lazy-import (`importlib.import_module`)
 
 > Claude-эквивалент [`.cursor/rules/lazy-import-order.mdc`](../../.cursor/rules/lazy-import-order.mdc). Применяется точечно — при работе с последовательными блоками `importlib.import_module`.

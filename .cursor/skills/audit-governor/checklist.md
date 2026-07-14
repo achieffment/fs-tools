@@ -1,5 +1,14 @@
 # Checklist: audit-governor
 
+## Contents
+
+- Источники истины
+- Область аудита
+- Обязательные проверки качества
+- Обязательные команды
+- Цикл выполнения
+- Definition of Done
+
 ## Источники истины
 
 - `AGENTS.md`
@@ -8,23 +17,19 @@
 - `examples/checker/README.md`
 - `examples/normalizer/README.md`
 - `examples/syncher/README.md`
+- `examples/schemer/README.md`
 - `pyproject.toml`
-- `.cursor/rules/audit-governor.mdc`
-- `.cursor/rules/naming-symmetry.mdc`
-- `.cursor/rules/docs-consistency.mdc`
-- `.cursor/rules/cross-platform-safety.mdc`
-- `.cursor/rules/testing.mdc`
-- `.cursor/rules/comments-style.mdc`
-- `.cursor/rules/lazy-import-order.mdc`
-- `.cursor/rules/imports.mdc`
-- `.cursor/rules/examples.mdc`
-- `.cursor/rules/path-matching.mdc`
-- `.cursor/rules/rule-matching.mdc`
-- `.cursor/rules/rsync-mapping.mdc`
-- `.cursor/rules/offload-safety.mdc`
-- `.cursor/rules/config-format.mdc`
-- `.cursor/rules/date-rule.mdc`
-- `.cursor/rules/rules-sync.mdc`
+- `.cursor/rules/*.mdc` (22 файла — 1:1 адаптация `.claude/rules/*.md`):
+  `agents-format.mdc`, `audit-governor.mdc`, `collaboration-boundaries.mdc`,
+  `comments-style.mdc`, `config-format.mdc`, `cross-platform-safety.mdc`,
+  `date-rule.mdc`, `docs-consistency.mdc`, `docs-consistency-matrix.mdc`,
+  `examples.mdc`, `external-references.mdc`, `imports.mdc`,
+  `lazy-import-order.mdc`, `naming-symmetry.mdc`, `offload-safety.mdc`,
+  `path-matching.mdc`, `readme-format.mdc`, `rsync-mapping.mdc`,
+  `rule-matching.mdc`, `rules-sync.mdc`, `scheme-format.mdc`, `testing.mdc`
+- `.cursor/skills/*/SKILL.md` — событийные процедуры вне файлового паттерна:
+  `commit-hygiene` (перед `git commit`/`git push`), `release-notes` (при
+  выпуске релиза GitHub)
 
 ## Область аудита
 
@@ -40,40 +45,60 @@
 - Проверить все ключевые модули в `src/fs_tools/`.
 - Проверить все тесты в `tests/`.
 - Проверить документацию и examples.
-- Проверить правила и агентные инструкции.
+- Проверить правила (`.cursor/rules/*.mdc`) и агентные инструкции.
 
 ## Обязательные проверки качества
 
-- Покрыть все пласты без исключений: код, тесты, examples, docs, комментарии, rules, agent guide.
-- Подтвердить высокий инженерный уровень: SRP, DRY, минимализм, простота, читаемость.
+- Покрыть все пласты без исключений: код, тесты, examples, docs,
+  комментарии, rules, agent guide.
+- Подтвердить высокий инженерный уровень: SRP, DRY, минимализм, простота,
+  читаемость.
 - Консистентность кода, тестов, examples, docs, rules.
 - Кроссплатформенность и безопасность.
-- Комментарии: минимум, актуальность, выравнивание по `comments-style.mdc`.
-- Проверить автоконтроль Markdown-выравнивания: `tests/shared/test_markdown_comments.py`
-  проходит в составе `pytest`; для командных fenced-блоков выравнивание считается
-  по локальным подблокам (между пустыми строками), опорная колонка — по самой длинной
-  строке подблока.
+- Комментарии: минимум, актуальность, выравнивание по
+  `.cursor/rules/comments-style.mdc`.
+- Проверить автоконтроль выравнивания inline-комментариев:
+  `tests/shared/test_markdown_comments.py` (командные fenced-блоки Markdown) и
+  `tests/shared/test_toml_comments.py` (файлы `*.toml`) проходят в составе
+  `pytest`; оба считают по локальным подблокам (между пустыми строками), но с
+  разными профилями опорной колонки — точные параметры в
+  `.cursor/rules/comments-style.mdc`.
+- Проверить, что `tests/shared/test_rules_consistency.py` проходит в составе
+  `pytest`: симметрия пар `.claude/rules/*.md` ↔ `.cursor/rules/*.mdc`,
+  идентичный порядок правил в `CLAUDE.md`/`AGENTS.md`/`rules-sync.mdc`,
+  blockquote-ссылка и frontmatter в каждом файле-правиле (см.
+  `.cursor/rules/rules-sync.mdc`) — это регрессионный барьер именно от того
+  типа расхождений, которые ранее находились только вручную на разных
+  прогонах аудита.
 - Проверить локальные naming-пары:
   - `src_rel/dst_rel` в `normalizer/engine.py`;
-  - `map_norm_argument/add_norm_argument/norm_argv_from_namespace` в `fs_tools/cli.py`.
-- Проверить runner-паттерн режимов с флагами: используется `_build_parser()`, а
-  одноразовый `path_help` не вынесен в отдельную константу.
+  - `map_norm_argument/add_norm_argument/norm_argv_from_namespace` в
+    `fs_tools/cli.py`.
+- Проверить runner-паттерн режимов с флагами: используется
+  `_build_parser()`, а одноразовый `path_help` не вынесен в отдельную
+  константу.
 - Проверить dry-run контракт: `normalizer` и `syncher` пишут `.fs-log.log` при
   `--dry-run` с меткой режима `dry-run` и планом изменений.
 - Проверить общий контракт логирования `.fs-log.log` для всех режимов:
-  - единый формат заголовка блока (`дата`, `Инструмент`, `Режим`, `Результат`);
-  - append-only поведение (новые прогоны дописываются, а не перезаписывают файл);
-  - режимные маркеры пустого результата (`(изменений нет)` / `(нарушений нет)`)
-    согласованы между `src/fs_tools/shared/log.py`, режимными `log.py`,
-    тестами `tests/shared/test_log.py`, `tests/*/test_log.py` и документацией.
+  - единый формат заголовка блока (`дата`, `Инструмент`, `Режим`,
+    `Результат`);
+  - append-only поведение (новые прогоны дописываются, а не перезаписывают
+    файл);
+  - режимные маркеры пустого результата (`(изменений нет)` /
+    `(нарушений нет)`) согласованы между `src/fs_tools/shared/log.py`,
+    режимными `log.py`, тестами `tests/shared/test_log.py`,
+    `tests/*/test_log.py` и документацией.
 - Проверить контракт терминального вывода: двухстрочный финальный блок
-  `Статус:` + `Сводка:` в `normalizer`/`checker`/`syncher` и его консистентность
-  между кодом, тестами и документацией.
+  `Статус:` + `Сводка:` в `normalizer`/`checker`/`syncher`/`schemer` и его
+  консистентность между кодом, тестами и документацией (у `schemer` статус —
+  только `ok`/`error`, без `warn`).
 - Проверить контракт текста веб-хуков:
   - `fs-checker - выполнен с ошибкой.`
   - `fs-syncher - выполнен с ошибкой.`
-  - условия отправки (checker: при missing; syncher: только production и код 2/3)
-    согласованы в раннерах, тестах и документации.
+  - `fs-schemer - выполнен с ошибкой.`
+  - условия отправки (checker: при missing или ошибках сканирования
+    `**`-обхода (`errlist`); syncher: только production и код 2/3; schemer:
+    при наличии нарушений) согласованы в раннерах, тестах и документации.
 - Отсутствие необоснованных suppression-комментариев:
   - `# pylint: disable`
   - `# noqa`
@@ -105,4 +130,5 @@
 - Комментарии соответствуют правилам и не раздуты.
 - Кроссплатформенность и безопасность соблюдены.
 - Нет необоснованных suppression-комментариев.
-- При необходимости обновлены `.cursor/rules/*.mdc` и/или `AGENTS.md` минимально и по факту.
+- При необходимости обновлены `.cursor/rules/*.mdc` и/или `AGENTS.md`
+  минимально и по факту.

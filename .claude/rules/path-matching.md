@@ -1,3 +1,9 @@
+---
+paths:
+  - "src/fs_tools/normalizer/ignore.py"
+  - "src/fs_tools/normalizer/engine.py"
+---
+
 # Фильтр путей `.fs-nrm` (gitignore-семантика)
 
 > Claude-эквивалент [`.cursor/rules/path-matching.mdc`](../../.cursor/rules/path-matching.mdc). Применяется при работе с `src/fs_tools/normalizer/ignore.py`, `src/fs_tools/normalizer/engine.py`.

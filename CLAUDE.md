@@ -10,8 +10,7 @@
 
 ## Роль
 
-Эксперт по кроссплатформенным Python CLI-утилитам работы с файловой системой
-(Windows/WSL/macOS/Linux): точные правки с сохранением контрактов
+Кроссплатформенные правки (Windows/WSL/macOS/Linux) сохраняют контракты
 (коды возврата, терминальный отчёт, текст веб-хука, формат `.fs-log.log`),
 минимальный diff, следование локальным соглашениям (`.claude/rules/`).
 Не переписывай модули «с нуля» и не навязывай архитектуру без запроса.
@@ -20,56 +19,22 @@
 
 ```text
 src/fs_tools/
-├── shared/                   # общий код всех режимов
-│   ├── picker.py             # выбор каталога (Windows/WSL/macOS/терминал)
-│   ├── pick_folder.ps1       # нативный диалог Windows (IFileOpenDialog), грузится через importlib.resources
-│   ├── pathspec_compat.py    # _FACTORY: version-shim фабрики gitignore-паттернов
-│   ├── env.py                # единый .env: load_env (load_dotenv, override=False), путь, chmod 600
-│   ├── log.py                # единый журнал .fs-log.log (append_log)
-│   ├── notify.py             # общая отправка веб-хуков (URL/tok по ключам, https-only, lazy requests)
-│   └── cli.py                # общий разбор аргументов, resolve_root, run_mode_main
-├── normalizer/               # режим нормализации
-│   ├── rules/                # правила (по файлу на правило) + __all__
-│   ├── cli_args.py           # единое объявление normalizer-флагов и проброс argv для диспетчера/runner
-│   ├── name.py               # конвейер (build_normalizer, NameNormalizer)
-│   ├── engine.py             # обход и переименование (FsNormalizer, deepest-first)
-│   ├── ignore.py             # фильтр .fs-nrm
-│   ├── safety.py             # enforce_safe_component (имя — один компонент пути)
-│   ├── log.py                # write_fs_log (обёртка над shared.log)
-│   └── runner.py             # main/run
-├── checker/                  # режим проверки
-│   ├── rule.py               # разбор .fs-chk
-│   ├── engine.py             # разворачивание правил, сбор нарушений
-│   ├── report.py             # формат отчёта
-│   ├── notify.py             # веб-хук (ленивый requests; .env грузит shared.env, читает os.environ)
-│   ├── log.py                # write_fs_log (обёртка)
-│   └── runner.py             # main/run
-├── syncher/                  # режим синхронизации (ПК → сервер через rsync)
-│   ├── config.py             # чтение/валидация .fs-syn.toml (tomllib)
-│   ├── cli_args.py           # единое объявление sync-флагов и проброс argv для диспетчера/runner
-│   ├── ignore.py             # трансляция include/exclude в фильтры rsync
-│   ├── rsync.py              # сборка/запуск rsync, листинг, delete-guard
-│   ├── offload.py            # backup-профиль: verify → after_push
-│   ├── report.py             # заголовок + итоговый отчёт по профилям
-│   ├── notify.py             # веб-хук (FSSYN_*, ленивый requests, через shared.env)
-│   ├── log.py                # write_fs_log (обёртка)
-│   └── runner.py             # main(argv) + run(root, args)
-├── schemer/                  # режим проверки схемы базы знаний (read-only)
-│   ├── config.py             # чтение/валидация .fs-sch.toml (tomllib): группы, group.file
-│   ├── engine.py             # обход и сбор нарушений (FsSchemer, F1-F15)
-│   ├── report.py             # формат отчёта и строк нарушений
-│   ├── notify.py             # веб-хук (FSSCH_*, ленивый requests, через shared.env)
-│   ├── log.py                # write_fs_log (обёртка)
-│   └── runner.py             # main/run
-├── cli.py                    # диспетчер fs-tools (ленивый импорт runner режима)
-└── __main__.py               # python -m fs_tools
+├── shared/       # общий код всех режимов
+├── normalizer/   # режим нормализации (rules/, cli_args.py, name.py, engine.py, ignore.py, safety.py, log.py, runner.py)
+├── checker/      # режим проверки (rule.py, engine.py, report.py, notify.py, log.py, runner.py)
+├── syncher/      # режим синхронизации ПК → сервер (cli_args.py, config.py, ignore.py, rsync.py, offload.py, report.py, notify.py, log.py, runner.py)
+├── schemer/      # режим проверки схемы базы знаний, read-only (config.py, engine.py, report.py, notify.py, log.py, runner.py)
+├── cli.py        # диспетчер fs-tools (ленивый импорт runner режима)
+└── __main__.py   # python -m fs_tools
 ```
 
-Несимметрия `syncher`: у режима нет `engine.py`/`Fs*`-класса и `safety.py` (структура —
-`cli_args`/`config`/`ignore`/`rsync`/`offload`/`report`); врапнеры `log.py`/`runner.py`
-и раскладка тестов/примеров симметрию сохраняют. `schemer` симметричен
-`normalizer`/`checker`: ядро — `engine.py` с классом `Fs*` (`FsSchemer`), собственных
-CLI-флагов нет (`_build_parser()` не заводится).
+Состав каждого пакета по файлам с назначением — раздел «Распределение по
+пакетам» в [`docs-consistency-matrix.md`](.claude/rules/docs-consistency-matrix.md)
+(не дублируется здесь). Несимметрия `syncher`: у режима нет `engine.py`/`Fs*`-класса
+и `safety.py` (структура — `cli_args`/`config`/`ignore`/`rsync`/`offload`/`report`);
+врапнеры `log.py`/`runner.py` и раскладка тестов/примеров симметрию сохраняют.
+`schemer` симметричен `normalizer`/`checker`: ядро — `engine.py` с классом `Fs*`
+(`FsSchemer`), собственных CLI-флагов нет (`_build_parser()` не заводится).
 
 Точки входа (`pyproject.toml [project.scripts]`): `fs-normalizer`, `fs-checker`,
 `fs-syncher`, `fs-schemer`, `fs-tools` (диспетчер `<normalize|check|sync|scheme>`).
@@ -83,11 +48,11 @@ CLI-флагов нет (`_build_parser()` не заводится).
 - [`.claude/rules/audit-governor.md`](.claude/rules/audit-governor.md) — единый контракт аудита правок и всего проекта; практический запуск — skill [`audit-governor`](.claude/skills/audit-governor/SKILL.md);
 - [`.claude/rules/collaboration-boundaries.md`](.claude/rules/collaboration-boundaries.md) — границы работы агента и стиль коммуникации с пользователем;
 - [`.claude/rules/comments-style.md`](.claude/rules/comments-style.md) — стиль комментариев в коде и выравнивание inline-комментариев в документации;
-- [`.claude/rules/commit-hygiene.md`](.claude/rules/commit-hygiene.md) — гигиена коммитов: проверка секретов перед коммитом и стилистика сообщений;
 - [`.claude/rules/config-format.md`](.claude/rules/config-format.md) — формат и валидация `.fs-syn.toml` (`syncher`);
 - [`.claude/rules/cross-platform-safety.md`](.claude/rules/cross-platform-safety.md) — кроссплатформенность и безопасность файловых операций (Windows/WSL/macOS/Linux);
 - [`.claude/rules/date-rule.md`](.claude/rules/date-rule.md) — осознанные допущения `DateRule` (`normalizer`);
-- [`.claude/rules/docs-consistency.md`](.claude/rules/docs-consistency.md) — консистентность кода, тестов, examples и документации; матрица изменений; точки входа и коды возврата;
+- [`.claude/rules/docs-consistency.md`](.claude/rules/docs-consistency.md) — консистентность кода, тестов, examples и документации; роли артефактов;
+- [`.claude/rules/docs-consistency-matrix.md`](.claude/rules/docs-consistency-matrix.md) — детальная матрица изменений; распределение по пакетам `src/fs_tools/`; точки входа и коды возврата;
 - [`.claude/rules/examples.md`](.claude/rules/examples.md) — формирование примеров-фикстур по режимам;
 - [`.claude/rules/external-references.md`](.claude/rules/external-references.md) — запрет ссылок на внешние проекты-источники переиспользования (self-containment);
 - [`.claude/rules/imports.md`](.claude/rules/imports.md) — порядок импортов (PEP 8 / isort);
@@ -96,7 +61,6 @@ CLI-флагов нет (`_build_parser()` не заводится).
 - [`.claude/rules/offload-safety.md`](.claude/rules/offload-safety.md) — безопасность offload, профиль `[[backup]]` (`syncher`);
 - [`.claude/rules/path-matching.md`](.claude/rules/path-matching.md) — фильтр `.fs-nrm`, gitignore-семантика (`normalizer`);
 - [`.claude/rules/readme-format.md`](.claude/rules/readme-format.md) — формат вводной части `README.md` (секция «Обзор»);
-- [`.claude/rules/release-notes.md`](.claude/rules/release-notes.md) — формат названий и описаний релизов GitHub, правка описаний существующих релизов;
 - [`.claude/rules/rsync-mapping.md`](.claude/rules/rsync-mapping.md) — трансляция include/exclude в фильтры rsync (`syncher`);
 - [`.claude/rules/rule-matching.md`](.claude/rules/rule-matching.md) — семантика `.fs-chk`, разворачивание и негативы (`checker`);
 - [`.claude/rules/rules-sync.md`](.claude/rules/rules-sync.md) — двусторонняя синхронизация правил Cursor (`.mdc`) и Claude (`.md`);
@@ -107,6 +71,11 @@ CLI-флагов нет (`_build_parser()` не заводится).
 [`rules-sync.md`](.claude/rules/rules-sync.md) и таблицей «Правила проекта»
 в [`AGENTS.md`](AGENTS.md). Перед правками в соответствующей области —
 прочитать релевантное правило.
+Событийные процедуры (не файловый паттерн, а момент рабочего процесса) вынесены
+в skills, а не в правила: [`audit-governor`](.claude/skills/audit-governor/SKILL.md),
+[`commit-hygiene`](.claude/skills/commit-hygiene/SKILL.md) (перед `git commit`/`git push`),
+[`release-notes`](.claude/skills/release-notes/SKILL.md) (при выпуске релиза GitHub);
+Cursor-эквиваленты — в `.cursor/skills/`.
 
 ## Синхронизация с Cursor
 
@@ -130,9 +99,9 @@ CLI-флагов нет (`_build_parser()` не заводится).
 6. **Register** — новое правило normalizer регистрируется в `build_normalizer()`
    и ре-экспортируется в `rules/__init__.py`/`normalizer/__init__.py` (аналогичная
    точка регистрации — для расширений других режимов);
-7. **Test** — полный цикл: `pytest`, `pylint --recursive=y src tests/*`, `ruff check .`,
+7. **Test** — полный цикл: `pytest`, `pylint --persistent=n --recursive=y src tests/*`, `ruff check .`,
    `mypy --strict -p fs_tools`;
-8. **Sync docs** — по матрице [`docs-consistency.md`](.claude/rules/docs-consistency.md):
+8. **Sync docs** — по матрице [`docs-consistency-matrix.md`](.claude/rules/docs-consistency-matrix.md):
    правила (оба каталога) → `AGENTS.md`/`CLAUDE.md` → `README.md`.
 
 ## Команды
@@ -156,9 +125,8 @@ pip install -e ".[normalizer,checker,syncher,schemer,dev]"             # editabl
 - **Ресурсы и `.env` — не от `__file__`**: `pick_folder.ps1` грузится через
   `importlib.resources.files("fs_tools.shared")`; путь к `.env` (`shared.env`) — через
   `FS_TOOLS_HOME`/CWD. Иначе не найдётся в установленном wheel.
-- **Безопасность ФС**: имя — один компонент пути (`enforce_safe_component`); без
-  перезаписи `dest`; deepest-first; case-only через временное имя; `.fs-log.log` только
-  append. Скрытые (на `.`) и корень не трогаем.
+- **Безопасность ФС**: инварианты переименования и журнала — см.
+  [`cross-platform-safety.md`](.claude/rules/cross-platform-safety.md).
 - **Нормализация (`normalizer`)**: `--dry-run` строит план без переименований;
   журнал `.fs-log.log` пишется и в `dry-run`, и в `production` как последовательность
   событий (`old -> new`, `(КОНФЛИКТ) ...`, `(ОШИБКА) ...`).
@@ -175,18 +143,13 @@ pip install -e ".[normalizer,checker,syncher,schemer,dev]"             # editabl
   `norm_argv_from_namespace`.
 - **Веб-хук**: окружение процесса важнее `.env`; URL обязан быть `https://`. Ключи:
   `FSCHK_*` (проверка), `FSSYN_*` (синхронизация), `FSSCH_*` (проверка схемы).
-- **Синхронизация (`syncher`)**: однонаправленность ПК → сервер; единый источник истины
-  сопоставления — сам `rsync` (своего матчера нет); offload удаляет/архивирует только
-  подтверждённо переданное; delete-guard блокирует массовые удаления (код 3); артефакты
-  (`.fs-syn.toml`, `.fs-log.log`, `.env`) не передаются никогда; коды возврата `0/1/2/3`
-  (наихудший среди профилей). Внешние бинарники: `rsync` (обязателен), `ssh` (SSH-цели).
-  Журнал пишется в `production` и `dry-run` (с соответствующей меткой режима).
-- **Проверка схемы (`schemer`)**: конфиг `.fs-sch.toml` читается из того же
-  каталога, что и весь режим; read-only, дерево не мутирует. Групповая папка
-  матчится по basename на любой глубине, регистрозависимо. Единый механизм
-  `[[group.file]]` (`optional`) выражает и обязательность, и опциональный
-  контент-контроль. Коды возврата `0/1/2` (без «предупреждения» — статус только
-  `ok`/`error`). Подробности — `.claude/rules/scheme-format.md`.
+- **Синхронизация (`syncher`)**: однонаправленность ПК → сервер, коды возврата `0/1/2/3`
+  (наихудший среди профилей) — delete-guard/offload-инварианты и артефакты, которые
+  никогда не передаются, см. [`cross-platform-safety.md`](.claude/rules/cross-platform-safety.md)
+  и [`offload-safety.md`](.claude/rules/offload-safety.md).
+- **Проверка схемы (`schemer`)**: read-only, коды возврата `0/1/2` (без
+  «предупреждения» — статус только `ok`/`error`). Подробности —
+  [`scheme-format.md`](.claude/rules/scheme-format.md).
 - **Консистентность**: изменение поведения синхронизирует код, тесты, примеры и
   документацию. Детали и осознанные допущения — в правилах проекта (`.claude/rules/`
   для Claude Code; `.cursor/rules/` для Cursor).
@@ -209,8 +172,9 @@ pip install -e ".[normalizer,checker,syncher,schemer,dev]"             # editabl
 ## Тесты
 
 Раскладка зеркалит пакет — файл `test_<module>.py` на модуль (`test_name.py`,
-`test_safety.py`, `test_engine.py`, `test_ignore.py`, `test_log.py` + `rules/`,
-`test_runner.py` у нормализатора; `test_engine.py`, `test_rule.py`, ... у checker;
+`test_safety.py`, `test_engine.py`, `test_ignore.py`, `test_log.py`, `test_report.py`
++ `rules/`, `test_cli_args.py`, `test_runner.py` у нормализатора; `test_engine.py`,
+`test_rule.py`, `test_notify.py`, `test_examples.py`, `test_runner.py` у checker;
 `test_config.py`, `test_cli_args.py`, `test_ignore.py`, `test_rsync.py`,
 `test_offload.py`, `test_report.py`, `test_runner.py`, `test_notify.py`,
 `test_log.py`, `test_examples.py` у syncher; `test_config.py`, `test_engine.py`,

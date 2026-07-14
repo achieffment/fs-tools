@@ -1,6 +1,7 @@
 ---
 description: Тесты всех режимов и проверка изменений
-alwaysApply: true
+globs: tests/**,examples/**
+alwaysApply: false
 ---
 
 # Тесты режимов
@@ -9,8 +10,9 @@ alwaysApply: true
 
 Раскладка тестов зеркалит пакет (файл `test_<module>.py` на модуль): нормализатор —
 `test_name.py`, `test_safety.py`, `test_engine.py` (FsNormalizer e2e), `test_ignore.py`,
-`test_log.py` (+ `rules/test_<rule>.py`, `test_runner.py`); checker — `test_engine.py`,
-`test_rule.py`, `test_log.py`, `test_notify.py`, `test_runner.py`; syncher —
+`test_log.py`, `test_report.py` (+ `rules/test_<rule>.py`, `test_cli_args.py`,
+`test_runner.py`); checker — `test_engine.py`, `test_rule.py`, `test_log.py`,
+`test_notify.py`, `test_examples.py`, `test_runner.py`; syncher —
 `test_config.py`, `test_cli_args.py`, `test_ignore.py`, `test_rsync.py`,
 `test_offload.py`, `test_report.py`, `test_runner.py`, `test_notify.py`,
 `test_log.py`, `test_examples.py`; schemer — `test_config.py`, `test_engine.py`,

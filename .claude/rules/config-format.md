@@ -1,3 +1,8 @@
+---
+paths:
+  - "src/fs_tools/syncher/*"
+---
+
 # Формат `.fs-syn.toml`
 
 > Claude-эквивалент [`.cursor/rules/config-format.mdc`](../../.cursor/rules/config-format.mdc). Применяется при работе с `src/fs_tools/syncher/*`.

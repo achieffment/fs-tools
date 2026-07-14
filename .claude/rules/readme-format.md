@@ -1,3 +1,8 @@
+---
+paths:
+  - "README.md"
+---
+
 # Формат README (`## Обзор`)
 
 > Claude-эквивалент [`.cursor/rules/readme-format.mdc`](../../.cursor/rules/readme-format.mdc). Применяется при работе с `README.md`.

@@ -1,3 +1,10 @@
+---
+paths:
+  - "**/*.py"
+  - "**/*.md"
+  - "**/*.toml"
+---
+
 # Комментарии — кратко и по существу
 
 > Claude-эквивалент [`.cursor/rules/comments-style.mdc`](../../.cursor/rules/comments-style.mdc). Применяется при работе с `**/*.py`, `**/*.md`, `**/*.toml`.

@@ -1,6 +1,12 @@
+---
+paths:
+  - "src/fs_tools/**/*.py"
+  - "tests/**/*.py"
+---
+
 # Именование и симметрия переменных
 
-> Claude-эквивалент [`.cursor/rules/naming-symmetry.mdc`](../../.cursor/rules/naming-symmetry.mdc). Применяется всегда.
+> Claude-эквивалент [`.cursor/rules/naming-symmetry.mdc`](../../.cursor/rules/naming-symmetry.mdc). Применяется при работе с `*.py`.
 
 Применяй единый словарь и симметрию длин для логически связанных локальных имён.
 Цель — визуальная ровность соседних переменных без потери смысла.

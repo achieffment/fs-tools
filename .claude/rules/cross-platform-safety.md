@@ -1,6 +1,15 @@
+---
+paths:
+  - "src/fs_tools/normalizer/**"
+  - "src/fs_tools/syncher/**"
+  - "src/fs_tools/shared/picker.py"
+  - "src/fs_tools/shared/env.py"
+  - "src/fs_tools/shared/log.py"
+---
+
 # Кросс-платформенная безопасность
 
-> Claude-эквивалент [`.cursor/rules/cross-platform-safety.mdc`](../../.cursor/rules/cross-platform-safety.mdc). Применяется всегда.
+> Claude-эквивалент [`.cursor/rules/cross-platform-safety.mdc`](../../.cursor/rules/cross-platform-safety.mdc). Применяется при работе с `normalizer`/`syncher`/`shared/picker.py`/`shared/env.py`/`shared/log.py`.
 
 Код безопасно исполняется на Windows, WSL, Linux и macOS. Файловые операции не
 должны приводить к потере файлов и данных.

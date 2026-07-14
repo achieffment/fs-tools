@@ -1,3 +1,8 @@
+---
+paths:
+  - "src/fs_tools/schemer/*"
+---
+
 # Формат `.fs-sch.toml` и модель движка `schemer`
 
 > Claude-эквивалент [`.cursor/rules/scheme-format.mdc`](../../.cursor/rules/scheme-format.mdc). Применяется при работе с `src/fs_tools/schemer/*`.

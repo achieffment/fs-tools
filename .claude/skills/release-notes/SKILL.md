@@ -1,6 +1,6 @@
 ---
-description: Формат названий и описаний релизов GitHub; правка описаний существующих релизов
-alwaysApply: true
+name: release-notes
+description: Use when cutting a new GitHub release or editing the description of an existing one — canonical format for the release title and body sections of this project.
 ---
 
 # Формат релизов GitHub
@@ -105,7 +105,7 @@ alwaysApply: true
 
 ## Примечание
 
-Правило описывает GitHub release notes — не связано с [`commit-hygiene.mdc`](commit-hygiene.mdc)
-(стилистика самих commit-сообщений) и не требует правки кода/тестов; при
-изменении канона — обновить и парный Claude-файл (см.
-[`rules-sync.mdc`](rules-sync.mdc)).
+Этот skill описывает GitHub release notes — не связан со skill
+[`commit-hygiene`](../commit-hygiene/SKILL.md) (стилистика самих
+commit-сообщений) и не требует правки кода/тестов; при изменении канона —
+обновить и парный `.cursor/skills/release-notes/SKILL.md`.

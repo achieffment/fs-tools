@@ -1,6 +1,6 @@
 ---
-description: Гигиена коммитов — отсутствие секретов и стилистика сообщений
-alwaysApply: true
+name: commit-hygiene
+description: Use before `git commit`/`git push`, or when asked to check for leaked secrets or draft a commit message — verifies the staged diff for credentials and enforces this repository's Conventional Commits message style.
 ---
 
 # Гигиена коммитов: секреты и стилистика сообщений
