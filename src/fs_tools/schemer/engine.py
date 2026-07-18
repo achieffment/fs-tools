@@ -9,6 +9,15 @@
 сам `.fs-sch.toml` под неё не попадает — он скрытый и отсеян общим фильтром).
 `group.file`/`default_rule` применяются только к файлам, лежащим НЕПОСРЕДСТВЕННО в
 групповой папке (не рекурсивно) — рекурсивный обход зарезервирован только для F14.
+`group.file` и `default_rule` **накладываются**: файл с записью `[[group.file]]`
+дополнительно проверяется по `default_rule` группы, если проходит её фильтр
+расширений (кроме `exclude_prefix`-файлов, которые `default_rule` не трогает
+никогда). Несколько записей `[[group.file]]` с одинаковым `name` — валидны и
+комбинируются: каждая выполняет свою content-проверку независимо, а обязательность
+файла определяется по «строже побеждает» (файл обязателен, если хотя бы одна из
+его записей не `optional`). `files_checked` считает выполненные content-проверки,
+а не уникальные файлы — файл, задетый и `group.file`, и `default_rule` (или
+несколькими записями `group.file`), увеличивает счётчик на каждую проверку.
 По умолчанию (`strict=False`) обход не спускается в подпапки группы вовсе: их
 содержимое не классифицируется ни группой, ни тематическим узлом, F15 на них не
 срабатывает — вложенность внутри группы разрешена. `strict=True` включает прежнее
@@ -26,7 +35,7 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-from .config import ContentRule, Group, SchemeConfig
+from .config import ContentRule, Group, GroupFile, SchemeConfig
 
 
 @dataclass(frozen=True)
@@ -131,7 +140,9 @@ class FsSchemer:
             else:
                 self._check_loose(root, curr, visible_files, violations)
         return SchemerResult(
-            violations=sorted(violations, key=lambda vio: (vio.path, vio.kind)),
+            violations=sorted(
+                violations, key=lambda vio: (vio.path, vio.kind, vio.expected, vio.actual)
+            ),
             groups_checked=groups_checked,
             files_checked=files_checked,
         )
@@ -158,28 +169,32 @@ class FsSchemer:
     ) -> int:
         """Обязательность/контент/пустота (F1–F14) для одной групповой папки.
 
-        Возвращает число файлов, для которых выполнена контент-проверка.
+        Возвращает число выполненных content-проверок (не число уникальных файлов —
+        см. докстринг модуля).
         """
         rel_dir = curr.relative_to(root)
         by_name = set(visible_files)
         files_checked = 0
-        handled: set[str] = set()
+        entries_by_name: dict[str, list[GroupFile]] = {}
         for gfile in group.files:
-            handled.add(gfile.name)
-            rel = (rel_dir / gfile.name).as_posix()
-            if gfile.name not in by_name:
-                if not gfile.optional:
+            entries_by_name.setdefault(gfile.name, []).append(gfile)
+
+        for name, entries in entries_by_name.items():
+            rel = (rel_dir / name).as_posix()
+            if name not in by_name:
+                if any(not entry.optional for entry in entries):
                     violations.add(Violation(path=rel, kind="missing_group_file"))
                 continue
-            files_checked = files_checked + 1
-            content = _check_content(curr / gfile.name, rel, gfile.rule)
-            if content is not None:
-                violations.add(content)
+            for entry in entries:
+                files_checked = files_checked + 1
+                content = _check_content(curr / name, rel, entry.rule)
+                if content is not None:
+                    violations.add(content)
 
         if group.default_rule is not None:
             rule = group.default_rule
             for name in visible_files:
-                if name in handled or name.startswith(self._config.exclude_prefix):
+                if name.startswith(self._config.exclude_prefix):
                     continue
                 if not _matches_extension_filter(name, rule):
                     continue

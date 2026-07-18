@@ -137,19 +137,48 @@ def test_f9_commands_md_optional_in_knowledges(make_tree: Callable[[Iterable[str
 
 
 def test_f10_rules_md_line_three(make_tree: Callable[[Iterable[str]], Path]) -> None:
-    """F10: rules.md опционален, строка 3 == '## Правила'."""
+    """F10: rules.md опционален, строка 3 == '## Правила'; строка 1 также должна пройти
+    default_rule группы (правила накладываются) — файл, проходящий оба, без нарушений."""
     root = make_tree(["Topic/_Knowledges/"])
     _write(root, "Topic/_Knowledges/_main.md", "# Заметки\n")
-    _write(root, "Topic/_Knowledges/rules.md", "line1\nline2\n## Правила\n")
+    _write(root, "Topic/_Knowledges/rules.md", "# Заметки\nline2\n## Правила\n")
     assert "Topic/_Knowledges/rules.md" not in _kinds(root)
 
 
+def test_default_rule_and_group_file_overlay_both_checked(
+    make_tree: Callable[[Iterable[str]], Path],
+) -> None:
+    """group.file и default_rule накладываются: обе проверки выполняются независимо."""
+    root = make_tree(["Topic/_Knowledges/"])
+    _write(root, "Topic/_Knowledges/_main.md", "# Заметки\n")
+    _write(root, "Topic/_Knowledges/rules.md", "плохо\nline2\nline3\n")
+    result = FsSchemer(parse_scheme_config(_CONFIG)).check(root)
+    matches = {
+        (vio.kind, vio.expected, vio.actual)
+        for vio in result.violations
+        if vio.path == "Topic/_Knowledges/rules.md"
+    }
+    assert matches == {
+        ("bad_header", "# Заметки", "плохо"),  # default_rule группы (строка 1)
+        ("bad_header", "## Правила", "line3"),  # group.file rules.md (строка 3)
+    }
+
+
 def test_missing_line_shorter_than_required(make_tree: Callable[[Iterable[str]], Path]) -> None:
-    """Файл короче нужного числа строк -> missing_line."""
+    """Файл короче нужного числа строк для group.file -> missing_line;
+    default_rule дополнительно даёт bad_header по строке 1 (наложение правил)."""
     root = make_tree(["Topic/_Knowledges/"])
     _write(root, "Topic/_Knowledges/_main.md", "# Заметки\n")
     _write(root, "Topic/_Knowledges/rules.md", "line1\n")
-    assert _kinds(root)["Topic/_Knowledges/rules.md"] == "missing_line"
+    matches = {
+        (vio.kind, vio.expected)
+        for vio in FsSchemer(parse_scheme_config(_CONFIG)).check(root).violations
+        if vio.path == "Topic/_Knowledges/rules.md"
+    }
+    assert matches == {
+        ("missing_line", "## Правила"),  # group.file rules.md (строка 3 отсутствует)
+        ("bad_header", "# Заметки"),     # default_rule группы (строка 1 не совпала)
+    }
 
 
 def test_non_utf8_content_reports_read_error(
@@ -251,6 +280,84 @@ def test_non_strict_group_direct_children_still_checked(
     assert {vio.path: vio.kind for vio in result.violations} == {
         "Topic/_Resources/_main.md": "missing_group_file",
     }
+
+
+def test_group_file_multiple_rules_same_name_all_applied(
+    make_tree: Callable[[Iterable[str]], Path],
+) -> None:
+    """Несколько [[group.file]] с одинаковым name -> все content-проверки выполняются."""
+    config = parse_scheme_config(
+        '[[group]]\n'
+        'name = "_Resources"\n\n'
+        '  [[group.file]]\n'
+        '  name = "note.md"\n'
+        '  line = 1\n'
+        '  text = "# A"\n\n'
+        '  [[group.file]]\n'
+        '  name = "note.md"\n'
+        '  line = 2\n'
+        '  text = "# B"\n'
+    )
+    root = make_tree(["Topic/_Resources/"])
+    _write(root, "Topic/_Resources/note.md", "wrong1\nwrong2\n")
+    result = FsSchemer(config).check(root)
+    matches = {
+        (vio.kind, vio.expected, vio.actual)
+        for vio in result.violations
+        if vio.path == "Topic/_Resources/note.md"
+    }
+    assert matches == {
+        ("bad_header", "# A", "wrong1"),
+        ("bad_header", "# B", "wrong2"),
+    }
+    assert result.files_checked == 2
+
+
+def test_group_file_multiple_rules_missing_file_single_violation(
+    make_tree: Callable[[Iterable[str]], Path],
+) -> None:
+    """Несколько записей на один name + отсутствие файла -> одно missing_group_file."""
+    config = parse_scheme_config(
+        '[[group]]\n'
+        'name = "_Resources"\n\n'
+        '  [[group.file]]\n'
+        '  name = "note.md"\n'
+        '  line = 1\n'
+        '  text = "# A"\n\n'
+        '  [[group.file]]\n'
+        '  name = "note.md"\n'
+        '  optional = true\n'
+        '  line = 2\n'
+        '  text = "# B"\n'
+    )
+    root = make_tree(["Topic/_Resources/"])
+    result = FsSchemer(config).check(root)
+    matches = [vio for vio in result.violations if vio.path == "Topic/_Resources/note.md"]
+    assert len(matches) == 1
+    assert matches[0].kind == "missing_group_file"
+
+
+def test_group_file_multiple_rules_all_optional_absent_not_required(
+    make_tree: Callable[[Iterable[str]], Path],
+) -> None:
+    """Все записи с одним name — optional -> отсутствие файла не нарушение."""
+    config = parse_scheme_config(
+        '[[group]]\n'
+        'name = "_Resources"\n\n'
+        '  [[group.file]]\n'
+        '  name = "note.md"\n'
+        '  optional = true\n'
+        '  line = 1\n'
+        '  text = "# A"\n\n'
+        '  [[group.file]]\n'
+        '  name = "note.md"\n'
+        '  optional = true\n'
+        '  line = 2\n'
+        '  text = "# B"\n'
+    )
+    root = make_tree(["Topic/_Resources/"])
+    result = FsSchemer(config).check(root)
+    assert "Topic/_Resources/note.md" not in {vio.path for vio in result.violations}
 
 
 def test_fs_sch_toml_in_root_excluded_from_f15(

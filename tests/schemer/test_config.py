@@ -77,11 +77,11 @@ def test_group_file_required_and_optional(write_scheme_toml: Callable[[str], Pat
     )
     group = load_scheme_config(root).group_by_name("_Knowledges")
     assert group is not None
-    main_file = group.file_by_name("_main.md")
-    optional_file = group.file_by_name("_commands.md")
-    assert main_file is not None and main_file.optional is False
+    (main_file,) = group.files_by_name("_main.md")
+    (optional_file,) = group.files_by_name("_commands.md")
+    assert main_file.optional is False
     assert main_file.rule.line == 1 and main_file.rule.text == "# Заметки"
-    assert optional_file is not None and optional_file.optional is True
+    assert optional_file.optional is True
 
 
 def test_default_rule_parsed(write_scheme_toml: Callable[[str], Path]) -> None:
@@ -178,10 +178,10 @@ def test_group_name_with_slash_raises(write_scheme_toml: Callable[[str], Path]) 
         load_scheme_config(root)
 
 
-def test_group_file_name_not_unique_in_group_raises(
+def test_group_file_duplicate_name_parsed(
     write_scheme_toml: Callable[[str], Path],
 ) -> None:
-    """Дублирующееся имя файла внутри одной группы — ошибка."""
+    """Несколько [[group.file]] с одинаковым name — валидно, обе записи сохраняются."""
     root = write_scheme_toml(
         '[[group]]\n'
         'name = "G"\n\n'
@@ -191,11 +191,14 @@ def test_group_file_name_not_unique_in_group_raises(
         '  text = "x"\n\n'
         '  [[group.file]]\n'
         '  name = "a.md"\n'
-        '  line = 1\n'
+        '  line = 2\n'
         '  text = "y"\n'
     )
-    with pytest.raises(SchemeConfigError):
-        load_scheme_config(root)
+    group = load_scheme_config(root).group_by_name("G")
+    assert group is not None
+    first, second = group.files_by_name("a.md")
+    assert (first.rule.line, first.rule.text) == (1, "x")
+    assert (second.rule.line, second.rule.text) == (2, "y")
 
 
 def test_group_file_missing_line_raises(write_scheme_toml: Callable[[str], Path]) -> None:

@@ -45,10 +45,15 @@ class ContentRule:
 
 @dataclass(frozen=True)
 class GroupFile:
-    """Единственный механизм для конкретного имени файла в группе.
+    """Одна запись `[[group.file]]` для конкретного имени файла в группе.
 
     `optional=False` — файл обязателен (F1/F4); `optional=True` — отсутствие не
-    нарушение, но при наличии контент-проверка обязательна (F7/F9–F13).
+    нарушение, но при наличии контент-проверка обязательна (F7/F9–F13). `name`
+    не обязан быть уникален в пределах группы: несколько записей с одинаковым
+    `name` — валидный способ задать несколько независимых content-проверок
+    (несколько пар `line`/`text`) для одного файла; движок (`engine.py`)
+    выполняет их все, а обязательность файла — «строже побеждает» (файл
+    обязателен, если хотя бы одна из его записей не `optional`).
     """
 
     name: str
@@ -73,12 +78,9 @@ class Group:
     files: tuple[GroupFile, ...]
     strict: bool = False
 
-    def file_by_name(self, name: str) -> GroupFile | None:
-        """Найти запись `[[group.file]]` по имени или вернуть None."""
-        for gfile in self.files:
-            if gfile.name == name:
-                return gfile
-        return None
+    def files_by_name(self, name: str) -> tuple[GroupFile, ...]:
+        """Найти все записи `[[group.file]]` с данным именем (в порядке объявления)."""
+        return tuple(gfile for gfile in self.files if gfile.name == name)
 
 
 @dataclass(frozen=True)
@@ -188,15 +190,10 @@ def _build_group(bare: dict[str, Any]) -> Group:
     if not isinstance(files_bare, list):
         raise SchemeConfigError(where)
     files: list[GroupFile] = []
-    seen: set[str] = set()
     for file_bare in files_bare:
         if not isinstance(file_bare, dict):
             raise SchemeConfigError(where)
-        gfile = _build_group_file(file_bare, name)
-        if gfile.name in seen:
-            raise SchemeConfigError(f"группа «{name}»: имя файла «{gfile.name}» не уникально")
-        seen.add(gfile.name)
-        files.append(gfile)
+        files.append(_build_group_file(file_bare, name))
 
     return Group(name=name, default_rule=default_rule, files=tuple(files), strict=strict)
 

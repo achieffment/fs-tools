@@ -23,7 +23,7 @@ def test_examples_matches_readme(capsys: pytest.CaptureFixture[str]) -> None:
     assert "Нарушения" not in out
     assert f"Каталог: {WAREHOUSE}" in out
     assert "Статус: error. Найдены нарушения структуры/контента." in out
-    assert "Сводка: проверено групп: 5; проверено файлов: 6; нарушений: 5." in out
+    assert "Сводка: проверено групп: 5; проверено файлов: 7; нарушений: 5." in out
 
     assert not (WAREHOUSE / FS_LOG).exists()
     log = (EXAMPLES / FS_LOG).read_text(encoding="utf-8")
