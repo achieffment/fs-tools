@@ -50,6 +50,21 @@ def test_build_command_dry_run_and_options(tmp_path: Path) -> None:
     assert "--delete" not in cmd
 
 
+def test_build_command_preserve_perms_and_chmod(tmp_path: Path) -> None:
+    """Проверяет сценарий: build command preserve perms and chmod."""
+    profile = _profile(tmp_path, preserve_perms=False, chmod="D755,F644")
+    cmd = build_command(profile, dry_run=False, delete=False)
+    assert "--no-perms" in cmd
+    assert "--chmod=D755,F644" in cmd
+
+
+def test_build_command_default_preserves_perms(tmp_path: Path) -> None:
+    """Проверяет сценарий: build command default preserves perms."""
+    cmd = build_command(_profile(tmp_path), dry_run=False, delete=False)
+    assert "--no-perms" not in cmd
+    assert not any(arg.startswith("--chmod=") for arg in cmd)
+
+
 def test_build_command_ssh_opts_only_for_ssh(tmp_path: Path) -> None:
     """Проверяет сценарий: build command ssh opts only for ssh."""
     ssh = _profile(tmp_path, target_path="host:/p", ssh_opts=["-p", "2222"])
@@ -248,6 +263,57 @@ def test_real_source_files_respects_filters(tmp_path: Path) -> None:
     (src / ".fs-syn.toml").write_text("x", encoding="utf-8")   # артефакт исключается
     profile = _profile(src, target_path=str(tmp_path / "dst"), exclude=["*.tmp"])
     assert source_files(profile) == ["a.txt", "sub/b.bin"]
+
+
+@requires_rsync
+def test_real_sync_applies_chmod(tmp_path: Path) -> None:
+    """Проверяет сценарий: real sync applies chmod."""
+    src = tmp_path / "src"
+    dst = tmp_path / "dst"
+    src.mkdir()
+    dst.mkdir()
+    (src / "a.txt").write_text("a", encoding="utf-8")
+    src.chmod(0o777)
+    (src / "a.txt").chmod(0o777)
+    profile = _profile(src, target_path=str(dst), chmod="D755,F644")
+
+    out = rsync_mod.run_rsync(build_command(profile, dry_run=False, delete=False))
+    assert out.ok
+    assert (dst.stat().st_mode & 0o777) == 0o755
+    assert (dst / "a.txt").stat().st_mode & 0o777 == 0o644
+
+    dst.chmod(0o777)
+    (dst / "a.txt").chmod(0o777)
+    again = rsync_mod.run_rsync(build_command(profile, dry_run=False, delete=False))
+    assert again.ok
+    assert (dst / "a.txt").stat().st_mode & 0o777 == 0o644
+
+
+@requires_rsync
+def test_real_sync_no_perms_with_chmod_skips_unchanged_mode(tmp_path: Path) -> None:
+    """Проверяет сценарий: real sync no perms with chmod skips unchanged mode."""
+    src = tmp_path / "src"
+    dst = tmp_path / "dst"
+    src.mkdir()
+    dst.mkdir()
+    (src / "a.txt").write_text("a", encoding="utf-8")
+    src.chmod(0o777)
+    (src / "a.txt").chmod(0o777)
+    profile = _profile(
+        src,
+        target_path=str(dst),
+        preserve_perms=False,
+        chmod="D755,F644",
+    )
+
+    first = rsync_mod.run_rsync(build_command(profile, dry_run=False, delete=False))
+    assert first.ok
+    assert (dst / "a.txt").stat().st_mode & 0o777 == 0o644
+
+    (dst / "a.txt").chmod(0o777)
+    again = rsync_mod.run_rsync(build_command(profile, dry_run=False, delete=False))
+    assert again.ok
+    assert (dst / "a.txt").stat().st_mode & 0o777 == 0o777
 
 
 @requires_rsync

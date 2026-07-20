@@ -519,6 +519,43 @@ sudo apt install -y rsync openssh-client
 Здесь `/mnt/e/Home` соответствует `E:\Home`, а `local_root = "Access"` в
 `.fs-syn.toml` остаётся относительным и безопасно ограничивает область синхронизации.
 
+#### Troubleshooting: права 777 на сервере (WSL/drvfs)
+
+WSL монтирует Windows-диски через drvfs (`/mnt/e/...`): у NTFS нет настоящих Unix-прав,
+и `stat` часто показывает `777`. `fs-syncher` запускает rsync с `-a`, который сохраняет
+права источника — на Linux-сервере появляются `777` у переданных или обновлённых объектов.
+
+Проверка на WSL:
+
+```bash
+ls -la /mnt/e/Home/<папка>/<файл>
+stat -c '%a %n' /mnt/e/Home/<папка>/<файл>
+```
+
+Рекомендуемая настройка в `.fs-syn.toml` (в `[defaults]` или в профиле):
+
+```toml
+[defaults]
+chmod = "D755,F644"
+```
+
+`chmod` добавляет rsync `--chmod=D755,F644` (каталоги `755`, файлы `644` на приёмнике).
+При дефолтном `preserve_perms = true` rsync исправляет и новые, и уже лежащие на сервере
+объекты с `777`, даже если содержимое не менялось.
+
+`preserve_perms = false` (rsync `--no-perms`) не комбинируйте с `chmod` для drvfs: тогда
+`--chmod` применяется только к **переданным** файлам, а неизменённые `777` на сервере
+останутся. Поле `preserve_perms = false` без `chmod` имеет смысл для POSIX→POSIX, когда
+нужны права по umask приёмника.
+
+После перехода на один только `chmod` следующий прогон восстановит уже лежащие на сервере
+`777`. Если в конфиге по-прежнему `preserve_perms = false` вместе с `chmod`, неизменённые
+файлы с `777` не починятся — смените конфиг или выполните `find … -exec chmod …` на
+приёмнике. `checksum = true` права не восстанавливает.
+
+Альтернатива без правок конфига — включить metadata в WSL (`/etc/wsl.conf`,
+секция `[automount]`, опция `options = "metadata,umask=022"`), затем `wsl --shutdown`.
+
 #### Troubleshooting: `The source and destination cannot both be remote`
 
 Эта ошибка появляется, когда локальный путь источника передан в `rsync` как
@@ -563,6 +600,8 @@ bin\sync.bat "E:\Home" --dry-run --profile access
 | `checksum`, `compress`, `partial_progress`  | опции передачи (bool)                                                                                                            |
 | `bwlimit`                                   | ограничение полосы (строка)                                                                                                      |
 | `ssh_opts`                                  | доп. опции `ssh` (список строк; только для SSH-целей)                                                                            |
+| `preserve_perms`                            | сохранять права источника (дефолт `true`; `false` → rsync `--no-perms`; с `chmod` — только к переданным файлам)                  |
+| `chmod`                                     | явные права на приёмнике (строка, синтаксис rsync `--chmod`, напр. `D755,F644`; для WSL/drvfs — основной обход `777`)            |
 | `after_push`                                | только `[[backup]]`: `delete` / `archive` / `nothing` (дефолт `nothing`)                                                         |
 | `verify`                                    | только `[[backup]]`: сверка перед offload (дефолт `true`)                                                                        |
 | `archive_dir`                               | только `[[backup]]`: каталог архива (дефолт `<local_root>/../_fs-backup/<profile>/<YYYY-MM-DD>/`)                                |

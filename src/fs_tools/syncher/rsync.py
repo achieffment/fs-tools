@@ -2,9 +2,9 @@
 
 Базовый набор опций: `-a` (архив) + `--itemize-changes` (для отчёта/журнала) +
 `--stats`. Зеркалирование удалений (`--delete`), сжатие (`-z`), `--checksum`,
-`--partial --progress`, `--bwlimit`, кастомный транспорт `-e ssh ...` — по параметрам
-профиля. Источник всегда формируется с завершающим `/` (содержимое каталога), чтобы
-поведение не зависело от слешей в конфиге.
+`--partial --progress`, `--bwlimit`, кастомный транспорт `-e ssh ...`, права
+(`--no-perms`, `--chmod=...`) — по параметрам профиля. Источник всегда формируется с
+завершающим `/` (содержимое каталога), чтобы поведение не зависело от слешей в конфиге.
 """
 from __future__ import annotations
 
@@ -101,7 +101,10 @@ def _dest(target_path: str) -> str:
 
 
 def transfer_args(profile: Profile) -> list[str]:
-    """Опции передачи, зависящие от профиля (без --delete и --dry-run)."""
+    """Опции передачи, зависящие от профиля (без --delete и --dry-run).
+
+    Права: `preserve_perms=false` → `--no-perms`; непустой `chmod` → `--chmod=...`.
+    """
     args: list[str] = []
     if profile.checksum:
         args.append("--checksum")
@@ -113,6 +116,10 @@ def transfer_args(profile: Profile) -> list[str]:
         args.append(f"--bwlimit={profile.bwlimit}")
     if profile.ssh_opts and split_target(profile.target_path)[0]:
         args = args + ["-e", "ssh " + " ".join(profile.ssh_opts)]
+    if not profile.preserve_perms:
+        args.append("--no-perms")
+    if profile.chmod:
+        args.append(f"--chmod={profile.chmod}")
     return args
 
 

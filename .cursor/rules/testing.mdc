@@ -71,11 +71,13 @@ alwaysApply: false
   `line`/`text`), исключение `.fs-sch.toml` из loose-проверки, коды возврата,
   веб-хук (мок сети).
 - **syncher**: парсинг/валидация `.fs-syn.toml` и коды `ConfigError`; трансляция
-  include/exclude в фильтры rsync; разбор `--itemize-changes`/`--list-only`;
-  delete-guard (пороги по количеству/доле, код 3); offload (verify → `after_push`,
-  частичный успех); коды возврата `0/1/2/3` и «наихудший среди профилей»; «нет
-  аргумента → интерактивный picker, аргумент-каталог минует диалог». Интеграционные тесты с реальным rsync —
-  `@requires_rsync` (skip без бинаря).
+  include/exclude в фильтры rsync; опции `preserve_perms`/`chmod` → `--no-perms`/
+  `--chmod=...`; разбор `--itemize-changes`/`--list-only`; delete-guard (пороги по
+  количеству/доле, код 3); offload (verify → `after_push`, частичный успех); коды
+  возврата `0/1/2/3` и «наихудший среди профилей»; «нет аргумента → интерактивный
+  picker, аргумент-каталог минует диалог». Интеграционные тесты с реальным rsync —
+  `@requires_rsync` (skip без бинаря), в т.ч. применение `--chmod` и trade-off
+  `--no-perms` + `--chmod`.
 - **Аргумент-каталог минует диалог** — для всех режимов; при отсутствии аргумента
   normalizer/checker/syncher/schemer используют интерактивный выбор каталога.
 - **Веб-хук**: окружение процесса важнее `.env` (проверяется в `test_env.py`);

@@ -28,7 +28,10 @@ alwaysApply: false
 - `delete_threshold` (число, дефолт 100) и `delete_threshold_pct` (доля %, дефолт 25)
   — пороги delete-guard; `force_delete` (дефолт `false`) снимает защиту.
 - Передача: `checksum`, `compress`, `partial_progress` (bool), `bwlimit` (строка),
-  `ssh_opts` (список строк).
+  `ssh_opts` (список строк), `preserve_perms` (bool, дефолт `true`; `false` → rsync
+  `--no-perms`), `chmod` (строка, опционально; синтаксис rsync `--chmod`, напр.
+  `D755,F644` — явные права на приёмнике). С `--no-perms` rsync применяет `--chmod`
+  только к переданным файлам; для drvfs достаточно одного `chmod`.
 - Только `[[backup]]`: `after_push` (`delete`|`archive`|`nothing`, дефолт `nothing`),
   `verify` (bool, дефолт `true`), `archive_dir` (для `archive`; дефолт
   `<local_root>/../_fs-backup/<profile>/<YYYY-MM-DD>/`).
@@ -39,6 +42,7 @@ alwaysApply: false
 - `local_root` существует.
 - `remote_root` непустой и безопасный: не корень `/`, непустой путь после `:`.
 - `after_push` — корректный enum; типы полей соответствуют ожидаемым.
+- `chmod` — непустая строка.
 - Сообщение об ошибке указывает профиль и поле.
 
 Поле профиля перекрывает одноимённое из `[defaults]`. Меняя набор полей или дефолты,

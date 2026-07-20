@@ -50,6 +50,8 @@ class Profile:
     partial_progress: bool = False
     bwlimit: str | None = None
     ssh_opts: list[str] = field(default_factory=list)
+    preserve_perms: bool = True
+    chmod: str | None = None
     after_push: str = "nothing"
     verify: bool = True
     backup_path: Path | None = None
@@ -98,6 +100,14 @@ def _as_float(value: Any, profile: str, field_name: str) -> float:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise ConfigError(f"профиль «{profile}»: поле «{field_name}» должно быть числом")
     return float(value)
+
+
+def _validate_chmod(value: str, profile: str) -> str:
+    """chmod: непустая строка в синтаксисе rsync --chmod."""
+    bare = value.strip()
+    if not bare:
+        raise ConfigError(f"профиль «{profile}»: поле «chmod» не должно быть пустым")
+    return bare
 
 
 def _validate_remote_root(remote_root: str, profile: str) -> None:
@@ -202,6 +212,10 @@ def _build_profile(
         profile.bwlimit = _as_str(str(val) if isinstance(val, int) else val, name, "bwlimit")
     if (val := pick("ssh_opts")) is not None:
         profile.ssh_opts = _as_str_list(val, name, "ssh_opts")
+    if (val := pick("preserve_perms")) is not None:
+        profile.preserve_perms = _as_bool(val, name, "preserve_perms")
+    if (val := pick("chmod")) is not None:
+        profile.chmod = _validate_chmod(_as_str(val, name, "chmod"), name)
 
     if kind == "backup":
         if (val := pick("after_push")) is not None:

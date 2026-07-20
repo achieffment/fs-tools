@@ -38,6 +38,8 @@ def test_parse_minimal_sync(tmp_path: Path) -> None:
     assert profile.delete_threshold == 100
     assert profile.delete_threshold_pct == 25.0
     assert profile.verify is True
+    assert profile.preserve_perms is True
+    assert profile.chmod is None
 
 
 def test_backup_delete_default_false(tmp_path: Path) -> None:
@@ -61,6 +63,8 @@ def test_defaults_section_applied_and_overridden(tmp_path: Path) -> None:
         "[defaults]\n"
         "compress = true\n"
         "delete_threshold = 50\n"
+        "preserve_perms = false\n"
+        "chmod = \"D755,F644\"\n"
         "[[sync]]\n"
         "name = \"a\"\n"
         "local_root = \".\"\n"
@@ -70,11 +74,14 @@ def test_defaults_section_applied_and_overridden(tmp_path: Path) -> None:
         "local_root = \".\"\n"
         "remote_root = \"/srv/b\"\n"
         "delete_threshold = 5\n"
+        "preserve_perms = true\n"
     )
     config = parse_config(text, tmp_path)
     a, b = config.roll
     assert a.compress is True and a.delete_threshold == 50
+    assert a.preserve_perms is False and a.chmod == "D755,F644"
     assert b.compress is True and b.delete_threshold == 5   # профиль перекрыл defaults
+    assert b.preserve_perms is True and b.chmod == "D755,F644"
 
 
 def test_local_root_relative_to_config(tmp_path: Path) -> None:
@@ -160,6 +167,28 @@ def test_bad_type_rejected(tmp_path: Path) -> None:
     """Проверяет сценарий: bad type rejected."""
     with pytest.raises(ConfigError, match="delete"):
         parse_config(_toml(extra="delete = \"yes\"\n"), tmp_path)
+
+
+def test_empty_chmod_rejected(tmp_path: Path) -> None:
+    """Проверяет сценарий: empty chmod rejected."""
+    with pytest.raises(ConfigError, match="chmod"):
+        parse_config(_toml(extra="chmod = \"\"\n"), tmp_path)
+    with pytest.raises(ConfigError, match="chmod"):
+        parse_config(_toml(extra="chmod = \"   \"\n"), tmp_path)
+
+
+def test_preserve_perms_and_chmod_parsed(tmp_path: Path) -> None:
+    """Проверяет сценарий: preserve perms and chmod parsed."""
+    config = parse_config(_toml(extra="preserve_perms = false\nchmod = \"D755,F644\"\n"), tmp_path)
+    profile = config.roll[0]
+    assert profile.preserve_perms is False
+    assert profile.chmod == "D755,F644"
+
+
+def test_chmod_strips_whitespace(tmp_path: Path) -> None:
+    """Проверяет сценарий: chmod strips whitespace."""
+    config = parse_config(_toml(extra="chmod = \"  D755,F644  \"\n"), tmp_path)
+    assert config.roll[0].chmod == "D755,F644"
 
 
 def test_no_profiles_rejected(tmp_path: Path) -> None:

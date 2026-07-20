@@ -50,7 +50,9 @@ bin/sync.bat examples/syncher --dry-run        # Windows (через WSL/cwrsync
 ```
 
 Такой запуск использует единый Linux-стек `rsync`/`ssh` и избегает смешивания
-Windows OpenSSH и chocolatey/cwrsync runtime.
+Windows OpenSSH и chocolatey/cwrsync runtime. При синхронизации с Windows-диска на
+Linux-сервер см. troubleshooting «права 777» в корневом `README.md`
+(`chmod = "D755,F644"` в `.fs-syn.toml`).
 
 ## Что демонстрирует `.fs-syn.toml`
 
